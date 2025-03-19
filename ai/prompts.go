@@ -3,6 +3,8 @@ package ai
 const (
     GenerateTitlePrompt = `You are an expert software engineer who creates concise titles for pull requests on GitHub.
 Generate a title message based on the provided diffs. Review the list of changes and diffs that will be sent to GitHub.
+---
+---
 Diffs:
 %s
 Carefully review the diffs and generate a one-line title message for those changes.
