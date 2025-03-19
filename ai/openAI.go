@@ -39,7 +39,8 @@ func (o *OpenAI) GenerateTitle(branchName, diff string) (string, error) {
 }
 
 func (o *OpenAI) GenerateBody(branchName, diff string) (string, error) {
-    prompt := fmt.Sprintf(GenerateBodyPrompt, diff, branchName)
+    issueNumber := extractIssueNumber(branchName)
+    prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issueNumber)
     return o.generateText(prompt)
 }
 
@@ -55,7 +56,7 @@ func (o *OpenAI) generateText(prompt string) (string, error) {
                 Content: prompt,
             },
         },
-        MaxTokens:   100,
+//        MaxTokens:   100,
         Temperature: o.temperature,
     }
     resp, err := o.client.CreateChatCompletion(context.Background(), req)

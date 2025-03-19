@@ -38,6 +38,7 @@ Ensure the description:
 - Uses clear and professional language.
 - Does not exceed a reasonable length (around 100 characters).
 - Don't add implementation details
+- DON'T LIST CHANGES ITSELF
 - Issue link is placed at the end of the description 
 
 Reply only with the PR body, without any additional text, explanations, or line breaks outside of the structured sections.
