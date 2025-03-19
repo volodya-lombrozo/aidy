@@ -44,6 +44,9 @@ func (o *OpenAI) GenerateBody(branchName, diff string) (string, error) {
 }
 
 func (o *OpenAI) generateText(prompt string) (string, error) {
+    fmt.Println("Prompt being sent to OpenAI:")
+    fmt.Println(prompt)
+
     req := openai.ChatCompletionRequest{
         Model: o.model,
         Messages: []openai.ChatCompletionMessage{
