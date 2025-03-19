@@ -4,10 +4,17 @@ import (
     "fmt"
     "log"
     "github.com/volodya-lombrozo/aidy/ai"
+    "github.com/volodya-lombrozo/aidy/git"
 )
 
 func main() {
-    branchName := "feature/123-add-new-feature" // Example branch name
+    // Use the mock Git implementation
+    gitService := &git.MockGit{}
+
+    branchName, err := gitService.GetBranchName()
+    if err != nil {
+        log.Fatalf("Error getting branch name: %v", err)
+    }
 
     // Use the mock AI implementation
     aiService := &ai.MockAI{}
