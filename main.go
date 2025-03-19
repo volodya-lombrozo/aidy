@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-    // Use the mock Git implementation
-    gitService := &git.MockGit{}
+    // Use the real Git implementation
+    gitService := &git.RealGit{}
 
     branchName, err := gitService.GetBranchName()
     if err != nil {
