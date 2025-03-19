@@ -32,18 +32,23 @@ func (o *OpenAI) GenerateBody(branchName string) (string, error) {
 }
 
 func (o *OpenAI) generateText(prompt string) (string, error) {
-    req := openai.CompletionRequest{
-        Model:       o.model,
-        Prompt:      prompt,
+    req := openai.ChatCompletionRequest{
+        Model: o.model,
+        Messages: []openai.ChatCompletionMessage{
+            {
+                Role:    "system",
+                Content: prompt,
+            },
+        },
         MaxTokens:   100,
         Temperature: o.temperature,
     }
-    resp, err := o.client.CreateCompletion(context.Background(), req)
+    resp, err := o.client.CreateChatCompletion(context.Background(), req)
     if err != nil {
         return "", err
     }
     if len(resp.Choices) > 0 {
-        return resp.Choices[0].Text, nil
+        return resp.Choices[0].Message.Content, nil
     }
     return "", fmt.Errorf("no text generated")
 }
