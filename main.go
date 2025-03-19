@@ -42,7 +42,7 @@ func main() {
     }
     fmt.Printf("Git Diff:\n%s\n", diff)
     // Use the OpenAI implementation
-    aiService := ai.NewOpenAI(apiKey, "text-davinci-003", 0.7)
+    aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.3)
 
     title, err := aiService.GenerateTitle(branchName)
     if err != nil {
