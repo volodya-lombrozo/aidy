@@ -3,7 +3,7 @@ package main
 import (
     "fmt"
     "log"
-    "yourmodule/ai"
+    "github.com/volodya-lombrozo/aidy/ai"
 )
 
 func main() {
