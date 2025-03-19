@@ -3,6 +3,7 @@ package ai
 import (
     "context"
     "fmt"
+    "strings"
     openai "github.com/sashabaranov/go-openai"
 )
 
