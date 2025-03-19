@@ -26,7 +26,18 @@ func (r *RealGit) GetDiff(baseBranch string) (string, error) {
     cmd.Stdout = &out
     err := cmd.Run()
     if err != nil {
-        return "", err
+        // Attempt to get diff for 'master' if 'main' fails
+        if baseBranch == "main" {
+            cmd = exec.Command("git", "diff", "master")
+            out.Reset()
+            cmd.Stdout = &out
+            err = cmd.Run()
+            if err != nil {
+                return "", err
+            }
+        } else {
+            return "", err
+        }
     }
     diff := out.String()
     return diff, nil
