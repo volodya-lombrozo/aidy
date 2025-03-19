@@ -22,12 +22,12 @@ func NewOpenAI(apiKey, model string, temperature float32) *OpenAI {
 }
 
 func (o *OpenAI) GenerateTitle(branchName string) (string, error) {
-    prompt := fmt.Sprintf("Generate a title for the branch: %s", branchName)
+    prompt := fmt.Sprintf(GenerateTitlePrompt, branchName)
     return o.generateText(prompt)
 }
 
 func (o *OpenAI) GenerateBody(branchName string) (string, error) {
-    prompt := fmt.Sprintf("Generate a body for the branch: %s", branchName)
+    prompt := fmt.Sprintf(GenerateBodyPrompt, branchName)
     return o.generateText(prompt)
 }
 
