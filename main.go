@@ -16,7 +16,11 @@ func main() {
         log.Fatalf("Error getting branch name: %v", err)
     }
 
-    // Use the mock AI implementation
+    diff, err := gitService.GetDiff("main")
+    if err != nil {
+        log.Fatalf("Error getting git diff: %v", err)
+    }
+    fmt.Printf("Git Diff:\n%s\n", diff)
     aiService := &ai.MockAI{}
 
     title, err := aiService.GenerateTitle(branchName)
