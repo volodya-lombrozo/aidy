@@ -46,7 +46,6 @@ func main() {
     if err != nil {
         log.Fatalf("Error getting git diff: %v", err)
     }
-    fmt.Printf("Git Diff:\n%s\n", diff)
     // Use the OpenAI implementation
     aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.3)
 
