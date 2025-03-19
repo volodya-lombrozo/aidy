@@ -15,6 +15,7 @@ Additionally, you can extract the issue number from the current branch name.
 Ensure the title message:
 - Starts with the appropriate prefix.
 - Includes an issue number.
+- DON'T CHANGE THE ISSUE NUMBER.
 - Is in the imperative mood (e.g., "Add feature" instead of "Added feature" or "Adding feature").
 - Does not exceed 72 characters.
 Reply only with the one-line title, without any additional text, explanations, or line breaks.`
@@ -35,7 +36,7 @@ Carefully analyze the diffs and generate a professional pull request description
 Ensure the description:
 - Is concise but informative.
 - Uses clear and professional language.
-- Does not exceed a reasonable length (around 300-500 characters).
+- Does not exceed a reasonable length (around 100 characters).
 - Don't add implementation details
 - Issue link is placed at the end of the description 
 
