@@ -30,15 +30,15 @@ func NewOpenAI(apiKey, model string, temperature float32) *OpenAI {
     }
 }
 
-func (o *OpenAI) GenerateTitle(branchName string) (string, error) {
+func (o *OpenAI) GenerateTitle(branchName, diff string) (string, error) {
     // Extract issue number from branch name
     issueNumber := extractIssueNumber(branchName)
-    prompt := fmt.Sprintf(GenerateTitlePrompt, issueNumber)
+    prompt := fmt.Sprintf(GenerateTitlePrompt, issueNumber, diff)
     return o.generateText(prompt)
 }
 
-func (o *OpenAI) GenerateBody(branchName string) (string, error) {
-    prompt := fmt.Sprintf(GenerateBodyPrompt, branchName)
+func (o *OpenAI) GenerateBody(branchName, diff string) (string, error) {
+    prompt := fmt.Sprintf(GenerateBodyPrompt, branchName, diff)
     return o.generateText(prompt)
 }
 

@@ -50,12 +50,12 @@ func main() {
     // Use the OpenAI implementation
     aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.3)
 
-    title, err := aiService.GenerateTitle(branchName)
+    title, err := aiService.GenerateTitle(branchName, diff)
     if err != nil {
         log.Fatalf("Error generating title: %v", err)
     }
 
-    body, err := aiService.GenerateBody(branchName)
+    body, err := aiService.GenerateBody(branchName, diff)
     if err != nil {
         log.Fatalf("Error generating body: %v", err)
     }
