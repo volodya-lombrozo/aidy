@@ -7,6 +7,7 @@ import (
     "github.com/volodya-lombrozo/aidy/git"
     "gopkg.in/yaml.v2"
     "io/ioutil"
+    "os"
 )
 
 func main() {
