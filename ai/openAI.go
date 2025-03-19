@@ -12,6 +12,15 @@ type OpenAI struct {
     temperature float32
 }
 
+func extractIssueNumber(branchName string) string {
+    // Assuming the branch name format is "<issue-number>_<description>"
+    parts := strings.Split(branchName, "_")
+    if len(parts) > 0 {
+        return parts[0]
+    }
+    return "unknown"
+}
+
 func NewOpenAI(apiKey, model string, temperature float32) *OpenAI {
     client := openai.NewClient(apiKey)
     return &OpenAI{
@@ -22,7 +31,9 @@ func NewOpenAI(apiKey, model string, temperature float32) *OpenAI {
 }
 
 func (o *OpenAI) GenerateTitle(branchName string) (string, error) {
-    prompt := fmt.Sprintf(GenerateTitlePrompt, branchName)
+    // Extract issue number from branch name
+    issueNumber := extractIssueNumber(branchName)
+    prompt := fmt.Sprintf(GenerateTitlePrompt, issueNumber)
     return o.generateText(prompt)
 }
 
