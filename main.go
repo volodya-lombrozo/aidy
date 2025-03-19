@@ -11,7 +11,12 @@ import (
 
 func main() {
     // Read API key from configuration file
-    configData, err := ioutil.ReadFile(".aidy.conf.yml")
+    homeDir, err := os.UserHomeDir()
+    if err != nil {
+        log.Fatalf("Error getting home directory: %v", err)
+    }
+    configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
+    configData, err := ioutil.ReadFile(configPath)
     if err != nil {
         log.Fatalf("Error reading config file: %v", err)
     }
