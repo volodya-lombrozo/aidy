@@ -14,7 +14,7 @@ Use the following options for <type>: fix, feat, build, chore, ci, docs, style, 
 Additionally, you can extract the issue number from the current branch name.
 Ensure the title message:
 - Starts with the appropriate prefix.
-- Includes an issue number.
+- Includes an issue number #%s
 - DON'T CHANGE THE ISSUE NUMBER.
 - Is in the imperative mood (e.g., "Add feature" instead of "Added feature" or "Adding feature").
 - Does not exceed 72 characters.
