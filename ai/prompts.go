@@ -36,6 +36,7 @@ Ensure the description:
 - Is concise but informative.
 - Uses clear and professional language.
 - Does not exceed a reasonable length (around 300-500 characters).
+- Don't add implementation details
 - Issue link is placed at the end of the description 
 
 Reply only with the PR body, without any additional text, explanations, or line breaks outside of the structured sections.
