@@ -11,6 +11,23 @@ import (
 )
 
 func main() {
+    if len(os.Args) < 2 {
+        fmt.Println("Error: No command provided. Use 'aidy help' for usage.")
+        os.Exit(1)
+    }
+    command := os.Args[1]
+    switch command {
+    case "pr":
+        handlePR()
+    case "help":
+        handleHelp()
+    default:
+        fmt.Printf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
+        os.Exit(1)
+    }
+}
+
+func handlePR() {
     // Read API key from configuration file
     homeDir, err := os.UserHomeDir()
     if err != nil {
@@ -60,4 +77,10 @@ func main() {
     }
 
     fmt.Printf("Generated PR Command:\ngh pr create --title \"%s\" --body \"%s\"\n", title, body)
+}
+
+func handleHelp() {
+    fmt.Println("Usage:")
+    fmt.Println("  aidy pr   - Generate a pull request using AI-generated title and body.")
+    fmt.Println("  aidy help - Show this help message.")
 }
