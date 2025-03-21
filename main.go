@@ -27,10 +27,22 @@ func main() {
         handleHelp()
     case "heal":
         handleHeal()
+    case "ci", "commit":
+        handleCommit()
     default:
         fmt.Printf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
         os.Exit(1)
     }
+}
+
+func handleCommit() {
+    // Execute aider --commit
+    err := exec.Command("aider", "--commit").Run()
+    if err != nil {
+        log.Fatalf("Error executing aider --commit: %v", err)
+    }
+    // Execute aidy heal
+    handleHeal()
 }
 
 func handlePR() {
