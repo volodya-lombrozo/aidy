@@ -29,10 +29,32 @@ func main() {
         handleHeal()
     case "ci", "commit":
         handleCommit()
+    case "sq", "squash":
+        handleSquash()
     default:
         fmt.Printf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
         os.Exit(1)
     }
+}
+
+func handleSquash() {
+    gitService := &git.RealGit{}
+
+    // Determine the base branch name
+    baseBranch, err := gitService.GetBaseBranchName()
+    if err != nil {
+        log.Fatalf("Error determining base branch: %v", err)
+    }
+
+    // Perform git reset --soft <base-branch>
+    cmd := exec.Command("git", "reset", "--soft", baseBranch)
+    err = cmd.Run()
+    if err != nil {
+        log.Fatalf("Error executing git reset: %v", err)
+    }
+
+    // Call handleCommit to commit the changes
+    handleCommit()
 }
 
 func handleCommit() {
@@ -77,7 +99,7 @@ func handlePR() {
         log.Fatalf("Error getting branch name: %v", err)
     }
 
-    diff, err := gitService.GetDiff("main")
+    diff, err := gitService.GetDiff()
     if err != nil {
         log.Fatalf("Error getting git diff: %v", err)
     }
