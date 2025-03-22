@@ -58,8 +58,15 @@ func handleSquash() {
 }
 
 func handleCommit() {
+    gitService := &git.RealGit{}
+    branchName, err := gitService.GetBranchName()
+    if err != nil {
+      log.Fatalf("Error getting branch name: %v", err)
+    }
+    issueNumber := extractIssueNumber(branchName);
+    prompt := fmt.Sprintf(ai.GenerateCommitPrompt, issueNumber, issueNumber);
     // Execute aider --commit
-    err := exec.Command("aider", "--commit").Run()
+    err = exec.Command("aider", "--commit", "--commit-prompt", prompt).Run()
     if err != nil {
         log.Fatalf("Error executing aider --commit: %v", err)
     }
