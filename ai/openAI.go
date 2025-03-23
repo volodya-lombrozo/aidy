@@ -44,6 +44,16 @@ func (o *OpenAI) GenerateBody(branchName, diff string) (string, error) {
     return o.generateText(prompt)
 }
 
+func (o *OpenAI) GenerateIssueTitle(userInput string) (string, error) {
+    prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput)
+    return o.generateText(prompt)
+}
+
+func (o *OpenAI) GenerateIssueBody(userInput string) (string, error) {
+    prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput)
+    return o.generateText(prompt)
+}
+
 func (o *OpenAI) generateText(prompt string) (string, error) {
     req := openai.ChatCompletionRequest{
         Model: o.model,

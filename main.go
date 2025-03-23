@@ -21,20 +21,69 @@ func main() {
     }
     command := os.Args[1]
     switch command {
-    case "pr":
+    case "pr", "pull-request":
         handlePR()
     case "help":
         handleHelp()
-    case "heal":
+    case "h", "heal":
         handleHeal()
     case "ci", "commit":
         handleCommit()
     case "sq", "squash":
         handleSquash()
+    case "i", "issue":
+        handleIssue()
     default:
         fmt.Printf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
         os.Exit(1)
     }
+}
+
+// This method implements the 'issue' command.
+// It creates a `gh` issue command.
+// For example `gh issue create --title "Issue title" --body "Issue body"`
+func handleIssue() {
+    if len(os.Args) < 3 {
+        log.Fatalf("Error: No input provided for issue generation.")
+    }
+    userInput := os.Args[2]
+    homeDir, err := os.UserHomeDir()
+    if err != nil {
+        log.Fatalf("Error getting home directory: %v", err)
+    }
+    configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
+    configData, err := ioutil.ReadFile(configPath)
+    if err != nil {
+        log.Fatalf("Error reading config file: %v", err)
+    }
+
+    var config struct {
+        OpenAIAPIKey string `yaml:"openai-api-key"`
+    }
+
+    err = yaml.Unmarshal(configData, &config)
+    if err != nil {
+        log.Fatalf("Error parsing config file: %v", err)
+    }
+
+    apiKey := config.OpenAIAPIKey
+    if apiKey == "" {
+        log.Fatalf("OpenAI API key not found in config file")
+    }
+    // Use the OpenAI implementation
+    aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.3)
+
+    title, err := aiService.GenerateIssueTitle(userInput)
+    if err != nil {
+        log.Fatalf("Error generating title: %v", err)
+    }
+
+    body, err := aiService.GenerateIssueBody(userInput)
+    if err != nil {
+        log.Fatalf("Error generating body: %v", err)
+    }
+
+    fmt.Printf("Generated Issue Command:\ngh issue create --title \"%s\" --body \"%s\"\n", title, body)
 }
 
 func handleSquash() {
