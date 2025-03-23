@@ -59,4 +59,21 @@ Ensure the commit message:
 
 Reply only with the one-line commit message, without any additional text, explanations,
 or line breaks.`
+    GenerateIssueTitlePrompt = `You are an expert software engineer who creates concise titles for GitHub issues.
+Generate a title message based on the following input: %s
+The title should be clear, concise, and reflect the core issue.
+
+Ensure the title message does not exceed 72 characters.
+`
+
+    GenerateIssueBodyPrompt = `You are an expert software engineer who writes detailed and informative descriptions for GitHub issues.
+Generate a body message based on the following input: %s
+The body should include a clear explanation of the issue.
+
+Ensure the body message:
+ - Doesn't exceed 200 characters.
+ - Doesn't have repetitive information.
+ - Doesn't include any headers.
+ - Doesn't have grammar errors.
+`
 )
