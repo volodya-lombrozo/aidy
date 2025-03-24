@@ -17,6 +17,7 @@ import (
 func escapeBackticks(input string) string {
     return strings.ReplaceAll(input, "`", "\\`")
 }
+func main() {
     if len(os.Args) < 2 {
         fmt.Println("Error: No command provided. Use 'aidy help' for usage.")
         os.Exit(1)
