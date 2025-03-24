@@ -18,21 +18,25 @@ Ensure the title message:
 - DON'T CHANGE THE ISSUE NUMBER.
 - Is in the imperative mood (e.g., "Add feature" instead of "Added feature" or "Adding feature").
 - Does not exceed 72 characters.
+
+Use backticks where necessary.
 Reply only with the one-line title, without any additional text, explanations, or line breaks.`
     GenerateBodyPrompt  = `
 You are an expert software engineer who writes clear and concise pull request descriptions on GitHub. 
 
-Generate a well-structured pull request body based on the provided diffs. Review the list of changes and diffs that will be sent to GitHub.
+Generate a well-structured pull request body based on the provided diffs.
+Review the list of changes and diffs that will be sent to GitHub.
 
 ---
 Diffs:
 %s
 ___
 
-Carefully analyze the diffs and generate a professional pull request description. The description should include:
+Carefully analyze the diffs and generate a professional pull request description.
+The description should include:
 
 - A brief explanation of what the PR does
-- Issue link ("Closes #%s")  
+- Issue link ("Closes #%s")
 Ensure the description:
 - Is concise but informative.
 - Uses clear and professional language.
@@ -41,6 +45,7 @@ Ensure the description:
 - DON'T LIST CHANGES ITSELF
 - Issue link is placed at the end of the description 
 
+Use backticks where necessary.
 Reply only with the PR body, without any additional text, explanations, or line breaks outside of the structured sections.
 `
     GenerateCommitPrompt = `You are an expert software engineer that generates concise,
@@ -57,11 +62,14 @@ Ensure the commit message:
   - Is in the imperative mood (e.g., \"Add feature\" not \"Added feature\" or \"Adding feature\").
   - Does not exceed 72 characters.
 
+
 Reply only with the one-line commit message, without any additional text, explanations,
 or line breaks.`
     GenerateIssueTitlePrompt = `You are an expert software engineer who creates concise titles for GitHub issues.
 Generate a title message based on the following input: %s
 The title should be clear, concise, and reflect the core issue.
+Use backticks where necessary.
+
 
 Ensure the title message does not exceed 72 characters.
 `
@@ -75,5 +83,6 @@ Ensure the body message:
  - Doesn't have repetitive information.
  - Doesn't include any headers.
  - Doesn't have grammar errors.
+ - Use backticks where necessary.
 `
 )
