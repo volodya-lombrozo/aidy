@@ -14,7 +14,9 @@ import (
     "regexp"
 )
 
-func main() {
+func escapeBackticks(input string) string {
+    return strings.ReplaceAll(input, "`", "\\`")
+}
     if len(os.Args) < 2 {
         fmt.Println("Error: No command provided. Use 'aidy help' for usage.")
         os.Exit(1)
@@ -83,7 +85,7 @@ func handleIssue() {
         log.Fatalf("Error generating body: %v", err)
     }
 
-    fmt.Printf("Generated Issue Command:\ngh issue create --title \"%s\" --body \"%s\"\n", title, body)
+    fmt.Printf("Generated Issue Command:\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
 }
 
 func handleSquash() {
@@ -170,7 +172,7 @@ func handlePR() {
         log.Fatalf("Error generating body: %v", err)
     }
 
-    fmt.Printf("Generated PR Command:\ngh pr create --title \"%s\" --body \"%s\"\n", title, body)
+    fmt.Printf("Generated PR Command:\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"", title, body)))
 }
 
 func handleHelp() {
@@ -225,7 +227,7 @@ func handleHeal() {
     commitMessage := out.String()
     re := regexp.MustCompile(`#\d+`)
     newCommitMessage := re.ReplaceAllString(commitMessage, fmt.Sprintf("#%s", issueNumber))
-    fmt.Printf("Executing command: 'git commit --amend -m \"%s\"''", newCommitMessage)
+    fmt.Printf("Executing command: %s\n", escapeBackticks(fmt.Sprintf("git commit --amend -m \"%s\"", newCommitMessage)))
     cmd = exec.Command("git", "commit", "--amend", "-m", newCommitMessage)
     err = cmd.Run()
     if err != nil {
