@@ -62,14 +62,12 @@ Ensure the commit message:
   - Is in the imperative mood (e.g., \"Add feature\" not \"Added feature\" or \"Adding feature\").
   - Does not exceed 72 characters.
 
-
 Reply only with the one-line commit message, without any additional text, explanations,
 or line breaks.`
     GenerateIssueTitlePrompt = `You are an expert software engineer who creates concise titles for GitHub issues.
 Generate a title message based on the following input: %s
 The title should be clear, concise, and reflect the core issue.
 Use backticks where necessary.
-
 
 Ensure the title message does not exceed 72 characters.
 `
