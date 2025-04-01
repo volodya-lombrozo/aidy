@@ -7,7 +7,7 @@ import (
     openai "github.com/sashabaranov/go-openai"
 )
 
-type OpenAI struct {
+type MyOpenAI struct {
     client     *openai.Client
     model      string
     temperature float32
@@ -22,39 +22,39 @@ func extractIssueNumber(branchName string) string {
     return "unknown"
 }
 
-func NewOpenAI(apiKey, model string, temperature float32) *OpenAI {
+func NewOpenAI(apiKey, model string, temperature float32) *MyOpenAI {
     client := openai.NewClient(apiKey)
-    return &OpenAI{
+    return &MyOpenAI{
         client:     client,
         model:      model,
         temperature: temperature,
     }
 }
 
-func (o *OpenAI) GenerateTitle(branchName, diff string) (string, error) {
+func (o *MyOpenAI) GenerateTitle(branchName, diff string) (string, error) {
     // Extract issue number from branch name
     issueNumber := extractIssueNumber(branchName)
     prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issueNumber, issueNumber)
     return o.generateText(prompt)
 }
 
-func (o *OpenAI) GenerateBody(branchName, diff string) (string, error) {
+func (o *MyOpenAI) GenerateBody(branchName, diff string) (string, error) {
     issueNumber := extractIssueNumber(branchName)
     prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issueNumber)
     return o.generateText(prompt)
 }
 
-func (o *OpenAI) GenerateIssueTitle(userInput string) (string, error) {
+func (o *MyOpenAI) GenerateIssueTitle(userInput string) (string, error) {
     prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput)
     return o.generateText(prompt)
 }
 
-func (o *OpenAI) GenerateIssueBody(userInput string) (string, error) {
+func (o *MyOpenAI) GenerateIssueBody(userInput string) (string, error) {
     prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput)
     return o.generateText(prompt)
 }
 
-func (o *OpenAI) generateText(prompt string) (string, error) {
+func (o *MyOpenAI) generateText(prompt string) (string, error) {
     req := openai.ChatCompletionRequest{
         Model: o.model,
         Messages: []openai.ChatCompletionMessage{
@@ -63,7 +63,6 @@ func (o *OpenAI) generateText(prompt string) (string, error) {
                 Content: prompt,
             },
         },
-//        MaxTokens:   100,
         Temperature: o.temperature,
     }
     resp, err := o.client.CreateChatCompletion(context.Background(), req)

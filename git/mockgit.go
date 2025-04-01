@@ -10,6 +10,6 @@ func (m *MockGit) GetBaseBranchName() (string, error) {
 func (m *MockGit) GetBranchName() (string, error) {
     return "main", nil
 }
-func (m *MockGit) GetDiff(baseBranch string) (string, error) {
+func (m *MockGit) GetDiff() (string, error) {
     return "mock-diff", nil
 }

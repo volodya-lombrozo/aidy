@@ -2,6 +2,6 @@ package git
 
 type Git interface {
     GetBranchName() (string, error)
-    GetDiff(baseBranch string) (string, error)
+    GetDiff() (string, error)
     GetBaseBranchName() (string, error)
 }
