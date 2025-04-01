@@ -26,7 +26,7 @@ func TestMockGetBranchName(t *testing.T) {
 
 func TestMockGetDiff(t *testing.T) {
     git := MockGit{}
-    output, err := git.GetDiff("main")
+    output, err := git.GetDiff()
     if err != nil {
         panic(err)
     }

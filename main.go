@@ -5,6 +5,7 @@ import (
     "log"
     "github.com/volodya-lombrozo/aidy/ai"
     "github.com/volodya-lombrozo/aidy/git"
+    "github.com/volodya-lombrozo/aidy/config"
     "gopkg.in/yaml.v2"
     "io/ioutil"
     "os"
@@ -14,9 +15,6 @@ import (
     "regexp"
 )
 
-func escapeBackticks(input string) string {
-    return strings.ReplaceAll(input, "`", "\\`")
-}
 func main() {
     if len(os.Args) < 2 {
         fmt.Println("Error: No command provided. Use 'aidy help' for usage.")
@@ -33,9 +31,31 @@ func main() {
     case "ci", "commit":
         handleCommit()
     case "sq", "squash":
-        handleSquash()
+        gitService := &git.RealGit{}
+        handleSquash(gitService)
     case "i", "issue":
-        handleIssue()
+        if len(os.Args) < 3 {
+            log.Fatalf("Error: No input provided for issue generation.")
+        }
+        userInput := os.Args[2]
+        homeDir, err := os.UserHomeDir()
+        if err != nil {
+            log.Fatalf("Error getting home directory: %v", err)
+        }
+        configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
+        yamlConfig, err := config.NewYAMLConfig(configPath)
+        if err != nil {
+            log.Fatalf("Failed to create YAMLConfig: %v", err)
+        }
+        apiKey, confErr := yamlConfig.GetOpenAIAPIKey()
+        if confErr != nil {
+            panic(confErr)
+        }
+        if apiKey == "" {
+            log.Fatalf("OpenAI API key not found in config file")
+        }
+        aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.3)
+        handleIssue(userInput, aiService)
     default:
         fmt.Printf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
         os.Exit(1)
@@ -45,53 +65,19 @@ func main() {
 // This method implements the 'issue' command.
 // It creates a `gh` issue command.
 // For example `gh issue create --title "Issue title" --body "Issue body"`
-func handleIssue() {
-    if len(os.Args) < 3 {
-        log.Fatalf("Error: No input provided for issue generation.")
-    }
-    userInput := os.Args[2]
-    homeDir, err := os.UserHomeDir()
-    if err != nil {
-        log.Fatalf("Error getting home directory: %v", err)
-    }
-    configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
-    configData, err := ioutil.ReadFile(configPath)
-    if err != nil {
-        log.Fatalf("Error reading config file: %v", err)
-    }
-
-    var config struct {
-        OpenAIAPIKey string `yaml:"openai-api-key"`
-    }
-
-    err = yaml.Unmarshal(configData, &config)
-    if err != nil {
-        log.Fatalf("Error parsing config file: %v", err)
-    }
-
-    apiKey := config.OpenAIAPIKey
-    if apiKey == "" {
-        log.Fatalf("OpenAI API key not found in config file")
-    }
-    // Use the OpenAI implementation
-    aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.3)
-
+func handleIssue(userInput string, aiService ai.AI) {
     title, err := aiService.GenerateIssueTitle(userInput)
     if err != nil {
         log.Fatalf("Error generating title: %v", err)
     }
-
     body, err := aiService.GenerateIssueBody(userInput)
     if err != nil {
         log.Fatalf("Error generating body: %v", err)
     }
-
     fmt.Printf("Generated Issue Command:\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
 }
 
-func handleSquash() {
-    gitService := &git.RealGit{}
-
+func handleSquash(gitService git.Git) {
     // Determine the base branch name
     baseBranch, err := gitService.GetBaseBranchName()
     if err != nil {
@@ -241,8 +227,13 @@ func handleHeal() {
 func extractIssueNumber(branchName string) string {
     // Assuming the branch name format is "<issue-number>_<description>"
     parts := strings.Split(branchName, "_")
-    if len(parts) > 0 {
+    if len(parts) > 0 && branchName != "" {
         return parts[0]
     }
     return "unknown"
 }
+
+func escapeBackticks(input string) string {
+    return strings.ReplaceAll(input, "`", "\\`")
+}
+
