@@ -9,7 +9,6 @@ import (
     "github.com/volodya-lombrozo/aidy/ai"
 )
 
-
 func TestHandleIssue(t *testing.T) {
     mockAI := &ai.MockAI{}
     userInput := "test input"
@@ -27,7 +26,6 @@ func TestHandleIssue(t *testing.T) {
         t.Errorf("Unexpected output:\n%s", output)
     }
 }
-
 
 func TestHandleHelp(t *testing.T) {
     old := os.Stdout
