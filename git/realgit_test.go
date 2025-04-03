@@ -83,4 +83,27 @@ func TestRealGetDiff(t *testing.T) {
     if diff == "" {                                                                                                                                                                                  
         t.Fatal("Expected non-empty diff")                                                                                                                                                           
     }                                                                                                                                                                                                
-}                 
+} 
+
+func TestRealGetCurrentCommitMessage(t *testing.T) {
+    repoDir, cleanup := setupTestRepo(t)
+    defer cleanup()
+    // Create a new commit to test
+    filePath := filepath.Join(repoDir, "file.txt")
+    os.WriteFile(filePath, []byte("Hello, Commit!"), 0644)
+    cmd := exec.Command("git", "add", ".")
+    cmd.Dir = repoDir
+    cmd.Run()
+    commitMessage := "Test commit message"
+    cmd = exec.Command("git", "commit", "-m", commitMessage)
+    cmd.Dir = repoDir
+    cmd.Run()
+    gitService := NewRealGit(repoDir)
+    message, err := gitService.GetCurrentCommitMessage()
+    if err != nil {
+        t.Fatalf("Error getting current commit message: %v", err)
+    }
+    if message != commitMessage {
+        t.Fatalf("Expected commit message '%s', got '%s'", commitMessage, message)
+    }
+}
