@@ -3,6 +3,7 @@ package git
 import (
     "bytes"
     "fmt"
+    "log"
     "os"
     "os/exec"
     "strings"
@@ -43,6 +44,7 @@ func (r *RealGit) GetBranchName() (string, error) {
 }
 
 func (r *RealGit) GetBaseBranchName() (string, error) {
+    log.Printf("Executing command to check base branch in directory: %s", r.dir)
     // Check if 'main' branch exists
     cmd := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/main")
     cmd.Dir = r.dir
@@ -81,4 +83,18 @@ func (r *RealGit) GetDiff() (string, error) {
       diff := out.String()
       return diff, nil
     }
+}
+
+func (r *RealGit) GetCurrentCommitMessage() (string, error) {
+    cmd := exec.Command("git", "log", "-1", "--pretty=%B")
+    var out bytes.Buffer
+    cmd.Stdout = &out
+    cmd.Dir = r.dir
+    err := cmd.Run()
+    if err != nil {
+        return "", err
+    }
+    commitMessage := out.String()
+    commitMessage = strings.TrimSpace(commitMessage)
+    return commitMessage, nil
 }

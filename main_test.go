@@ -7,7 +7,92 @@ import (
     "strings"
     "testing"
     "github.com/volodya-lombrozo/aidy/ai"
+    "github.com/volodya-lombrozo/aidy/executor"
+    "github.com/volodya-lombrozo/aidy/git"
 )
+
+func TestHeal(t *testing.T) {
+    mockGit := &git.MockGit{}
+    mockExecutor := &executor.MockExecutor{
+        Output: "",
+        Err:    nil,
+    }
+
+    heal(mockGit, mockExecutor)
+
+    expectedCommands := []string{
+        "git commit --amend -m feat(#41): current commit message",
+    }
+    for i, expectedCommand := range expectedCommands {
+        if !strings.Contains(mockExecutor.Commands[i], expectedCommand) {
+            t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
+        }
+    }
+}
+
+func TestSquash(t *testing.T) {
+    mockGit := &git.MockGit{}
+    mockExecutor := &executor.MockExecutor{
+        Output: "",
+        Err:    nil,
+    }
+
+    squash(mockGit, mockExecutor)
+
+    expectedCommands := []string{
+        "git reset --soft main",
+        "aider --commit --commit-prompt",
+        "git commit --amend -m feat(#41): current commit message",
+    }
+    for i, expectedCommand := range expectedCommands {
+        if !strings.Contains(mockExecutor.Commands[i], expectedCommand) {
+            t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
+        }
+    }
+}
+
+func TestPullRequest(t *testing.T) {
+    mockGit := &git.MockGit{}
+    mockAI := &ai.MockAI{}
+
+    old := os.Stdout
+    r, w, _ := os.Pipe()
+    os.Stdout = w
+
+    pull_request(mockGit, mockAI)
+
+    w.Close()
+    os.Stdout = old
+
+    var buf bytes.Buffer
+    io.Copy(&buf, r)
+    output := buf.String()
+
+    expected := "Generated PR Command:\ngh pr create --title \"Mock Title for 41_working_branch\" --body \"Mock Body for 41_working_branch\""
+    if strings.TrimSpace(output) != strings.TrimSpace(expected) {
+        t.Errorf("Unexpected output:\n%s", output)
+    }
+}
+
+func TestCommit(t *testing.T) {
+    mockGit := &git.MockGit{}
+    mockExecutor := &executor.MockExecutor{
+        Output: "",
+        Err:    nil,
+    }
+
+    commit(mockGit, mockExecutor)
+
+    expectedCommands := []string{
+        "aider --commit --commit-prompt",
+        "git commit --amend -m feat(#41): current commit message",
+    }
+    for i, expectedCommand := range expectedCommands {
+        if !strings.Contains(mockExecutor.Commands[i], expectedCommand) {
+            t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
+        }
+    }
+}
 
 func TestHandleIssue(t *testing.T) {
     mockAI := &ai.MockAI{}
@@ -15,7 +100,7 @@ func TestHandleIssue(t *testing.T) {
     old := os.Stdout
     r, w, _ := os.Pipe()
     os.Stdout = w
-    handleIssue(userInput, mockAI)
+    issue(userInput, mockAI)
     w.Close()
     os.Stdout = old
     var buf bytes.Buffer
@@ -31,7 +116,7 @@ func TestHandleHelp(t *testing.T) {
     old := os.Stdout
     r, w, _ := os.Pipe()
     os.Stdout = w
-    handleHelp()
+    help()
     w.Close()
     os.Stdout = old
     var buf bytes.Buffer
