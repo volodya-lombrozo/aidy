@@ -12,11 +12,20 @@ func setupTestRepo(t *testing.T) (string, func()) {
     if err != nil {                                                                                                                                                                                  
         t.Fatalf("Failed to create temp dir: %v", err)                                                                                                                                               
     }                                                                                                                                                                                                
-    cmd := exec.Command("git", "init")                                                                                                                                                               
+    cmd := exec.Command("git", "init", "--initial-branch", "main")                                                                                                                                                               
     cmd.Dir = tempDir                                                                                                                                                                                
     if err := cmd.Run(); err != nil {                                                                                                                                                                
         t.Fatalf("Failed to initialize git repo: %v", err)                                                                                                                                           
     } 
+
+    cmd = exec.Command("git", "config", "user.name", "Test User")
+    cmd.Dir = tempDir
+    _ = cmd.Run()
+
+    cmd = exec.Command("git", "config", "user.email", "test@example.com")
+    cmd.Dir = tempDir
+    _ = cmd.Run()
+
     cmd = exec.Command("git", "commit", "-m", "initial commit", "--allow-empty")                                                                                                                                              
     cmd.Dir = tempDir                                                                                                                                                                                
     if err := cmd.Run(); err != nil {                                                                                                                                                                
