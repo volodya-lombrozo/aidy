@@ -1,13 +1,13 @@
 package config
 
 type MockConfig struct {
-    OpenAIAPIKey string
+	OpenAIAPIKey string
 }
 
 func NewMockConfig(apiKey string) *MockConfig {
-    return &MockConfig{OpenAIAPIKey: apiKey}
+	return &MockConfig{OpenAIAPIKey: apiKey}
 }
 
 func (m *MockConfig) GetOpenAIAPIKey() (string, error) {
-    return m.OpenAIAPIKey, nil
+	return m.OpenAIAPIKey, nil
 }
