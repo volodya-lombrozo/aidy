@@ -7,11 +7,7 @@ import (
     "github.com/volodya-lombrozo/aidy/git"
     "github.com/volodya-lombrozo/aidy/config"
     "github.com/volodya-lombrozo/aidy/executor"
-    "gopkg.in/yaml.v2"
-    "io/ioutil"
     "os"
-    "os/exec"
-    "bytes"
     "strings"
     "regexp"
 )
