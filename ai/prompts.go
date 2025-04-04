@@ -36,14 +36,18 @@ Carefully analyze the diffs and generate a professional pull request description
 The description should include:
 
 - A brief explanation of what the PR does
-- Issue link ("Closes #%s")
+- Add an issue link ("Closes #%s") at the end of the description 
+- Add an empty line before the issue link ("Closes")
+- Don't add any headers
+
 Ensure the description:
 - Is concise but informative.
 - Uses clear and professional language.
-- Does not exceed a reasonable length (around 100 characters).
+- Does not exceed a reasonable length (around 50-100 characters).
 - Don't add implementation details
-- DON'T LIST CHANGES ITSELF
-- Issue link is placed at the end of the description 
+- Don't list changes itself
+- Don't try explaining why these changes was made.
+- Issue link is placed  
 
 Use backticks where necessary.
 Reply only with the PR body, without any additional text, explanations, or line breaks outside of the structured sections.
