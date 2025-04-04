@@ -1,4 +1,5 @@
 # Aidy
+[![codecov](https://codecov.io/gh/volodya-lombrozo/jtcop/branch/main/graph/badge.svg)](https://codecov.io/gh/volodya-lombrozo/aidy)
 
 Aidy is a command-line tool that generates GitHub pull request commands with AI-generated titles and body messages.
 
