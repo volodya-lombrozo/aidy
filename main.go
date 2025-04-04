@@ -35,7 +35,7 @@ func main() {
 	if apiKey == "" {
 		log.Fatalf("OpenAI API key not found in config file")
 	}
-	aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.3)
+	aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.2)
 	gitService := git.NewRealGit()
 	shell := &executor.RealExecutor{}
 	switch command {
