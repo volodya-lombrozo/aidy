@@ -1,5 +1,5 @@
 package config
 
 type Config interface {
-    GetOpenAIAPIKey() (string, error)
+	GetOpenAIAPIKey() (string, error)
 }

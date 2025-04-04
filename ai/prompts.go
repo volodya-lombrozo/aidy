@@ -1,7 +1,7 @@
 package ai
 
 const (
-    GenerateTitlePrompt = `You are an expert software engineer who creates concise titles for pull requests on GitHub.
+	GenerateTitlePrompt = `You are an expert software engineer who creates concise titles for pull requests on GitHub.
 Generate a title message based on the provided diffs. Review the list of changes and diffs that will be sent to GitHub.
 ---
 Diffs:
@@ -21,7 +21,7 @@ Ensure the title message:
 
 Use backticks where necessary.
 Reply only with the one-line title, without any additional text, explanations, or line breaks.`
-    GenerateBodyPrompt  = `
+	GenerateBodyPrompt = `
 You are an expert software engineer who writes clear and concise pull request descriptions on GitHub. 
 
 Generate a well-structured pull request body based on the provided diffs.
@@ -48,7 +48,7 @@ Ensure the description:
 Use backticks where necessary.
 Reply only with the PR body, without any additional text, explanations, or line breaks outside of the structured sections.
 `
-    GenerateCommitPrompt = `You are an expert software engineer that generates concise,
+	GenerateCommitPrompt = `You are an expert software engineer that generates concise,
 one-line Git commit messages based on the provided diffs.
 Review the provided context and diffs which are about to be committed to a git repo.
 Review the diffs carefully.
@@ -64,7 +64,7 @@ Ensure the commit message:
 
 Reply only with the one-line commit message, without any additional text, explanations,
 or line breaks.`
-    GenerateIssueTitlePrompt = `You are an expert software engineer who creates concise titles for GitHub issues.
+	GenerateIssueTitlePrompt = `You are an expert software engineer who creates concise titles for GitHub issues.
 Generate a title message based on the following input: %s
 The title should be clear, concise, and reflect the core issue.
 Use backticks where necessary.
@@ -72,7 +72,7 @@ Use backticks where necessary.
 Ensure the title message does not exceed 72 characters.
 `
 
-    GenerateIssueBodyPrompt = `You are an expert software engineer who writes detailed and informative descriptions for GitHub issues.
+	GenerateIssueBodyPrompt = `You are an expert software engineer who writes detailed and informative descriptions for GitHub issues.
 Generate a body message based on the following input: %s
 The body should include a clear explanation of the issue.
 
