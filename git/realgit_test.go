@@ -1,6 +1,7 @@
 package git
 
 import (
+	"github.com/volodya-lombrozo/aidy/executor"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -51,7 +52,7 @@ func setupTestRepo(t *testing.T) (string, func()) {
 func TestRealGetBranchName(t *testing.T) {
 	dir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gitService := NewRealGit(dir)
+	gitService := NewRealGit(&executor.RealExecutor{}, dir)
 	branchName, err := gitService.GetBranchName()
 	if err != nil {
 		t.Fatalf("Error getting branch name: %v", err)
@@ -64,7 +65,7 @@ func TestRealGetBranchName(t *testing.T) {
 func TestRealGetBaseBranchName(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gitService := NewRealGit(repoDir)
+	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
 	baseBranch, err := gitService.GetBaseBranchName()
 	if err != nil {
 		t.Fatalf("Error getting base branch name: %v", err)
@@ -94,7 +95,7 @@ func TestRealGetDiff(t *testing.T) {
 	if err := os.WriteFile(filePath, []byte("Hello, Git!"), 0644); err != nil {
 		t.Fatalf("Error writing to file: %v", err)
 	}
-	gitService := NewRealGit(repoDir)
+	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
 	diff, err := gitService.GetDiff()
 	if err != nil {
 		t.Fatalf("Error getting diff: %v", err)
@@ -123,7 +124,7 @@ func TestRealGetCurrentCommitMessage(t *testing.T) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Error running command: %v", err)
 	}
-	gitService := NewRealGit(repoDir)
+	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
 	message, err := gitService.GetCurrentCommitMessage()
 	if err != nil {
 		t.Fatalf("Error getting current commit message: %v", err)

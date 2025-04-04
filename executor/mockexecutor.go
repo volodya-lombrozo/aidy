@@ -13,3 +13,9 @@ func (m *MockExecutor) RunCommand(name string, args ...string) (string, error) {
 	m.Commands = append(m.Commands, command)
 	return m.Output, m.Err
 }
+
+func (m *MockExecutor) RunCommandInDir(dir string, name string, args ...string) (string, error) {
+	command := "cd " + dir + " && " + name + " " + strings.Join(args, " ")
+	m.Commands = append(m.Commands, command)
+	return m.Output, m.Err
+}
