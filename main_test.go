@@ -72,7 +72,7 @@ func TestPullRequest(t *testing.T) {
 	}
 	output := buf.String()
 
-	expected := "Generated PR Command:\ngh pr create --title \"Mock Title for 41_working_branch\" --body \"Mock Body for 41_working_branch\""
+	expected := "\ngh pr create --title \"Mock Title for 41_working_branch\" --body \"Mock Body for 41_working_branch\""
 	if strings.TrimSpace(output) != strings.TrimSpace(expected) {
 		t.Errorf("Unexpected output:\n%s", output)
 	}
@@ -114,7 +114,7 @@ func TestHandleIssue(t *testing.T) {
 		t.Fatalf("Error copying data: %v", err)
 	}
 	output := buf.String()
-	expected := "Generated Issue Command:\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\""
+	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\""
 	if strings.TrimSpace(output) != strings.TrimSpace(expected) {
 		t.Errorf("Unexpected output:\n%s", output)
 	}

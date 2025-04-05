@@ -3,7 +3,6 @@ package git
 import (
 	"fmt"
 	"github.com/volodya-lombrozo/aidy/executor"
-	"log"
 	"os"
 	"strings"
 )
@@ -38,7 +37,6 @@ func (r *RealGit) GetBranchName() (string, error) {
 }
 
 func (r *RealGit) GetBaseBranchName() (string, error) {
-	log.Printf("Executing command to check base branch in directory: %s", r.dir)
 	// Check if 'main' branch exists
 	_, errMain := r.shell.RunCommandInDir(r.dir, "git", "show-ref", "--verify", "--quiet", "refs/heads/main")
 	// Check if 'master' branch exists

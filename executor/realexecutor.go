@@ -9,9 +9,10 @@ import (
 )
 
 type RealExecutor struct{}
+const maxLogLength = 120
 
 func (r *RealExecutor) RunCommand(name string, args ...string) (string, error) {
-	log.Printf("Executing command: %s %s", name, strings.Join(args, " "))
+	logShortf("Execute: \"%s %s\"", name, strings.Join(args, " "))
 	cmd := exec.Command(name, args...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -23,7 +24,7 @@ func (r *RealExecutor) RunCommand(name string, args ...string) (string, error) {
 }
 
 func (r *RealExecutor) RunCommandInDir(dir string, name string, args ...string) (string, error) {
-	log.Printf("Executing command in directory %s: %s %s", dir, name, strings.Join(args, " "))
+	logShortf("Execute (%s): \"%s %s\"", dir, name, strings.Join(args, " "))
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	var out bytes.Buffer
@@ -35,4 +36,16 @@ func (r *RealExecutor) RunCommandInDir(dir string, name string, args ...string) 
 		return "", fmt.Errorf("error: %v; stderr: %s", err, strings.TrimSpace(stderr.String()))
 	}
 	return out.String(), nil
+}
+
+func logShortf(format string, args ...interface{}) {
+	msg := format
+	if len(args) > 0 {
+		msg = fmt.Sprintf(format, args...)
+	}
+	if len(msg) > maxLogLength {
+		msg = msg[:maxLogLength] + "…"
+	}
+	msg = strings.ReplaceAll(msg, "\n", " ")
+	log.Print(msg)
 }
