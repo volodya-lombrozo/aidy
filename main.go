@@ -14,8 +14,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Error: No command provided. Use 'aidy help' for usage.")
-		os.Exit(1)
+		log.Fatal("Error: No command provided. Use 'aidy help' for usage.")
 	}
 	command := os.Args[1]
 
@@ -56,8 +55,7 @@ func main() {
 		userInput := os.Args[2]
 		issue(userInput, aiService)
 	default:
-		fmt.Printf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
-		os.Exit(1)
+		log.Fatalf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
 	}
 }
 
@@ -79,7 +77,7 @@ func issue(userInput string, aiService ai.AI) {
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
-	fmt.Printf("Generated Issue Command:\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
+	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
 }
 
 func squash(gitService git.Git, shell executor.Executor) {
@@ -126,7 +124,7 @@ func pull_request(gitService git.Git, aiService ai.AI) {
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
-	fmt.Printf("Generated PR Command:\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"", title, body)))
+	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"", title, body)))
 }
 
 func heal(gitService git.Git, shell executor.Executor) {
@@ -141,12 +139,10 @@ func heal(gitService git.Git, shell executor.Executor) {
 	}
 	re := regexp.MustCompile(`#\d+`)
 	newCommitMessage := re.ReplaceAllString(commitMessage, fmt.Sprintf("#%s", issueNumber))
-	fmt.Printf("Executing command: %s\n", escapeBackticks(fmt.Sprintf("git commit --amend -m \"%s\"", newCommitMessage)))
 	_, err = shell.RunCommand("git", "commit", "--amend", "-m", newCommitMessage)
 	if err != nil {
 		log.Fatalf("Error amending commit message: %v", err)
 	}
-	fmt.Println("Commit message healed successfully.")
 }
 
 func extractIssueNumber(branchName string) string {
