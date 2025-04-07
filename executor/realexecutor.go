@@ -9,6 +9,7 @@ import (
 )
 
 type RealExecutor struct{}
+
 const maxLogLength = 120
 
 func (r *RealExecutor) RunCommand(name string, args ...string) (string, error) {

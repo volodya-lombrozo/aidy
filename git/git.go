@@ -5,4 +5,5 @@ type Git interface {
 	GetDiff() (string, error)
 	GetBaseBranchName() (string, error)
 	GetCurrentCommitMessage() (string, error)
+	AppendToCommit() error
 }
