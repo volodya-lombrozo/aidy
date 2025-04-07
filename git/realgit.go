@@ -12,6 +12,18 @@ type RealGit struct {
 	shell executor.Executor
 }
 
+func (r *RealGit) AppendToCommit() error {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "add", "--all")
+	if err != nil {
+		return fmt.Errorf("error adding changes: %w", err)
+	}
+	_, err = r.shell.RunCommandInDir(r.dir, "git", "commit", "--amend", "--no-edit")
+	if err != nil {
+		return fmt.Errorf("error amending commit: %w", err)
+	}
+	return nil
+}
+
 // NewRealGit creates a new RealGit instance. If no directory is provided, it uses the current working directory.
 func NewRealGit(shell executor.Executor, dir ...string) *RealGit {
 	var directory string

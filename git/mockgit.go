@@ -6,6 +6,11 @@ func (m *MockGit) GetBaseBranchName() (string, error) {
 	return "main", nil
 }
 
+func (m *MockGit) AppendToCommit() error {
+	// Mock implementation, no actual git operations
+	return nil
+}
+
 func (m *MockGit) GetBranchName() (string, error) {
 	return "41_working_branch", nil
 }

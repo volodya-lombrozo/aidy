@@ -5,8 +5,34 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestRealGit_AppendToCommit(t *testing.T) {
+	mockExecutor := &executor.MockExecutor{}
+	gitService := NewRealGit(mockExecutor, "")
+
+	err := gitService.AppendToCommit()
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	expectedCommands := []string{
+		"git add --all",
+		"git commit --amend --no-edit",
+	}
+
+	if len(mockExecutor.Commands) != len(expectedCommands) {
+		t.Fatalf("Expected %d commands, got %d", len(expectedCommands), len(mockExecutor.Commands))
+	}
+
+	for i, cmd := range expectedCommands {
+		if !strings.Contains(mockExecutor.Commands[i], cmd) {
+			t.Errorf("Expected command '%s', got '%s'", cmd, mockExecutor.Commands[i])
+		}
+	}
+}
 
 func setupTestRepo(t *testing.T) (string, func()) {
 	tempDir, err := os.MkdirTemp("", "testrepo")

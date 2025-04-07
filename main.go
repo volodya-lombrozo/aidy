@@ -48,6 +48,8 @@ func main() {
 		commit(gitService, shell)
 	case "sq", "squash":
 		squash(gitService, shell)
+	case "ap", "append":
+		appendToCommit(gitService)
 	case "i", "issue":
 		if len(os.Args) < 3 {
 			log.Fatalf("Error: No input provided for issue generation.")
@@ -145,6 +147,12 @@ func heal(gitService git.Git, shell executor.Executor) {
 	}
 }
 
+func appendToCommit(gitService git.Git) {
+	err := gitService.AppendToCommit()
+	if err != nil {
+		log.Fatalf("Error appending to commit: %v", err)
+	}
+}
 func extractIssueNumber(branchName string) string {
 	// Assuming the branch name format is "<issue-number>_<description>"
 	parts := strings.Split(branchName, "_")
