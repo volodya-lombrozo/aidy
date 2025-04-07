@@ -12,6 +12,27 @@ type RealGit struct {
 	shell executor.Executor
 }
 
+func (r *RealGit) CommitChanges() error {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "add", "--all")
+	if err != nil {
+		return fmt.Errorf("error adding changes: %w", err)
+	}
+
+	changedFiles, err := r.shell.RunCommandInDir(r.dir, "git", "diff", "--name-only", "--cached")
+	if err != nil {
+		return fmt.Errorf("error getting changed files: %w", err)
+	}
+
+	commitMessage := strings.TrimSpace("Committing changes to the following files:\n" + changedFiles)
+	_, err = r.shell.RunCommandInDir(r.dir, "git", "commit", "-m", commitMessage)
+
+	if err != nil {
+		return fmt.Errorf("error committing changes: %w", err)
+	}
+
+	return nil
+}
+
 func (r *RealGit) AppendToCommit() error {
 	_, err := r.shell.RunCommandInDir(r.dir, "git", "add", "--all")
 	if err != nil {
@@ -44,7 +65,7 @@ func (r *RealGit) GetBranchName() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	branchName = strings.TrimSpace(branchName)
+	branchName = strings.TrimRight(branchName, "\r\n")
 	return branchName, nil
 }
 
