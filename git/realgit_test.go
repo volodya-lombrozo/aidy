@@ -34,6 +34,38 @@ func TestRealGit_AppendToCommit(t *testing.T) {
 	}
 }
 
+func TestRealGit_CommitChanges(t *testing.T) {
+	repoDir, cleanup := setupTestRepo(t)
+	defer cleanup()
+
+	// Create a new file and stage it
+	filePath := filepath.Join(repoDir, "newfile.txt")
+	if err := os.WriteFile(filePath, []byte("New content"), 0644); err != nil {
+		t.Fatalf("Error writing to file: %v", err)
+	}
+
+	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
+
+	// Commit the changes
+	err := gitService.CommitChanges()
+	if err != nil {
+		t.Fatalf("Error committing changes: %v", err)
+	}
+
+	// Verify the commit message
+	cmd := exec.Command("git", "log", "-1", "--pretty=%B")
+	cmd.Dir = repoDir
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("Error getting commit message: %v", err)
+	}
+
+	expectedMessage := "Committing changes to the following files:\nnewfile.txt\n\n"
+	if string(out) != expectedMessage {
+		t.Fatalf("Expected commit message '%s', got '%s'", expectedMessage, string(out))
+	}
+}
+
 func setupTestRepo(t *testing.T) (string, func()) {
 	tempDir, err := os.MkdirTemp("", "testrepo")
 	if err != nil {

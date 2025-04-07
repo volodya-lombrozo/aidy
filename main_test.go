@@ -85,7 +85,7 @@ func TestCommit(t *testing.T) {
 		Err:    nil,
 	}
 
-	commit(mockGit, mockExecutor)
+	commit(mockGit, mockExecutor, false)
 
 	expectedCommands := []string{
 		"aider --commit --commit-prompt",
