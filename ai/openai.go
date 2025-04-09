@@ -13,15 +13,6 @@ type MyOpenAI struct {
 	temperature float32
 }
 
-func extractIssueNumber(branchName string) string {
-	// Assuming the branch name format is "<issue-number>_<description>"
-	parts := strings.Split(branchName, "_")
-	if len(parts) > 0 {
-		return parts[0]
-	}
-	return "unknown"
-}
-
 func NewOpenAI(apiKey, model string, temperature float32) *MyOpenAI {
 	client := openai.NewClient(apiKey)
 	return &MyOpenAI{
@@ -32,7 +23,6 @@ func NewOpenAI(apiKey, model string, temperature float32) *MyOpenAI {
 }
 
 func (o *MyOpenAI) GenerateTitle(branchName, diff string, issue string) (string, error) {
-	// Extract issue number from branch name
 	issueNumber := extractIssueNumber(branchName)
 	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber)
 	return o.generateText(prompt)
@@ -51,6 +41,12 @@ func (o *MyOpenAI) GenerateIssueTitle(userInput string) (string, error) {
 
 func (o *MyOpenAI) GenerateIssueBody(userInput string) (string, error) {
 	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput)
+	return o.generateText(prompt)
+}
+
+func (o *MyOpenAI) GenerateCommitMessage(branchName, diff string) (string, error) {
+	issueNumber := extractIssueNumber(branchName)
+	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, issueNumber, issueNumber)
 	return o.generateText(prompt)
 }
 
@@ -73,4 +69,13 @@ func (o *MyOpenAI) generateText(prompt string) (string, error) {
 		return resp.Choices[0].Message.Content, nil
 	}
 	return "", fmt.Errorf("no text generated")
+}
+
+func extractIssueNumber(branchName string) string {
+	// Assuming the branch name format is "<issue-number>_<description>"
+	parts := strings.Split(branchName, "_")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return "unknown"
 }

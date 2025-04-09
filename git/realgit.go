@@ -27,7 +27,7 @@ func NewRealGit(shell executor.Executor, dir ...string) *RealGit {
 	return &RealGit{dir: directory, shell: shell}
 }
 
-func (r *RealGit) CommitChanges() error {
+func (r *RealGit) CommitChanges(messages ...string) error {
 	_, err := r.shell.RunCommandInDir(r.dir, "git", "add", "--all")
 	if err != nil {
 		return fmt.Errorf("error adding changes: %w", err)
@@ -38,7 +38,13 @@ func (r *RealGit) CommitChanges() error {
 		return fmt.Errorf("error getting changed files: %w", err)
 	}
 
-	commitMessage := strings.TrimSpace("Committing changes to the following files:\n" + changedFiles)
+	var commitMessage string
+	if len(messages) > 0 {
+		commitMessage = messages[0]
+	} else {
+		commitMessage = strings.TrimSpace("Committing changes to the following files:\n" + changedFiles)
+	}
+
 	_, err = r.shell.RunCommandInDir(r.dir, "git", "commit", "-m", commitMessage)
 
 	if err != nil {

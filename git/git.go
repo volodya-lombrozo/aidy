@@ -6,6 +6,6 @@ type Git interface {
 	GetBaseBranchName() (string, error)
 	GetCurrentCommitMessage() (string, error)
 	AppendToCommit() error
-	CommitChanges() error
+	CommitChanges(messages ...string) error
 	GetAllRemoteURLs() ([]string, error)
 }

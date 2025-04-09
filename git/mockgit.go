@@ -7,7 +7,6 @@ func (m *MockGit) GetBaseBranchName() (string, error) {
 }
 
 func (m *MockGit) AppendToCommit() error {
-	// Mock implementation, no actual git operations
 	return nil
 }
 
@@ -18,8 +17,7 @@ func (m *MockGit) GetDiff() (string, error) {
 	return "mock-diff", nil
 }
 
-func (m *MockGit) CommitChanges() error {
-	// Mock implementation, no actual git operations
+func (m *MockGit) CommitChanges(messages ...string) error {
 	return nil
 }
 

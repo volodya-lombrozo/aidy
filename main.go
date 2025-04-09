@@ -53,9 +53,9 @@ func main() {
 		heal(gitService, shell)
 	case "ci", "commit":
 		noAI := len(os.Args) > 2 && os.Args[2] == "-n"
-		commit(gitService, shell, noAI)
+		commit(gitService, shell, noAI, aiService)
 	case "sq", "squash":
-		squash(gitService, shell)
+		squash(gitService, shell, aiService)
 	case "ap", "append":
 		appendToCommit(gitService)
 	case "i", "issue":
@@ -90,7 +90,7 @@ func issue(userInput string, aiService ai.AI) {
 	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
 }
 
-func squash(gitService git.Git, shell executor.Executor) {
+func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
 	baseBranch, err := gitService.GetBaseBranchName()
 	if err != nil {
 		log.Fatalf("Error determining base branch: %v", err)
@@ -99,10 +99,10 @@ func squash(gitService git.Git, shell executor.Executor) {
 	if resetErr != nil {
 		log.Fatalf("Error executing git reset: %v", err)
 	}
-	commit(gitService, shell, false)
+	commit(gitService, shell, false, aiService)
 }
 
-func commit(gitService git.Git, shell executor.Executor, noAI bool) {
+func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai.AI) {
 	if noAI {
 		err := gitService.CommitChanges()
 		if err != nil {
@@ -113,12 +113,25 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool) {
 		if err != nil {
 			log.Fatalf("Error getting branch name: %v", err)
 		}
-		issueNumber := extractIssueNumber(branchName)
-		prompt := fmt.Sprintf(ai.GenerateCommitPrompt, issueNumber, issueNumber)
-		_, shellErr := shell.RunCommand("aider", "--commit", "--commit-prompt", prompt)
-		if shellErr != nil {
-			log.Fatalf("Error executing aider --commit: %v", err)
+
+		diff, diffErr := gitService.GetDiff()
+		if diffErr != nil {
+			log.Fatalf("Error getting diff: %v", err)
 		}
+
+		msg, cerr := aiService.GenerateCommitMessage(branchName, diff)
+		if cerr != nil {
+			log.Fatalf("Error generating commit message: %v", err)
+		}
+		if err := gitService.CommitChanges(msg); err != nil {
+			log.Fatalf("Error committing changes: %v", err)
+		}
+		// issueNumber := extractIssueNumber(branchName)
+		// prompt := fmt.Sprintf(ai.GenerateCommitPrompt, issueNumber, issueNumber)
+		// _, shellErr := shell.RunCommand("aider", "--commit", "--commit-prompt", prompt)
+		// if shellErr != nil {
+		// 	log.Fatalf("Error executing aider --commit: %v", err)
+		// }
 	}
 	heal(gitService, shell)
 }
