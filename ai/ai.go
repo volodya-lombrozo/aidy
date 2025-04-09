@@ -5,4 +5,5 @@ type AI interface {
 	GenerateBody(branchName string, diff string, issue string) (string, error)
 	GenerateIssueTitle(userInput string) (string, error)
 	GenerateIssueBody(userInput string) (string, error)
+	GenerateCommitMessage(branchName string, diff string) (string, error)
 }

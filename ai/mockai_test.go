@@ -4,6 +4,20 @@ import (
 	"testing"
 )
 
+func TestMockGenerateCommitMessage(t *testing.T) {
+	mockAI := &MockAI{}
+	diff := "some changes"
+	branchName := "100"
+	expected := "Mock Commit Message for " + diff + " and branch " + branchName
+	msg, err := mockAI.GenerateCommitMessage(branchName, diff)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if msg != expected {
+		t.Fatalf("Expected '%s', got '%s'", expected, msg)
+	}
+}
+
 func TestMockGenerateTitle(t *testing.T) {
 	mockAI := &MockAI{}
 	branchName := "feature-branch"

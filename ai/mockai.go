@@ -17,3 +17,7 @@ func (m *MockAI) GenerateIssueTitle(userInput string) (string, error) {
 func (m *MockAI) GenerateIssueBody(userInput string) (string, error) {
 	return "Mock Issue Body for " + userInput, nil
 }
+
+func (m *MockAI) GenerateCommitMessage(branchName string, diff string) (string, error) {
+	return "Mock Commit Message for " + diff + " and branch " + branchName, nil
+}

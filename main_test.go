@@ -13,6 +13,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/github"
 )
 
+// Here I added comment
 func TestHeal(t *testing.T) {
 	mockGit := &git.MockGit{}
 	mockExecutor := &executor.MockExecutor{
@@ -34,18 +35,19 @@ func TestHeal(t *testing.T) {
 
 func TestSquash(t *testing.T) {
 	mockGit := &git.MockGit{}
+	mockAI := &ai.MockAI{}
 	mockExecutor := &executor.MockExecutor{
 		Output: "",
 		Err:    nil,
 	}
 
-	squash(mockGit, mockExecutor)
+	squash(mockGit, mockExecutor, mockAI)
 
 	expectedCommands := []string{
 		"git reset --soft main",
-		"aider --commit --commit-prompt",
 		"git commit --amend -m feat(#41): current commit message",
 	}
+
 	for i, expectedCommand := range expectedCommands {
 		if !strings.Contains(mockExecutor.Commands[i], expectedCommand) {
 			t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
@@ -83,15 +85,15 @@ func TestPullRequest(t *testing.T) {
 
 func TestCommit(t *testing.T) {
 	mockGit := &git.MockGit{}
+	mockAI := &ai.MockAI{}
 	mockExecutor := &executor.MockExecutor{
 		Output: "",
 		Err:    nil,
 	}
 
-	commit(mockGit, mockExecutor, false)
+	commit(mockGit, mockExecutor, false, mockAI)
 
 	expectedCommands := []string{
-		"aider --commit --commit-prompt",
 		"git commit --amend -m feat(#41): current commit message",
 	}
 	for i, expectedCommand := range expectedCommands {

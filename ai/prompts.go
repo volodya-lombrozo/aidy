@@ -1,100 +1,116 @@
 package ai
 
 const (
-	GenerateTitlePrompt = `You are an expert software engineer who creates concise titles for pull requests on GitHub.
-Generate a title message based on the provided diffs. Review the list of changes and diffs that will be sent to GitHub.
----
-Diffs:
+	GenerateTitlePrompt = `You are an expert software engineer who creates concise and informative pull request titles for GitHub.
+
+Your task is to generate a one-line PR title based on the provided diff and issue description.
+
+<diff>
 %s
-___
+</diff>
 
-In this PR you are trying to solve the followin issue:
-___
+This pull request addresses the following issue:
+
+<issue>
 %s
-___
+</issue>
 
-Carefully review the diffs and the issue description, then generate a one-line title message for those changes.
-The title should be structured as follows: <type>(#%s): <description>
-Use the following options for <type>: fix, feat, build, chore, ci, docs, style, refactor, perf, test.
-Additionally, you can extract the issue number from the current branch name.
-Ensure the title message:
-- Starts with the appropriate prefix.
-- Includes an issue number #%s
-- DON'T CHANGE THE ISSUE NUMBER.
-- Is in the imperative mood (e.g., "Add feature" instead of "Added feature" or "Adding feature").
-- Does not exceed 72 characters.
+Carefully review both the diff and the issue description. Then, generate a PR title in the following format:
 
-Use backticks where necessary.
-Reply only with the one-line title, without any additional text, explanations, or line breaks.`
-	GenerateBodyPrompt = `
-You are an expert software engineer who writes clear and concise pull request descriptions on GitHub. 
+<type>(#%s): <description>
 
-Generate a well-structured pull request body based on the provided diffs.
-Review the list of changes and diffs that will be sent to GitHub.
+- Valid <type> values: fix, feat, build, chore, ci, docs, style, refactor, perf, test.
+- Always include the issue number #%s in the title.
+- Use the imperative mood (e.g., "add feature", not "added feature" or "adding feature").
+- Keep the title within 72 characters.
+- Do not include explanations, comments, or line breaks. Return only the title line.`
 
----
-Diffs:
+	GenerateBodyPrompt = `You are an expert software engineer who writes clear and professional pull request descriptions on GitHub.
+
+Your task is to generate a well-structured pull request body based on the provided diff and issue description.
+
+<diff>
 %s
-___
+</diff>
 
-In this PR you are trying to solve the followin issue:
-___
+This pull request addresses the following issue:
+
+<issue>
 %s
-___
+</issue>
 
-Carefully analyze the diffs and generate a professional pull request description.
-The description should include:
+Carefully analyze the diff and issue. Then, generate a concise and informative pull request description.
 
-- A brief explanation of what the PR does
-- Add an issue link ("Closes #%s") at the end of the description 
-- Add an empty line before the issue link ("Closes")
-- Don't add any headers
+The description must:
+- Briefly explain what the PR does (one or two sentences).
+- Be clear and professional.
+- Avoid listing individual changes.
+- Avoid implementation details.
+- Avoid explaining why the changes were made.
+- Be approximately 50–100 characters long.
+- Use backticks for code or identifiers when appropriate.
+- End with an empty line followed by: "Closes #%s"
 
-Ensure the description:
-- Is concise but informative.
-- Uses clear and professional language.
-- Does not exceed a reasonable length (around 50-100 characters).
-- Don't add implementation details
-- Don't list changes itself
-- Don't try explaining why these changes was made.
-- Issue link is placed  
+Formatting rules:
+- Do not add section headers.
+- Do not include line breaks except before the "Closes" line.
+- Reply only with the pull request body — no additional text or explanations.`
 
-Use backticks where necessary.
-Reply only with the PR body, without any additional text, explanations, or line breaks outside of the structured sections.
-`
-	GenerateCommitPrompt = `You are an expert software engineer that generates concise,
-one-line Git commit messages based on the provided diffs.
-Review the provided context and diffs which are about to be committed to a git repo.
-Review the diffs carefully.
-Generate a one-line commit message for those changes.
-The commit message should be structured as follows: <type>(#%s): <description>
-Use these for <type>: fix, feat, build, chore, ci, docs, style, refactor, perf, test
-Use issue number %s.
+	GenerateCommitPrompt = `You are an expert software engineer who writes concise, one-line Git commit messages based on code diffs.
 
-Ensure the commit message:
-  - Starts with the appropriate prefix.
-  - Is in the imperative mood (e.g., \"Add feature\" not \"Added feature\" or \"Adding feature\").
-  - Does not exceed 72 characters.
+Your task is to generate a single-line commit message for the following changes. 
 
-Reply only with the one-line commit message, without any additional text, explanations,
-or line breaks.`
-	GenerateIssueTitlePrompt = `You are an expert software engineer who creates concise titles for GitHub issues.
-Generate a title message based on the following input: %s
-The title should be clear, concise, and reflect the core issue.
-Use backticks where necessary.
+<diff>
+%s
+</diff>
 
-Ensure the title message does not exceed 72 characters.
-`
+Review diffs carefully.
 
-	GenerateIssueBodyPrompt = `You are an expert software engineer who writes detailed and informative descriptions for GitHub issues.
-Generate a body message based on the following input: %s
-The body should include a clear explanation of the issue.
+The commit message must follow this format:
+<type>(#%s): <description>
 
-Ensure the body message:
- - Doesn't exceed 200 characters.
- - Doesn't have repetitive information.
- - Doesn't include any headers.
- - Doesn't have grammar errors.
- - Use backticks where necessary.
-`
+Where:
+- <type> is one of: fix, feat, build, chore, ci, docs, style, refactor, perf, test
+- #%s is the issue number (do not modify it)
+
+Ensure the message:
+- Starts with the appropriate prefix
+- Uses the imperative mood (e.g., "Add feature", not "Added feature" or "Adding feature")
+- Does not exceed 72 characters
+
+Reply with the commit message only — no explanations, comments, or line breaks.`
+
+	GenerateIssueTitlePrompt = `You are an expert software engineer who writes clear and concise titles for GitHub issues.
+
+Generate a one-line issue title based on the following user input:
+
+<input>
+%s
+</input>
+
+The title should:
+- Clearly reflect the core problem or task
+- Be concise and informative
+- Use backticks for code identifiers or technical terms, where appropriate
+- Not exceed 72 characters
+
+Reply only with the issue title — no explanations, comments, or line breaks.`
+
+	GenerateIssueBodyPrompt = `You are an expert software engineer who writes clear and informative descriptions for GitHub issues.
+
+Generate an issue body based on the following user input:
+
+<input>
+%s
+</input>
+
+The description should:
+- Clearly explain the issue
+- Be no longer than 200 characters
+- Avoid repetition
+- Contain no headers
+- Be grammatically correct
+- Use backticks for code or technical terms where appropriate
+
+Reply only with the issue body — no explanations, comments, or extra formatting.`
 )
