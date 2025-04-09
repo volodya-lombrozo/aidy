@@ -12,6 +12,21 @@ type RealGit struct {
 	shell executor.Executor
 }
 
+// NewRealGit creates a new RealGit instance. If no directory is provided, it uses the current working directory.
+func NewRealGit(shell executor.Executor, dir ...string) *RealGit {
+	var directory string
+	if len(dir) > 0 && dir[0] != "" {
+		directory = dir[0]
+	} else {
+		var err error
+		directory, err = os.Getwd()
+		if err != nil {
+			panic(fmt.Errorf("failed to get current working directory: %w", err))
+		}
+	}
+	return &RealGit{dir: directory, shell: shell}
+}
+
 func (r *RealGit) CommitChanges() error {
 	_, err := r.shell.RunCommandInDir(r.dir, "git", "add", "--all")
 	if err != nil {
@@ -43,21 +58,6 @@ func (r *RealGit) AppendToCommit() error {
 		return fmt.Errorf("error amending commit: %w", err)
 	}
 	return nil
-}
-
-// NewRealGit creates a new RealGit instance. If no directory is provided, it uses the current working directory.
-func NewRealGit(shell executor.Executor, dir ...string) *RealGit {
-	var directory string
-	if len(dir) > 0 && dir[0] != "" {
-		directory = dir[0]
-	} else {
-		var err error
-		directory, err = os.Getwd()
-		if err != nil {
-			panic(fmt.Errorf("failed to get current working directory: %w", err))
-		}
-	}
-	return &RealGit{dir: directory, shell: shell}
 }
 
 func (r *RealGit) GetBranchName() (string, error) {
@@ -107,4 +107,25 @@ func (r *RealGit) GetCurrentCommitMessage() (string, error) {
 	commitMessage := out
 	commitMessage = strings.TrimSpace(commitMessage)
 	return commitMessage, nil
+}
+
+func (r *RealGit) GetAllRemoteURLs() ([]string, error) {
+	out, err := r.shell.RunCommandInDir(r.dir, "git", "remote", "-v")
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(out, "\n")
+	urls := make(map[string]struct{})
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) < 2 || !strings.Contains(line, "(fetch)") {
+			continue
+		}
+		urls[fields[1]] = struct{}{}
+	}
+	var result []string
+	for url := range urls {
+		result = append(result, url)
+	}
+	return result, nil
 }

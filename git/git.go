@@ -7,4 +7,5 @@ type Git interface {
 	GetCurrentCommitMessage() (string, error)
 	AppendToCommit() error
 	CommitChanges() error
+	GetAllRemoteURLs() ([]string, error)
 }

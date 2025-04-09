@@ -8,6 +8,7 @@ import (
 
 type YAMLConfig struct {
 	OpenAIAPIKey string `yaml:"openai-api-key"`
+	GitHubAPIKey string `yaml:"github-api-key"`
 }
 
 func NewYAMLConfig(filePath string) (*YAMLConfig, error) {
@@ -30,4 +31,11 @@ func (c *YAMLConfig) GetOpenAIAPIKey() (string, error) {
 		return "", fmt.Errorf("OpenAI API key not found in config file")
 	}
 	return c.OpenAIAPIKey, nil
+}
+
+func (c *YAMLConfig) GetGithubAPIKey() (string, error) {
+	if c.GitHubAPIKey == "" {
+		return "", fmt.Errorf("OpenAI API key not found in config file")
+	}
+	return c.GitHubAPIKey, nil
 }

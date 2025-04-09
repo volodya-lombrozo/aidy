@@ -6,6 +6,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/config"
 	"github.com/volodya-lombrozo/aidy/executor"
 	"github.com/volodya-lombrozo/aidy/git"
+	"github.com/volodya-lombrozo/aidy/github"
 	"log"
 	"os"
 	"regexp"
@@ -34,14 +35,20 @@ func main() {
 	if apiKey == "" {
 		log.Fatalf("OpenAI API key not found in config file")
 	}
+	githubKey, githubErr := yamlConfig.GetGithubAPIKey()
+	if githubErr != nil {
+		log.Printf("Can't find github token in configuration")
+		githubKey = ""
+	}
 	shell := &executor.RealExecutor{}
 	aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.2)
 	gitService := git.NewRealGit(shell)
+	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey)
 	switch command {
 	case "help":
 		help()
 	case "pr", "pull-request":
-		pull_request(gitService, aiService)
+		pull_request(gitService, aiService, gh)
 	case "h", "heal":
 		heal(gitService, shell)
 	case "ci", "commit":
@@ -116,7 +123,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool) {
 	heal(gitService, shell)
 }
 
-func pull_request(gitService git.Git, aiService ai.AI) {
+func pull_request(gitService git.Git, aiService ai.AI, gh github.Github) {
 	branchName, err := gitService.GetBranchName()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
@@ -125,12 +132,12 @@ func pull_request(gitService git.Git, aiService ai.AI) {
 	if err != nil {
 		log.Fatalf("Error getting git diff: %v", err)
 	}
-	title, err := aiService.GenerateTitle(branchName, diff)
+	issue := gh.IssueDescription(extractIssueNumber(branchName))
+	title, err := aiService.GenerateTitle(branchName, diff, issue)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
 	}
-
-	body, err := aiService.GenerateBody(branchName, diff)
+	body, err := aiService.GenerateBody(branchName, diff, issue)
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
@@ -161,6 +168,7 @@ func appendToCommit(gitService git.Git) {
 		log.Fatalf("Error appending to commit: %v", err)
 	}
 }
+
 func extractIssueNumber(branchName string) string {
 	// Assuming the branch name format is "<issue-number>_<description>"
 	parts := strings.Split(branchName, "_")

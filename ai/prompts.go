@@ -8,7 +8,12 @@ Diffs:
 %s
 ___
 
-Carefully review the diffs and generate a one-line title message for those changes.
+In this PR you are trying to solve the followin issue:
+___
+%s
+___
+
+Carefully review the diffs and the issue description, then generate a one-line title message for those changes.
 The title should be structured as follows: <type>(#%s): <description>
 Use the following options for <type>: fix, feat, build, chore, ci, docs, style, refactor, perf, test.
 Additionally, you can extract the issue number from the current branch name.
@@ -29,6 +34,11 @@ Review the list of changes and diffs that will be sent to GitHub.
 
 ---
 Diffs:
+%s
+___
+
+In this PR you are trying to solve the followin issue:
+___
 %s
 ___
 

@@ -26,3 +26,7 @@ func (m *MockGit) CommitChanges() error {
 func (m *MockGit) GetCurrentCommitMessage() (string, error) {
 	return "feat(#42): current commit message", nil
 }
+
+func (r *MockGit) GetAllRemoteURLs() ([]string, error) {
+	return []string{"https://github.com/volodya-lombrozo/aidy.git", "https://github.com/volodya-lombrozo/forked-aidy.git"}, nil
+}
