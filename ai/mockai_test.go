@@ -9,7 +9,7 @@ func TestMockGenerateTitle(t *testing.T) {
 	branchName := "feature-branch"
 	expected := "Mock Title for " + branchName
 
-	title, err := mockAI.GenerateTitle(branchName, "diff")
+	title, err := mockAI.GenerateTitle(branchName, "diff", "issue")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -51,7 +51,7 @@ func TestMockGenerateBody(t *testing.T) {
 	branchName := "feature-branch"
 	expected := "Mock Body for " + branchName
 
-	body, err := mockAI.GenerateBody(branchName, "diff")
+	body, err := mockAI.GenerateBody(branchName, "diff", "issue")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

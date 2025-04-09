@@ -2,13 +2,15 @@ package main
 
 import (
 	"bytes"
-	"github.com/volodya-lombrozo/aidy/ai"
-	"github.com/volodya-lombrozo/aidy/executor"
-	"github.com/volodya-lombrozo/aidy/git"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/volodya-lombrozo/aidy/ai"
+	"github.com/volodya-lombrozo/aidy/executor"
+	"github.com/volodya-lombrozo/aidy/git"
+	"github.com/volodya-lombrozo/aidy/github"
 )
 
 func TestHeal(t *testing.T) {
@@ -54,12 +56,13 @@ func TestSquash(t *testing.T) {
 func TestPullRequest(t *testing.T) {
 	mockGit := &git.MockGit{}
 	mockAI := &ai.MockAI{}
+	mockGithub := &github.MockGithub{}
 
 	old := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	pull_request(mockGit, mockAI)
+	pull_request(mockGit, mockAI, mockGithub)
 
 	if err := w.Close(); err != nil {
 		t.Fatalf("Error closing pipe writer: %v", err)

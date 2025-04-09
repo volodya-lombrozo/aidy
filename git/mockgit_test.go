@@ -48,3 +48,19 @@ func TestMockGetDiff(t *testing.T) {
 		t.Fatal("Expected the diff 'mock-diff'")
 	}
 }
+
+func TestMockGetAllRemoteURLs(t *testing.T) {
+	git := MockGit{}
+	output, err := git.GetAllRemoteURLs()
+	if err != nil {
+		panic(err)
+	}
+	first := "https://github.com/volodya-lombrozo/aidy.git"
+	second := "https://github.com/volodya-lombrozo/forked-aidy.git"
+	if output[0] != first {
+		t.Fatalf("Expected the diff '%s'", first)
+	}
+	if output[1] != second {
+		t.Fatalf("Expected the diff '%s'", second)
+	}
+}

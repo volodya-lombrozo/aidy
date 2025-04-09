@@ -9,6 +9,42 @@ import (
 	"testing"
 )
 
+func TestRealGit_GetAllRemoteURLs(t *testing.T) {
+	mockExecutor := &executor.MockExecutor{
+		Output: "origin\thttps://github.com/user/repo.git (fetch)\norigin\thttps://github.com/user/repo.git (push)\nupstream\thttps://github.com/another/repo.git (fetch)\nupstream\thttps://github.com/another/repo.git (push)\n",
+		Err:    nil,
+	}
+
+	gitService := NewRealGit(mockExecutor, "")
+
+	urls, err := gitService.GetAllRemoteURLs()
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	expectedURLs := []string{
+		"https://github.com/user/repo.git",
+		"https://github.com/another/repo.git",
+	}
+
+	if len(urls) != len(expectedURLs) {
+		t.Fatalf("Expected %d URLs, got %d", len(expectedURLs), len(urls))
+	}
+
+	for _, expectedURL := range expectedURLs {
+		found := false
+		for _, url := range urls {
+			if url == expectedURL {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected URL %s not found in result", expectedURL)
+		}
+	}
+}
+
 func TestRealGit_AppendToCommit(t *testing.T) {
 	mockExecutor := &executor.MockExecutor{}
 	gitService := NewRealGit(mockExecutor, "")
