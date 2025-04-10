@@ -17,6 +17,10 @@ func (m *MockGit) GetDiff() (string, error) {
 	return "mock-diff", nil
 }
 
+func (m *MockGit) GetCurrentDiff() (string, error) {
+	return "current-mock-diff", nil
+}
+
 func (m *MockGit) CommitChanges(messages ...string) error {
 	return nil
 }

@@ -105,6 +105,19 @@ func (r *RealGit) GetDiff() (string, error) {
 	}
 }
 
+func (r *RealGit) GetCurrentDiff() (string, error) {
+	unstaged, unErr := r.shell.RunCommandInDir(r.dir, "git", "diff")
+	if unErr != nil {
+		return "", unErr
+	}
+	staged, stErr := r.shell.RunCommandInDir(r.dir, "git", "diff", "--cached")
+	if stErr != nil {
+		return "", stErr
+	}
+	diff := unstaged + "\n" + staged
+	return diff, nil
+}
+
 func (r *RealGit) GetCurrentCommitMessage() (string, error) {
 	out, err := r.shell.RunCommandInDir(r.dir, "git", "log", "-1", "--pretty=%B")
 	if err != nil {

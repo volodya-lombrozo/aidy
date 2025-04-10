@@ -102,6 +102,7 @@ func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
 	commit(gitService, shell, false, aiService)
 }
 
+// Comment
 func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai.AI) {
 	if noAI {
 		err := gitService.CommitChanges()
@@ -113,12 +114,10 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		if err != nil {
 			log.Fatalf("Error getting branch name: %v", err)
 		}
-
-		diff, diffErr := gitService.GetDiff()
+		diff, diffErr := gitService.GetCurrentDiff()
 		if diffErr != nil {
 			log.Fatalf("Error getting diff: %v", err)
 		}
-
 		msg, cerr := aiService.GenerateCommitMessage(branchName, diff)
 		if cerr != nil {
 			log.Fatalf("Error generating commit message: %v", err)
@@ -126,12 +125,6 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		if err := gitService.CommitChanges(msg); err != nil {
 			log.Fatalf("Error committing changes: %v", err)
 		}
-		// issueNumber := extractIssueNumber(branchName)
-		// prompt := fmt.Sprintf(ai.GenerateCommitPrompt, issueNumber, issueNumber)
-		// _, shellErr := shell.RunCommand("aider", "--commit", "--commit-prompt", prompt)
-		// if shellErr != nil {
-		// 	log.Fatalf("Error executing aider --commit: %v", err)
-		// }
 	}
 	heal(gitService, shell)
 }

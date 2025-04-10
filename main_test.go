@@ -13,7 +13,6 @@ import (
 	"github.com/volodya-lombrozo/aidy/github"
 )
 
-// Here I added comment
 func TestHeal(t *testing.T) {
 	mockGit := &git.MockGit{}
 	mockExecutor := &executor.MockExecutor{

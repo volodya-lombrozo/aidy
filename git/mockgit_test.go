@@ -49,6 +49,17 @@ func TestMockGetDiff(t *testing.T) {
 	}
 }
 
+func TestMockGetCurrentDiff(t *testing.T) {
+	git := MockGit{}
+	output, err := git.GetCurrentDiff()
+	if err != nil {
+		panic(err)
+	}
+	if output != "current-mock-diff" {
+		t.Fatal("Expected the diff 'mock-diff'")
+	}
+}
+
 func TestMockGetAllRemoteURLs(t *testing.T) {
 	git := MockGit{}
 	output, err := git.GetAllRemoteURLs()
