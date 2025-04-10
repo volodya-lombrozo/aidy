@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"regexp"
+	"strings"
+
 	"github.com/volodya-lombrozo/aidy/ai"
 	"github.com/volodya-lombrozo/aidy/config"
 	"github.com/volodya-lombrozo/aidy/executor"
 	"github.com/volodya-lombrozo/aidy/git"
 	"github.com/volodya-lombrozo/aidy/github"
-	"log"
-	"os"
-	"regexp"
-	"strings"
 )
 
 func main() {
@@ -24,24 +25,25 @@ func main() {
 		log.Fatalf("Error getting home directory: %v", err)
 	}
 	configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
-	yamlConfig, err := config.NewYAMLConfig(configPath)
+	yamlConfig := config.NewConf(configPath)
+	apiKey, err := yamlConfig.GetOpenAIAPIKey()
 	if err != nil {
-		log.Fatalf("Failed to create YAMLConfig: %v", err)
-	}
-	apiKey, confErr := yamlConfig.GetOpenAIAPIKey()
-	if confErr != nil {
-		panic(confErr)
+		log.Fatalf("Error getting OpenAI API key: %v", err)
 	}
 	if apiKey == "" {
 		log.Fatalf("OpenAI API key not found in config file")
 	}
-	githubKey, githubErr := yamlConfig.GetGithubAPIKey()
-	if githubErr != nil {
-		log.Printf("Can't find github token in configuration")
+	githubKey, err := yamlConfig.GetGithubAPIKey()
+	if err != nil {
+		log.Printf("Can't find GitHub token in configuration")
 		githubKey = ""
 	}
+    model, err := yamlConfig.GetModel()
+	if err != nil {
+		log.Fatalf("Can't find GitHub token in configuration")
+	}
 	shell := &executor.RealExecutor{}
-	aiService := ai.NewOpenAI(apiKey, "gpt-4o", 0.2)
+	aiService := ai.NewOpenAI(apiKey, model, 0.2)
 	gitService := git.NewRealGit(shell)
 	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey)
 	switch command {
@@ -64,9 +66,36 @@ func main() {
 		}
 		userInput := os.Args[2]
 		issue(userInput, aiService)
-	default:
+	case "conf", "config":
+		printConfig(yamlConfig)
+    default:
 		log.Fatalf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
 	}
+}
+
+func printConfig(cfg config.Config) {
+	fmt.Println("Current Configuration:")
+	apiKey, err := cfg.GetOpenAIAPIKey()
+	if err != nil {
+		fmt.Printf("Error retrieving OpenAI API key: %v\n", err)
+	} else {
+		fmt.Printf("OpenAI API Key: %s\n", apiKey)
+	}
+
+	githubKey, err := cfg.GetGithubAPIKey()
+	if err != nil {
+		fmt.Printf("Error retrieving GitHub API key: %v\n", err)
+	} else {
+		fmt.Printf("GitHub API Key: %s\n", githubKey)
+	}
+
+    model, err := cfg.GetModel()
+    if err != nil {
+        fmt.Printf("Error retrieving model: %v\n", err)
+    } else {
+        fmt.Printf("Model: %s\n", model)
+    }
+
 }
 
 func help() {
@@ -120,7 +149,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		}
 		msg, cerr := aiService.GenerateCommitMessage(branchName, diff)
 		if cerr != nil {
-			log.Fatalf("Error generating commit message: %v", err)
+			log.Fatalf("Error generating commit message: %v", cerr)
 		}
 		if err := gitService.CommitChanges(msg); err != nil {
 			log.Fatalf("Error committing changes: %v", err)

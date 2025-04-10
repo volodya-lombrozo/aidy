@@ -40,37 +40,37 @@ func (r *RealGithub) IssueDescription(number string) string {
 		panic(gerr)
 	}
 	credentials := parseOwnerRepoPairs(urls)
-    var issue Issue
-    for _, cred := range credentials {
-        url := fmt.Sprintf("%s/repos/%s/%s/issues/%s", r.baseURL, cred[0], cred[1], number)
-        log.Printf("Tying to get an isse description by using the following url: %s\n", url)
-        req, err := http.NewRequest("GET", url, nil)
-        if err != nil {
-            return fmt.Sprintf("Error creating request: %v", err)
-        }
-        req.Header.Set("Authorization", "Bearer "+r.authToken)
-        resp, err := r.client.Do(req)
-        if err != nil {
-            return fmt.Sprintf("Error fetching issue description: %v", err)
-        }
-        defer func() {
-            if err := resp.Body.Close(); err != nil {
-                log.Printf("Error closing response body: %v", err)
-            }
-        }()
-        if resp.StatusCode != http.StatusOK {
-            fmt.Printf("Skipping %s: status %s\n", url, resp.Status)
-            continue
-        }
-        body, err := io.ReadAll(resp.Body)
-        if err != nil {
-            return fmt.Sprintf("Error reading response body: %v", err)
-        }
-        err = json.Unmarshal(body, &issue)
-        if err != nil {
-            return fmt.Sprintf("Error unmarshaling issue JSON: %v", err)
-        }
-    }
+	var issue Issue
+	for _, cred := range credentials {
+		url := fmt.Sprintf("%s/repos/%s/%s/issues/%s", r.baseURL, cred[0], cred[1], number)
+		log.Printf("Tying to get an isse description by using the following url: %s\n", url)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return fmt.Sprintf("Error creating request: %v", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+r.authToken)
+		resp, err := r.client.Do(req)
+		if err != nil {
+			return fmt.Sprintf("Error fetching issue description: %v", err)
+		}
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("Error closing response body: %v", err)
+			}
+		}()
+		if resp.StatusCode != http.StatusOK {
+			fmt.Printf("Skipping %s: status %s\n", url, resp.Status)
+			continue
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Sprintf("Error reading response body: %v", err)
+		}
+		err = json.Unmarshal(body, &issue)
+		if err != nil {
+			return fmt.Sprintf("Error unmarshaling issue JSON: %v", err)
+		}
+	}
 	fmt.Printf("Title: %s\nBody: %s\n", issue.Title, issue.Body)
 	return fmt.Sprintf("Title: '%s'\nBody: '%s'", issue.Title, issue.Body)
 }
