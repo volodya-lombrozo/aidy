@@ -199,6 +199,36 @@ func TestRealGetDiff(t *testing.T) {
 	}
 }
 
+func TestRealGetCurrentDiff(t *testing.T) {
+	repoDir, cleanup := setupTestRepo(t)
+	defer cleanup()
+	filePath := filepath.Join(repoDir, "file.txt")
+	if err := os.WriteFile(filePath, []byte("Hello, World!"), 0644); err != nil {
+		t.Fatalf("Error writing to file: %v", err)
+	}
+	cmd := exec.Command("git", "add", ".")
+	cmd.Dir = repoDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Error running command: %v", err)
+	}
+	cmd = exec.Command("git", "commit", "-m", "Add hello world")
+	cmd.Dir = repoDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Error running command: %v", err)
+	}
+	if err := os.WriteFile(filePath, []byte("Hello, Git!"), 0644); err != nil {
+		t.Fatalf("Error writing to file: %v", err)
+	}
+	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
+	diff, err := gitService.GetDiff()
+	if err != nil {
+		t.Fatalf("Error getting diff: %v", err)
+	}
+	if diff == "Hello, Git!" {
+		t.Fatal("Expected non-empty diff")
+	}
+}
+
 func TestRealGetCurrentCommitMessage(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
