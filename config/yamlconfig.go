@@ -11,18 +11,20 @@ type YAMLConfig struct {
 	GitHubAPIKey string `yaml:"github-api-key"`
 }
 
-func NewYAMLConfig(filePath string) (*YAMLConfig, error) {
-	configData, err := os.ReadFile(filePath)
+func (c *YAMLConfig) GetModel() (string, error) {
+	return "gpt-4o", nil
+}
+
+func NewYAMLConfig(filepath string) (*YAMLConfig, error) {
+	configData, err := os.ReadFile(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading config file: %v", err)
 	}
-
 	var config YAMLConfig
 	err = yaml.Unmarshal(configData, &config)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing config file: %v", err)
 	}
-
 	return &config, nil
 }
 
