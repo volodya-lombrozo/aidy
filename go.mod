@@ -3,7 +3,7 @@ module github.com/volodya-lombrozo/aidy
 go 1.24.1
 
 require (
-	github.com/sashabaranov/go-openai v1.38.0
+	github.com/sashabaranov/go-openai v1.38.1
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v2 v2.4.0
 )
