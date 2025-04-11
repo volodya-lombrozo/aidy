@@ -18,14 +18,8 @@ func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("Error: No command provided. Use 'aidy help' for usage.")
 	}
-	command := os.Args[1]
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalf("Error getting home directory: %v", err)
-	}
-	configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
-	yamlConfig := config.NewConf(configPath)
+    command := os.Args[1]
+	yamlConfig := readConfiguration() 
 	apiKey, err := yamlConfig.GetOpenAIAPIKey()
 	if err != nil {
 		log.Fatalf("Error getting OpenAI API key: %v", err)
@@ -71,6 +65,28 @@ func main() {
     default:
 		log.Fatalf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
 	}
+}
+
+func readConfiguration() config.Config {
+    homeDir, err := os.UserHomeDir()
+    if err != nil {
+        log.Fatalf("Error getting home directory: %v", err)
+    }
+    var conf config.Config
+    aider := false 
+    for _, arg := range os.Args {
+        if arg == "--aider" {
+            aider = true
+        }
+    }
+    if aider {
+        configPath := fmt.Sprintf("%s/.aider.conf.yml", homeDir)
+        conf = config.NewAiderConf(configPath)
+    } else {
+        configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
+        conf = config.NewConf(configPath)
+    }
+    return conf
 }
 
 func printConfig(cfg config.Config) {
