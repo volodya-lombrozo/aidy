@@ -34,8 +34,6 @@ func (c *NewConfig) GetGithubAPIKey() (string, error) {
 }
 
 func (c *NewConfig) GetModel() (string, error) {
-    model := c.DefaultModel
-    return    c.Models[model]["model-id"], nil
+	model := c.DefaultModel
+	return c.Models[model]["model-id"], nil
 }
-
-

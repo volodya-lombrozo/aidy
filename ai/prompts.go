@@ -113,4 +113,20 @@ The description should:
 - Use backticks for code or technical terms where appropriate
 
 Reply only with the issue body — no explanations, comments, or extra formatting.`
+
+	GenerateLabelsPrompt = `You are an expert software engineer who understands how to assign appropriate labels to GitHub issues.
+
+Your task is to select the most relevant labels for the following issue:
+
+<issue>
+%s
+</issue>
+
+Available labels:
+
+<labels>
+%s
+</labels>
+
+Reply only with the list of selected labels — no explanations, comments, or additional formatting.`
 )

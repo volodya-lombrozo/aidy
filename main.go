@@ -18,8 +18,8 @@ func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("Error: No command provided. Use 'aidy help' for usage.")
 	}
-    command := os.Args[1]
-	yamlConfig := readConfiguration() 
+	command := os.Args[1]
+	yamlConfig := readConfiguration()
 	apiKey, err := yamlConfig.GetOpenAIAPIKey()
 	if err != nil {
 		log.Fatalf("Error getting OpenAI API key: %v", err)
@@ -32,7 +32,7 @@ func main() {
 		log.Printf("Can't find GitHub token in configuration")
 		githubKey = ""
 	}
-    model, err := yamlConfig.GetModel()
+	model, err := yamlConfig.GetModel()
 	if err != nil {
 		log.Fatalf("Can't find GitHub token in configuration")
 	}
@@ -59,34 +59,34 @@ func main() {
 			log.Fatalf("Error: No input provided for issue generation.")
 		}
 		userInput := os.Args[2]
-		issue(userInput, aiService)
+		issue(userInput, aiService, gh)
 	case "conf", "config":
 		printConfig(yamlConfig)
-    default:
+	default:
 		log.Fatalf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
 	}
 }
 
 func readConfiguration() config.Config {
-    homeDir, err := os.UserHomeDir()
-    if err != nil {
-        log.Fatalf("Error getting home directory: %v", err)
-    }
-    var conf config.Config
-    aider := false 
-    for _, arg := range os.Args {
-        if arg == "--aider" {
-            aider = true
-        }
-    }
-    if aider {
-        configPath := fmt.Sprintf("%s/.aider.conf.yml", homeDir)
-        conf = config.NewAiderConf(configPath)
-    } else {
-        configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
-        conf = config.NewConf(configPath)
-    }
-    return conf
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("Error getting home directory: %v", err)
+	}
+	var conf config.Config
+	aider := false
+	for _, arg := range os.Args {
+		if arg == "--aider" {
+			aider = true
+		}
+	}
+	if aider {
+		configPath := fmt.Sprintf("%s/.aider.conf.yml", homeDir)
+		conf = config.NewAiderConf(configPath)
+	} else {
+		configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
+		conf = config.NewConf(configPath)
+	}
+	return conf
 }
 
 func printConfig(cfg config.Config) {
@@ -105,12 +105,12 @@ func printConfig(cfg config.Config) {
 		fmt.Printf("GitHub API Key: %s\n", githubKey)
 	}
 
-    model, err := cfg.GetModel()
-    if err != nil {
-        fmt.Printf("Error retrieving model: %v\n", err)
-    } else {
-        fmt.Printf("Model: %s\n", model)
-    }
+	model, err := cfg.GetModel()
+	if err != nil {
+		fmt.Printf("Error retrieving model: %v\n", err)
+	} else {
+		fmt.Printf("Model: %s\n", model)
+	}
 
 }
 
@@ -123,7 +123,7 @@ func help() {
 // This method implements the 'issue' command.
 // It creates a `gh` issue command.
 // For example `gh issue create --title "Issue title" --body "Issue body"`
-func issue(userInput string, aiService ai.AI) {
+func issue(userInput string, aiService ai.AI, gh github.Github) {
 	title, err := aiService.GenerateIssueTitle(userInput)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
@@ -132,7 +132,16 @@ func issue(userInput string, aiService ai.AI) {
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
-	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
+	labels := gh.Labels()
+	suitable, err := aiService.GenerateIssueLabels(body, labels)
+	if err != nil {
+		log.Fatalf("Error generating labels: %v", err)
+	}
+	if len(suitable) > 0 {
+		fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", title, body, strings.Join(suitable, ","))))
+	} else {
+		fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
+	}
 }
 
 func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {

@@ -21,3 +21,7 @@ func (m *MockAI) GenerateIssueBody(userInput string) (string, error) {
 func (m *MockAI) GenerateCommitMessage(branchName string, diff string) (string, error) {
 	return "Mock Commit Message for " + diff + " and branch " + branchName, nil
 }
+
+func (m *MockAI) GenerateIssueLabels(issue string, available []string) ([]string, error) {
+	return available, nil
+}

@@ -104,11 +104,12 @@ func TestCommit(t *testing.T) {
 
 func TestHandleIssue(t *testing.T) {
 	mockAI := &ai.MockAI{}
+	gh := &github.MockGithub{}
 	userInput := "test input"
 	old := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	issue(userInput, mockAI)
+	issue(userInput, mockAI, gh)
 	if err := w.Close(); err != nil {
 		t.Fatalf("Error closing pipe writer: %v", err)
 	}
@@ -118,7 +119,7 @@ func TestHandleIssue(t *testing.T) {
 		t.Fatalf("Error copying data: %v", err)
 	}
 	output := buf.String()
-	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\""
+	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\""
 	if strings.TrimSpace(output) != strings.TrimSpace(expected) {
 		t.Errorf("Unexpected output:\n%s", output)
 	}
