@@ -59,7 +59,7 @@ func main() {
 			log.Fatalf("Error: No input provided for issue generation.")
 		}
 		userInput := os.Args[2]
-		issue(userInput, aiService)
+		issue(userInput, aiService, gh)
 	case "conf", "config":
 		printConfig(yamlConfig)
     default:
@@ -123,16 +123,25 @@ func help() {
 // This method implements the 'issue' command.
 // It creates a `gh` issue command.
 // For example `gh issue create --title "Issue title" --body "Issue body"`
-func issue(userInput string, aiService ai.AI) {
-	title, err := aiService.GenerateIssueTitle(userInput)
-	if err != nil {
-		log.Fatalf("Error generating title: %v", err)
-	}
-	body, err := aiService.GenerateIssueBody(userInput)
-	if err != nil {
-		log.Fatalf("Error generating body: %v", err)
-	}
-	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
+func issue(userInput string, aiService ai.AI, gh github.Github) {
+    title, err := aiService.GenerateIssueTitle(userInput)
+    if err != nil {
+        log.Fatalf("Error generating title: %v", err)
+    }
+    body, err := aiService.GenerateIssueBody(userInput)
+    if err != nil {
+        log.Fatalf("Error generating body: %v", err)
+    }
+    labels := gh.Labels()
+    suitable, err:=aiService.GenerateIssueLabels(body, labels)
+    if err != nil {
+        log.Fatalf("Error generating labels: %v", err)
+    }
+    if len(suitable) > 0 {
+        fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", title, body, strings.Join(suitable, ","))))
+    } else {
+        fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
+    }
 }
 
 func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
