@@ -114,7 +114,7 @@ The description should:
 
 Reply only with the issue body — no explanations, comments, or extra formatting.`
 
-    GenerateLabelsPrompt = `You are an expert software engineer who understands how to assign appropriate labels to GitHub issues.
+	GenerateLabelsPrompt = `You are an expert software engineer who understands how to assign appropriate labels to GitHub issues.
 
 Your task is to select the most relevant labels for the following issue:
 

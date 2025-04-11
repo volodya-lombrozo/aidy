@@ -27,12 +27,12 @@ func TestMockGithub_IssueDescription(t *testing.T) {
 }
 
 func TestMockGithub_Labels(t *testing.T) {
-    mockGithub := &MockGithub{}
-    expected := []string{ "bug", "documentation", "question"} 
-    labels := mockGithub.Labels()
-    for i,label := range labels {
-        assert.Equal(t, expected[i], label)
-    }
+	mockGithub := &MockGithub{}
+	expected := []string{"bug", "documentation", "question"}
+	labels := mockGithub.Labels()
+	for i, label := range labels {
+		assert.Equal(t, expected[i], label)
+	}
 }
 
 func TestRealGithub_IssueDescription(t *testing.T) {
@@ -57,7 +57,7 @@ func TestRealGithub_IssueDescription(t *testing.T) {
 }
 
 func TestRealGithub_Labels(t *testing.T) {
-    json := `
+	json := `
 [
   {
     "id": 4737785601,
@@ -78,7 +78,7 @@ func TestRealGithub_Labels(t *testing.T) {
     "description": "This will not be worked on"
   }
 ]`
-    // Create a test server to mock GitHub API
+	// Create a test server to mock GitHub API
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte(json)); err != nil {
@@ -90,9 +90,8 @@ func TestRealGithub_Labels(t *testing.T) {
 
 	labels := realGithub.Labels()
 
-    expected := []string{ "duplicate", "wontfix"} 
-    for i,label := range labels {
-        assert.Equal(t, expected[i], label)
-    }
+	expected := []string{"duplicate", "wontfix"}
+	for i, label := range labels {
+		assert.Equal(t, expected[i], label)
+	}
 }
-

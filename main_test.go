@@ -104,7 +104,7 @@ func TestCommit(t *testing.T) {
 
 func TestHandleIssue(t *testing.T) {
 	mockAI := &ai.MockAI{}
-    gh := &github.MockGithub{}
+	gh := &github.MockGithub{}
 	userInput := "test input"
 	old := os.Stdout
 	r, w, _ := os.Pipe()

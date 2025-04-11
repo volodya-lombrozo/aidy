@@ -36,7 +36,6 @@ func TestAiderGetOpenAIAPIKey(t *testing.T) {
 	assert.Equal(t, "secret-key", apiKey, "API key should match")
 }
 
-
 func TestAiderGetModel(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "configtest")
 	if err != nil {

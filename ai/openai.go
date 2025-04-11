@@ -51,19 +51,19 @@ func (o *MyOpenAI) GenerateCommitMessage(branchName, diff string) (string, error
 }
 
 func (o *MyOpenAI) GenerateIssueLabels(issue string, available []string) ([]string, error) {
-    alllabels := strings.Join(available, ", ")
-   	prompt := fmt.Sprintf(GenerateLabelsPrompt, issue, alllabels)
-    out, err := o.generateText(prompt)
-    if err != nil {
-        return nil, err
-    }
-    var res []string
-    for _, label := range available {
-        if strings.Contains(out, label) {
-            res = append(res, label)
-        }
-    }
-    return res, nil
+	alllabels := strings.Join(available, ", ")
+	prompt := fmt.Sprintf(GenerateLabelsPrompt, issue, alllabels)
+	out, err := o.generateText(prompt)
+	if err != nil {
+		return nil, err
+	}
+	var res []string
+	for _, label := range available {
+		if strings.Contains(out, label) {
+			res = append(res, label)
+		}
+	}
+	return res, nil
 }
 
 func (o *MyOpenAI) generateText(prompt string) (string, error) {

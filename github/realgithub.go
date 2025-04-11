@@ -22,17 +22,13 @@ type Issue struct {
 	Body  string `json:"body"`
 }
 
-type Labels struct {
-    all []Label
-}
-
 type Label struct {
-    Id int64 `json:"id"`
-    Node string `json:"node_id"`
-    Url string `json:"url"`
-    Name string `json:"name"`
-    Color string `json:"color"`
-    Description string `json:"description"`
+	Id          int64  `json:"id"`
+	Node        string `json:"node_id"`
+	Url         string `json:"url"`
+	Name        string `json:"name"`
+	Color       string `json:"color"`
+	Description string `json:"description"`
 }
 
 func NewRealGithub(baseURL string, gitService git.Git, authToken string) *RealGithub {
@@ -88,7 +84,7 @@ func (r *RealGithub) IssueDescription(number string) string {
 	return fmt.Sprintf("Title: '%s'\nBody: '%s'", issue.Title, issue.Body)
 }
 
-func (r *RealGithub) Labels() []string{
+func (r *RealGithub) Labels() []string {
 	if r.gitService == nil {
 		panic("Git service isn't set")
 	}
@@ -97,7 +93,7 @@ func (r *RealGithub) Labels() []string{
 		panic(gerr)
 	}
 	credentials := parseOwnerRepoPairs(urls)
-    var labels []Label
+	var labels []Label
 	for _, cred := range credentials {
 		url := fmt.Sprintf("%s/repos/%s/%s/labels", r.baseURL, cred[0], cred[1])
 		log.Printf("Tying to get a repo labels by using the following url: %s\n", url)
@@ -108,7 +104,7 @@ func (r *RealGithub) Labels() []string{
 		req.Header.Set("Authorization", "Bearer "+r.authToken)
 		resp, err := r.client.Do(req)
 		if err != nil {
-	        log.Fatalf("Error fetching issue description: %v", err)
+			log.Fatalf("Error fetching issue description: %v", err)
 		}
 		defer func() {
 			if err := resp.Body.Close(); err != nil {
@@ -121,19 +117,19 @@ func (r *RealGithub) Labels() []string{
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-     		 log.Fatalf("Error reading response body: %v", err)
+			log.Fatalf("Error reading response body: %v", err)
 		}
-        err = json.Unmarshal(body, &labels)
-        if err != nil {
-            log.Fatalf("Error unmarshaling issue JSON: %v", err)
-        }
+		err = json.Unmarshal(body, &labels)
+		if err != nil {
+			log.Fatalf("Error unmarshaling issue JSON: %v", err)
+		}
 	}
-    var res []string
-    for _, label := range labels {
-        res = append(res, label.Name) 
-    }
+	var res []string
+	for _, label := range labels {
+		res = append(res, label.Name)
+	}
 	fmt.Printf("Labels: %s\n", strings.Join(res, ", "))
-    return res
+	return res
 }
 
 func parseOwnerRepoPairs(urls []string) [][2]string {

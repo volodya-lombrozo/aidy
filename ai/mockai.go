@@ -23,5 +23,5 @@ func (m *MockAI) GenerateCommitMessage(branchName string, diff string) (string, 
 }
 
 func (m *MockAI) GenerateIssueLabels(issue string, available []string) ([]string, error) {
-    return available, nil
+	return available, nil
 }

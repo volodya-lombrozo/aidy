@@ -7,5 +7,5 @@ func (m *MockGithub) IssueDescription(number string) string {
 }
 
 func (m *MockGithub) Labels() []string {
-    return []string{ "bug", "documentation", "question" }
+	return []string{"bug", "documentation", "question"}
 }

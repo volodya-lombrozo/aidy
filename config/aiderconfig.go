@@ -6,8 +6,8 @@ import (
 )
 
 type AiderConfig struct {
-    Model        string `yaml:"model"`
-    OpenaiApiKey string `yaml:"openai-api-key"`
+	Model        string `yaml:"model"`
+	OpenaiApiKey string `yaml:"openai-api-key"`
 }
 
 func NewAiderConf(filepath string) *AiderConfig {
@@ -32,7 +32,6 @@ func (c *AiderConfig) GetGithubAPIKey() (string, error) {
 }
 
 func (c *AiderConfig) GetModel() (string, error) {
-    model := c.Model
-    return model, nil
+	model := c.Model
+	return model, nil
 }
-

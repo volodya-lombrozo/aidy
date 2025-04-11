@@ -1,8 +1,8 @@
 package ai
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
-"github.com/stretchr/testify/assert"
 )
 
 func TestMockGenerateCommitMessage(t *testing.T) {
@@ -19,7 +19,6 @@ func TestMockGenerateCommitMessage(t *testing.T) {
 	}
 }
 
-
 func TestMockGenerateLabels(t *testing.T) {
 	mockAI := &MockAI{}
 	labels := []string{"bug", "feature"}
@@ -27,9 +26,8 @@ func TestMockGenerateLabels(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-    assert.Equal(t, labels, actual)
+	assert.Equal(t, labels, actual)
 }
-
 
 func TestMockGenerateTitle(t *testing.T) {
 	mockAI := &MockAI{}
