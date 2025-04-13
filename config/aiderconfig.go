@@ -35,3 +35,7 @@ func (c *AiderConfig) GetModel() (string, error) {
 	model := c.Model
 	return model, nil
 }
+
+func (c *AiderConfig) GetDeepseekAPIKey() (string, error) {
+	return "Unknown", nil
+}

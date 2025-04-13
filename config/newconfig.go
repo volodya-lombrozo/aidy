@@ -37,3 +37,7 @@ func (c *NewConfig) GetModel() (string, error) {
 	model := c.DefaultModel
 	return c.Models[model]["model-id"], nil
 }
+
+func (c *NewConfig) GetDeepseekAPIKey() (string, error) {
+	return c.APIKeys["deepseek"], nil
+}

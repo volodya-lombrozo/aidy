@@ -20,13 +20,6 @@ func main() {
 	}
 	command := os.Args[1]
 	yamlConfig := readConfiguration()
-	apiKey, err := yamlConfig.GetOpenAIAPIKey()
-	if err != nil {
-		log.Fatalf("Error getting OpenAI API key: %v", err)
-	}
-	if apiKey == "" {
-		log.Fatalf("OpenAI API key not found in config file")
-	}
 	githubKey, err := yamlConfig.GetGithubAPIKey()
 	if err != nil {
 		log.Printf("Can't find GitHub token in configuration")
@@ -37,7 +30,28 @@ func main() {
 		log.Fatalf("Can't find GitHub token in configuration")
 	}
 	shell := &executor.RealExecutor{}
-	aiService := ai.NewOpenAI(apiKey, model, 0.2)
+	var aiService ai.AI
+	if model == "deepseek-chat" {
+		apiKey, err := yamlConfig.GetDeepseekAPIKey()
+		if err != nil {
+			log.Fatalf("Error getting Deepseek API key: %v", err)
+		}
+		if apiKey == "" {
+			log.Fatalf("Deepseek API key not found in config file")
+		} else {
+			log.Println("Deepseek key is found")
+		}
+		aiService = ai.NewDeepSeekAI(apiKey)
+	} else {
+		apiKey, err := yamlConfig.GetOpenAIAPIKey()
+		if err != nil {
+			log.Fatalf("Error getting OpenAI API key: %v", err)
+		}
+		if apiKey == "" {
+			log.Fatalf("OpenAI API key not found in config file")
+		}
+		aiService = ai.NewOpenAI(apiKey, model, 0.2)
+	}
 	gitService := git.NewRealGit(shell)
 	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey)
 	switch command {
@@ -96,6 +110,13 @@ func printConfig(cfg config.Config) {
 		fmt.Printf("Error retrieving OpenAI API key: %v\n", err)
 	} else {
 		fmt.Printf("OpenAI API Key: %s\n", apiKey)
+	}
+
+	deepseek, err := cfg.GetDeepseekAPIKey()
+	if err != nil {
+		fmt.Printf("Error retrieving deepseek API key: %v\n", err)
+	} else {
+		fmt.Printf("Deepseek API Key: %s\n", deepseek)
 	}
 
 	githubKey, err := cfg.GetGithubAPIKey()
