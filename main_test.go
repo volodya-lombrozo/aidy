@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/volodya-lombrozo/aidy/ai"
 	"github.com/volodya-lombrozo/aidy/executor"
 	"github.com/volodya-lombrozo/aidy/git"
@@ -81,6 +82,13 @@ func TestPullRequest(t *testing.T) {
 	if strings.TrimSpace(output) != strings.TrimSpace(expected) {
 		t.Errorf("Unexpected output:\n%s", output)
 	}
+}
+
+func TestHealQoutes(t *testing.T) {
+    message := healQoutes("\"with \" qoutes\"")
+    assert.Equal(t, "with \" qoutes", message)
+    message = healQoutes("'with ' qoutes'")
+    assert.Equal(t, "with ' qoutes", message)
 }
 
 func TestCommit(t *testing.T) {

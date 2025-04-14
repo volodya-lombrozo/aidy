@@ -32,7 +32,7 @@ func TestMockGenerateLabels(t *testing.T) {
 func TestMockGenerateTitle(t *testing.T) {
 	mockAI := &MockAI{}
 	branchName := "feature-branch"
-	expected := "Mock Title for " + branchName
+    expected := "'Mock Title for " + branchName + "'"
 
 	title, err := mockAI.GenerateTitle(branchName, "diff", "issue")
 	if err != nil {
@@ -46,7 +46,7 @@ func TestMockGenerateTitle(t *testing.T) {
 func TestMockGenerateIssueTitle(t *testing.T) {
 	mockAI := &MockAI{}
 	userInput := "issue input"
-	expected := "Mock Issue Title for " + userInput
+    expected := "'Mock Issue Title for " + userInput + "'"
 
 	title, err := mockAI.GenerateIssueTitle(userInput)
 	if err != nil {
