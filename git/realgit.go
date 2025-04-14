@@ -96,7 +96,7 @@ func (r *RealGit) GetDiff() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error determining base branch: %v", err)
 	}
-	out, diffErr := r.shell.RunCommandInDir(r.dir, "git", "diff", baseBranch)
+	out, diffErr := r.shell.RunCommandInDir(r.dir, "git", "diff", baseBranch, "--cached")
 	if diffErr != nil {
 		return "", err
 	} else {
