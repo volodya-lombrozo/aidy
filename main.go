@@ -189,7 +189,11 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		if err != nil {
 			log.Fatalf("Error getting branch name: %v", err)
 		}
-		diff, diffErr := gitService.GetCurrentDiff()
+        _, addErr := shell.RunCommand("git", "add", "--all")
+        if addErr != nil {
+            log.Fatalf("Error adding git files: %v", err)
+        }
+        diff, diffErr := gitService.GetCurrentDiff()
 		if diffErr != nil {
 			log.Fatalf("Error getting diff: %v", err)
 		}

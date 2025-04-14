@@ -44,6 +44,7 @@ func TestSquash(t *testing.T) {
 
 	expectedCommands := []string{
 		"git reset --soft main",
+        "git add --all",
 		"git commit --amend -m feat(#41): current commit message",
 	}
 
@@ -93,6 +94,7 @@ func TestCommit(t *testing.T) {
 	commit(mockGit, mockExecutor, false, mockAI)
 
 	expectedCommands := []string{
+        "git add --all",
 		"git commit --amend -m feat(#41): current commit message",
 	}
 	for i, expectedCommand := range expectedCommands {
