@@ -159,9 +159,9 @@ func issue(userInput string, aiService ai.AI, gh github.Github) {
 		log.Fatalf("Error generating labels: %v", err)
 	}
 	if len(suitable) > 0 {
-		fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", title, body, strings.Join(suitable, ","))))
+		fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", healQoutes(title), healQoutes(body), strings.Join(suitable, ","))))
 	} else {
-		fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", title, body)))
+		fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQoutes(title), healQoutes(body))))
 	}
 }
 
@@ -226,7 +226,7 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github) {
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
-	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"", title, body)))
+	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"", healQoutes(title), healQoutes(body))))
 }
 
 func heal(gitService git.Git, shell executor.Executor) {
@@ -245,6 +245,10 @@ func heal(gitService git.Git, shell executor.Executor) {
 	if err != nil {
 		log.Fatalf("Error amending commit message: %v", err)
 	}
+}
+
+func healQoutes(text string) string {
+    return strings.Trim(text, `"'`)
 }
 
 func appendToCommit(gitService git.Git) {
