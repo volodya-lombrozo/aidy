@@ -3,6 +3,7 @@ package github
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/volodya-lombrozo/aidy/cache"
 	"github.com/volodya-lombrozo/aidy/git"
 	"io"
 	"log"
@@ -15,6 +16,7 @@ type RealGithub struct {
 	baseURL    string
 	gitService git.Git
 	authToken  string
+	ch         cache.Cache
 }
 
 type Issue struct {
@@ -31,12 +33,13 @@ type Label struct {
 	Description string `json:"description"`
 }
 
-func NewRealGithub(baseURL string, gitService git.Git, authToken string) *RealGithub {
+func NewRealGithub(baseURL string, gitService git.Git, authToken string, ch cache.Cache) *RealGithub {
 	return &RealGithub{
 		client:     &http.Client{},
 		baseURL:    baseURL,
 		gitService: gitService,
 		authToken:  authToken,
+		ch:         ch,
 	}
 }
 
@@ -94,8 +97,11 @@ func (r *RealGithub) Labels() []string {
 	}
 	credentials := parseOwnerRepoPairs(urls)
 	var labels []Label
-	for _, cred := range credentials {
-		url := fmt.Sprintf("%s/repos/%s/%s/labels", r.baseURL, cred[0], cred[1])
+
+	target, ok := r.ch.Get("target")
+	if ok {
+		log.Printf("Choosing labels from the '%s'\n", target)
+		url := fmt.Sprintf("%s/repos/%s/labels", r.baseURL, target)
 		log.Printf("Tying to get a repo labels by using the following url: %s\n", url)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -112,8 +118,7 @@ func (r *RealGithub) Labels() []string {
 			}
 		}()
 		if resp.StatusCode != http.StatusOK {
-			fmt.Printf("Skipping %s: status %s\n", url, resp.Status)
-			continue
+			log.Fatalf("Skipping %s: status %s\n", url, resp.Status)
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -122,6 +127,37 @@ func (r *RealGithub) Labels() []string {
 		err = json.Unmarshal(body, &labels)
 		if err != nil {
 			log.Fatalf("Error unmarshaling issue JSON: %v", err)
+		}
+	} else {
+		for _, cred := range credentials {
+			url := fmt.Sprintf("%s/repos/%s/%s/labels", r.baseURL, cred[0], cred[1])
+			log.Printf("Tying to get a repo labels by using the following url: %s\n", url)
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				panic(err)
+			}
+			req.Header.Set("Authorization", "Bearer "+r.authToken)
+			resp, err := r.client.Do(req)
+			if err != nil {
+				log.Fatalf("Error fetching issue description: %v", err)
+			}
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					log.Printf("Error closing response body: %v", err)
+				}
+			}()
+			if resp.StatusCode != http.StatusOK {
+				fmt.Printf("Skipping %s: status %s\n", url, resp.Status)
+				continue
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				log.Fatalf("Error reading response body: %v", err)
+			}
+			err = json.Unmarshal(body, &labels)
+			if err != nil {
+				log.Fatalf("Error unmarshaling issue JSON: %v", err)
+			}
 		}
 	}
 	var res []string

@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/volodya-lombrozo/aidy/ai"
+	"github.com/volodya-lombrozo/aidy/cache"
 	"github.com/volodya-lombrozo/aidy/config"
 	"github.com/volodya-lombrozo/aidy/executor"
 	"github.com/volodya-lombrozo/aidy/git"
@@ -19,6 +21,64 @@ func main() {
 		log.Fatal("Error: No command provided. Use 'aidy help' for usage.")
 	}
 	command := os.Args[1]
+	shell := &executor.RealExecutor{}
+
+	ch, err := cache.NewGitCache(".aidy/cache.js")
+	if err != nil {
+		log.Fatalf("Can't open cache %v", err)
+	}
+	target, ok := ch.Get("target")
+	if ok {
+		fmt.Printf("Target repo is: %s\n", target)
+	} else {
+		fmt.Println("Can't find target")
+		out, seterr := shell.RunCommand("git", "remote", "-v")
+		if seterr != nil {
+			panic(seterr)
+		}
+		lines := strings.Split(out, "\n")
+		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/[^.]+)(?:\.git)?`)
+
+		unique := make(map[string]struct{})
+		for _, line := range lines {
+			matches := re.FindStringSubmatch(line)
+			if len(matches) == 2 {
+				unique[string(matches[1])] = struct{}{}
+			}
+		}
+
+		// Sort and print
+		var repos []string
+		for repo := range unique {
+			repos = append(repos, repo)
+		}
+		sort.Strings(repos)
+		if len(repos) == 1 {
+			seterr = ch.Set("target", repos[0])
+			if seterr != nil {
+				panic(seterr)
+			}
+		} else if len(repos) < 1 {
+			panic("I can't find remore repositories :(")
+		} else {
+			fmt.Println("Where are you going to send PRs and Issues: ")
+			for i, repo := range repos {
+				fmt.Printf("(%d): %s\n", i+1, repo)
+			}
+			var choice int
+			fmt.Print("Enter the number of the repository to use: ")
+			_, err := fmt.Scan(&choice)
+			if err != nil || choice < 1 || choice > len(repos) {
+				panic("Invalid choice")
+			}
+			selectedRepo := repos[choice-1]
+			seterr = ch.Set("target", selectedRepo)
+			if seterr != nil {
+				panic(seterr)
+			}
+		}
+	}
+
 	yamlConfig := readConfiguration()
 	githubKey, err := yamlConfig.GetGithubAPIKey()
 	if err != nil {
@@ -29,7 +89,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Can't find GitHub token in configuration")
 	}
-	shell := &executor.RealExecutor{}
 	var aiService ai.AI
 	if model == "deepseek-chat" {
 		apiKey, err := yamlConfig.GetDeepseekAPIKey()
@@ -53,7 +112,7 @@ func main() {
 		aiService = ai.NewOpenAI(apiKey, model, 0.2)
 	}
 	gitService := git.NewRealGit(shell)
-	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey)
+	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey, ch)
 	switch command {
 	case "help":
 		help()
@@ -189,11 +248,11 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		if err != nil {
 			log.Fatalf("Error getting branch name: %v", err)
 		}
-        _, addErr := shell.RunCommand("git", "add", "--all")
-        if addErr != nil {
-            log.Fatalf("Error adding git files: %v", err)
-        }
-        diff, diffErr := gitService.GetCurrentDiff()
+		_, addErr := shell.RunCommand("git", "add", "--all")
+		if addErr != nil {
+			log.Fatalf("Error adding git files: %v", err)
+		}
+		diff, diffErr := gitService.GetCurrentDiff()
 		if diffErr != nil {
 			log.Fatalf("Error getting diff: %v", err)
 		}
@@ -248,7 +307,7 @@ func heal(gitService git.Git, shell executor.Executor) {
 }
 
 func healQoutes(text string) string {
-    return strings.Trim(text, `"'`)
+	return strings.Trim(text, `"'`)
 }
 
 func appendToCommit(gitService git.Git) {

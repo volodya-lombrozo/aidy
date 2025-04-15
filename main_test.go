@@ -45,7 +45,7 @@ func TestSquash(t *testing.T) {
 
 	expectedCommands := []string{
 		"git reset --soft main",
-        "git add --all",
+		"git add --all",
 		"git commit --amend -m feat(#41): current commit message",
 	}
 
@@ -85,10 +85,10 @@ func TestPullRequest(t *testing.T) {
 }
 
 func TestHealQoutes(t *testing.T) {
-    message := healQoutes("\"with \" qoutes\"")
-    assert.Equal(t, "with \" qoutes", message)
-    message = healQoutes("'with ' qoutes'")
-    assert.Equal(t, "with ' qoutes", message)
+	message := healQoutes("\"with \" qoutes\"")
+	assert.Equal(t, "with \" qoutes", message)
+	message = healQoutes("'with ' qoutes'")
+	assert.Equal(t, "with ' qoutes", message)
 }
 
 func TestCommit(t *testing.T) {
@@ -102,7 +102,7 @@ func TestCommit(t *testing.T) {
 	commit(mockGit, mockExecutor, false, mockAI)
 
 	expectedCommands := []string{
-        "git add --all",
+		"git add --all",
 		"git commit --amend -m feat(#41): current commit message",
 	}
 	for i, expectedCommand := range expectedCommands {
