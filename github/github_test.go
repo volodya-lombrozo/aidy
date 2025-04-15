@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/volodya-lombrozo/aidy/cache"
 	"github.com/volodya-lombrozo/aidy/git"
 )
 
@@ -45,7 +46,7 @@ func TestRealGithub_IssueDescription(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "")
+	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockCache())
 
 	issueNumber := "123"
 	description := realGithub.IssueDescription(issueNumber)
@@ -86,7 +87,7 @@ func TestRealGithub_Labels(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "")
+	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockCache())
 
 	labels := realGithub.Labels()
 
