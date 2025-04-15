@@ -94,7 +94,12 @@ func tempCacheFile(t *testing.T) string {
 
 func TestEnsureIgnored_CreatesGitignoreWithEntry(t *testing.T) {
 	tmp := t.TempDir()
+	originalDir, direrr := os.Getwd()
+	if direrr != nil {
+		panic(direrr)
+	}
 	defer func() {
+		_ = os.Chdir(originalDir)
 		if err := os.RemoveAll(tmp); err != nil {
 			t.Fatalf("Failed to remove temp directory: %v", err)
 		}
@@ -112,7 +117,12 @@ func TestEnsureIgnored_CreatesGitignoreWithEntry(t *testing.T) {
 
 func TestEnsureIgnored_AppendsIfMissing(t *testing.T) {
 	tmp := t.TempDir()
+	originalDir, direrr := os.Getwd()
+	if direrr != nil {
+		panic(direrr)
+	}
 	defer func() {
+		_ = os.Chdir(originalDir)
 		if err := os.RemoveAll(tmp); err != nil {
 			t.Fatalf("Failed to remove temp directory: %v", err)
 		}
@@ -132,7 +142,12 @@ func TestEnsureIgnored_AppendsIfMissing(t *testing.T) {
 
 func TestEnsureIgnored_DoesNothingIfAlreadyPresent(t *testing.T) {
 	tmp := t.TempDir()
+	originalDir, direrr := os.Getwd()
+	if direrr != nil {
+		panic(direrr)
+	}
 	defer func() {
+		_ = os.Chdir(originalDir)
 		if err := os.RemoveAll(tmp); err != nil {
 			t.Fatalf("Failed to remove temp directory: %v", err)
 		}
