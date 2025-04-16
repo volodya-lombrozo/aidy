@@ -3,12 +3,14 @@ package github
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/volodya-lombrozo/aidy/cache"
-	"github.com/volodya-lombrozo/aidy/git"
 	"io"
 	"log"
 	"net/http"
 	"regexp"
+	"sort"
+
+	"github.com/volodya-lombrozo/aidy/cache"
+	"github.com/volodya-lombrozo/aidy/git"
 )
 
 type RealGithub struct {
@@ -146,5 +148,6 @@ func (r *RealGithub) Remotes() []string {
 	for repo := range unique {
 		repos = append(repos, repo)
 	}
+	sort.Strings(repos)
 	return repos
 }
