@@ -8,5 +8,5 @@ type Git interface {
 	GetCurrentCommitMessage() (string, error)
 	AppendToCommit() error
 	CommitChanges(messages ...string) error
-	GetAllRemoteURLs() ([]string, error)
+	Remotes() ([]string, error)
 }

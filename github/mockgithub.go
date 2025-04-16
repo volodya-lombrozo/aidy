@@ -9,3 +9,7 @@ func (m *MockGithub) IssueDescription(number string) string {
 func (m *MockGithub) Labels() []string {
 	return []string{"bug", "documentation", "question"}
 }
+
+func (m *MockGithub) Remotes() []string {
+	return []string{"volodya-lombrozo/aidy", "volodya-lombrozo/jtcop"}
+}

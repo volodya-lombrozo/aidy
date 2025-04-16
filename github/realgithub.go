@@ -3,11 +3,14 @@ package github
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/volodya-lombrozo/aidy/cache"
-	"github.com/volodya-lombrozo/aidy/git"
 	"io"
 	"log"
 	"net/http"
+	"regexp"
+	"sort"
+
+	"github.com/volodya-lombrozo/aidy/cache"
+	"github.com/volodya-lombrozo/aidy/git"
 )
 
 type RealGithub struct {
@@ -95,7 +98,7 @@ func (r *RealGithub) Labels() []string {
 		log.Printf("Trying to get repository labels using the following URL: %s\n", url)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-            log.Fatalf("Cannot create a new GET request to retrieve labels, because of '%v'", err)
+			log.Fatalf("Cannot create a new GET request to retrieve labels, because of '%v'", err)
 		}
 		req.Header.Set("Authorization", "Bearer "+r.authToken)
 		resp, err := r.client.Do(req)
@@ -126,4 +129,25 @@ func (r *RealGithub) Labels() []string {
 		res = append(res, label.Name)
 	}
 	return res
+}
+
+func (r *RealGithub) Remotes() []string {
+	lines, err := r.gitService.Remotes()
+	if err != nil {
+		log.Fatalf("Cannot retrive git remotes: %v", err)
+	}
+	re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/[^.]+)(?:\.git)?`)
+	unique := make(map[string]struct{})
+	for _, line := range lines {
+		matches := re.FindStringSubmatch(line)
+		if len(matches) == 2 {
+			unique[string(matches[1])] = struct{}{}
+		}
+	}
+	var repos []string
+	for repo := range unique {
+		repos = append(repos, repo)
+	}
+	sort.Strings(repos)
+	return repos
 }

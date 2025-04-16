@@ -2,6 +2,9 @@ package git
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMockGetBaseBranchName(t *testing.T) {
@@ -62,16 +65,12 @@ func TestMockGetCurrentDiff(t *testing.T) {
 
 func TestMockGetAllRemoteURLs(t *testing.T) {
 	git := MockGit{}
-	output, err := git.GetAllRemoteURLs()
-	if err != nil {
-		panic(err)
-	}
+
+	output, err := git.Remotes()
+
+	require.NoError(t, err)
 	first := "https://github.com/volodya-lombrozo/aidy.git"
 	second := "https://github.com/volodya-lombrozo/forked-aidy.git"
-	if output[0] != first {
-		t.Fatalf("Expected the diff '%s'", first)
-	}
-	if output[1] != second {
-		t.Fatalf("Expected the diff '%s'", second)
-	}
+	assert.Equal(t, first, output[0])
+	assert.Equal(t, second, output[1])
 }
