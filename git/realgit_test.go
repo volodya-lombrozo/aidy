@@ -1,47 +1,51 @@
 package git
 
 import (
-	"github.com/volodya-lombrozo/aidy/executor"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/volodya-lombrozo/aidy/executor"
 )
 
-func TestRealGit_GetAllRemoteURLs(t *testing.T) {
-	mockExecutor := &executor.MockExecutor{
+func TestRealGit_Remotes(t *testing.T) {
+	mock := &executor.MockExecutor{
 		Output: "origin\thttps://github.com/user/repo.git (fetch)\norigin\thttps://github.com/user/repo.git (push)\nupstream\thttps://github.com/another/repo.git (fetch)\nupstream\thttps://github.com/another/repo.git (push)\n",
 		Err:    nil,
 	}
+	service := NewRealGit(mock, "")
 
-	gitService := NewRealGit(mockExecutor, "")
+	urls, err := service.Remotes()
 
-	urls, err := gitService.GetAllRemoteURLs()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	expectedURLs := []string{
+	require.NoError(t, err)
+	expected := []string{
 		"https://github.com/user/repo.git",
 		"https://github.com/another/repo.git",
 	}
+	assert.Equal(t, urls, expected)
+}
 
-	if len(urls) != len(expectedURLs) {
-		t.Fatalf("Expected %d URLs, got %d", len(expectedURLs), len(urls))
+func TestRealGit_Remotes_Parametrised(t *testing.T) {
+	tests := []struct {
+		remotes  string
+		expected []string
+	}{
+		{"origin\thttps://github.com/u/r.git (fetch)", []string{"https://github.com/u/r.git"}},
+		{"remote\thttps://github.com/u/r.git (fetch)", []string{"https://github.com/u/r.git"}},
+		{"upstream\thttps://github.com/u/r.git (fetch)", []string{"https://github.com/u/r.git"}},
+		{"upstream\thttps://github.com/u/r.git (fetch)\norigin\thttps://github.com/u/r.git (fetch)", []string{"https://github.com/u/r.git"}},
 	}
-
-	for _, expectedURL := range expectedURLs {
-		found := false
-		for _, url := range urls {
-			if url == expectedURL {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected URL %s not found in result", expectedURL)
-		}
+	for _, tc := range tests {
+		t.Run(tc.remotes, func(t *testing.T) {
+			mock := &executor.MockExecutor{Output: tc.remotes, Err: nil}
+			result, err := NewRealGit(mock).Remotes()
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, result)
+		})
 	}
 }
 

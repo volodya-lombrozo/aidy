@@ -128,23 +128,25 @@ func (r *RealGit) GetCurrentCommitMessage() (string, error) {
 	return commitMessage, nil
 }
 
-func (r *RealGit) GetAllRemoteURLs() ([]string, error) {
+// This method returns a unique list of remote urls
+func (r *RealGit) Remotes() ([]string, error) {
 	out, err := r.shell.RunCommandInDir(r.dir, "git", "remote", "-v")
 	if err != nil {
 		return nil, err
 	}
 	lines := strings.Split(out, "\n")
-	urls := make(map[string]struct{})
+	seen := make(map[string]struct{})
+	var result []string
 	for _, line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) < 2 || !strings.Contains(line, "(fetch)") {
 			continue
 		}
-		urls[fields[1]] = struct{}{}
-	}
-	var result []string
-	for url := range urls {
-		result = append(result, url)
+		url := fields[1]
+		if _, exists := seen[url]; !exists {
+			seen[url] = struct{}{}
+			result = append(result, url)
+		}
 	}
 	return result, nil
 }

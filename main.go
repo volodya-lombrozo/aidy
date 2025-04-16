@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/volodya-lombrozo/aidy/ai"
@@ -27,58 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Can't open cache %v", err)
 	}
-	target, ok := ch.Get("target")
-	if ok {
-		fmt.Printf("Target repo is: %s\n", target)
-	} else {
-		fmt.Println("Can't find target")
-		out, seterr := shell.RunCommand("git", "remote", "-v")
-		if seterr != nil {
-			panic(seterr)
-		}
-		lines := strings.Split(out, "\n")
-		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/[^.]+)(?:\.git)?`)
-
-		unique := make(map[string]struct{})
-		for _, line := range lines {
-			matches := re.FindStringSubmatch(line)
-			if len(matches) == 2 {
-				unique[string(matches[1])] = struct{}{}
-			}
-		}
-
-		// Sort and print
-		var repos []string
-		for repo := range unique {
-			repos = append(repos, repo)
-		}
-		sort.Strings(repos)
-		if len(repos) == 1 {
-			seterr = ch.Set("target", repos[0])
-			if seterr != nil {
-				panic(seterr)
-			}
-		} else if len(repos) < 1 {
-			panic("I can't find remore repositories :(")
-		} else {
-			fmt.Println("Where are you going to send PRs and Issues: ")
-			for i, repo := range repos {
-				fmt.Printf("(%d): %s\n", i+1, repo)
-			}
-			var choice int
-			fmt.Print("Enter the number of the repository to use: ")
-			_, err := fmt.Scan(&choice)
-			if err != nil || choice < 1 || choice > len(repos) {
-				panic("Invalid choice")
-			}
-			selectedRepo := repos[choice-1]
-			seterr = ch.Set("target", selectedRepo)
-			if seterr != nil {
-				panic(seterr)
-			}
-		}
-	}
-
 	yamlConfig := readConfiguration()
 	githubKey, err := yamlConfig.GetGithubAPIKey()
 	if err != nil {
@@ -113,6 +60,37 @@ func main() {
 	}
 	gitService := git.NewRealGit(shell)
 	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey, ch)
+	target, ok := ch.Get("target")
+	if ok {
+		log.Printf("Target repo is: %s\n", target)
+	} else {
+		log.Println("Can't find target")
+		repos := gh.Remotes()
+		if len(repos) == 1 {
+			seterr := ch.Set("target", repos[0])
+			if seterr != nil {
+				panic(seterr)
+			}
+		} else if len(repos) < 1 {
+			log.Fatal("I can't find remore repositories :(")
+		} else {
+			fmt.Println("Where are you going to send PRs and Issues: ")
+			for i, repo := range repos {
+				fmt.Printf("(%d): %s\n", i+1, repo)
+			}
+			var choice int
+			fmt.Print("Enter the number of the repository to use: ")
+			_, err := fmt.Scan(&choice)
+			if err != nil || choice < 1 || choice > len(repos) {
+				panic("Invalid choice")
+			}
+			selectedRepo := repos[choice-1]
+			seterr := ch.Set("target", selectedRepo)
+			if seterr != nil {
+				panic(seterr)
+			}
+		}
+	}
 	switch command {
 	case "help":
 		help()

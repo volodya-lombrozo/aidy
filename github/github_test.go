@@ -96,3 +96,21 @@ func TestRealGithub_Labels(t *testing.T) {
 		assert.Equal(t, expected[i], label)
 	}
 }
+
+func TestRealGithub_Remotes(t *testing.T) {
+	gh := NewRealGithub("", &git.MockGit{}, "", cache.NewMockCache())
+
+	actual := gh.Remotes()
+
+	expected := []string{"volodya-lombrozo/aidy", "volodya-lombrozo/forked-aidy"}
+	assert.Equal(t, expected, actual)
+}
+
+func TestMockGithub_Remotes(t *testing.T) {
+	expected := []string{"volodya-lombrozo/aidy", "volodya-lombrozo/jtcop"}
+	gh := &MockGithub{}
+
+	acutal := gh.Remotes()
+
+	assert.Equal(t, expected, acutal)
+}
