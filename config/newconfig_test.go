@@ -90,6 +90,7 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, "true", modelDeepseek["use-streaming"])
 	assert.Equal(t, "experimental-mode", modelDeepseek["custom-option"])
 }
+
 func TestGetOpenAIAPIKey(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "configtest")
 	if err != nil {
