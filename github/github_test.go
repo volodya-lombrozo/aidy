@@ -46,7 +46,7 @@ func TestRealGithub_IssueDescription(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockCache())
+	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockAidyCache())
 
 	issueNumber := "123"
 	description := realGithub.IssueDescription(issueNumber)
@@ -87,7 +87,7 @@ func TestRealGithub_Labels(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockCache())
+	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockAidyCache())
 
 	labels := realGithub.Labels()
 
@@ -98,7 +98,7 @@ func TestRealGithub_Labels(t *testing.T) {
 }
 
 func TestRealGithub_Remotes(t *testing.T) {
-	gh := NewRealGithub("", &git.MockGit{}, "", cache.NewMockCache())
+	gh := NewRealGithub("", &git.MockGit{}, "", cache.NewMockAidyCache())
 
 	actual := gh.Remotes()
 

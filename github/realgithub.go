@@ -18,7 +18,7 @@ type RealGithub struct {
 	baseURL    string
 	gitService git.Git
 	authToken  string
-	ch         cache.Cache
+	ch         cache.AidyCache
 }
 
 type issue struct {
@@ -35,7 +35,7 @@ type label struct {
 	Description string `json:"description"`
 }
 
-func NewRealGithub(baseURL string, gitService git.Git, authToken string, ch cache.Cache) *RealGithub {
+func NewRealGithub(baseURL string, gitService git.Git, authToken string, ch cache.AidyCache) *RealGithub {
 	return &RealGithub{
 		client:     &http.Client{},
 		baseURL:    baseURL,
@@ -50,8 +50,8 @@ func (r *RealGithub) IssueDescription(number string) string {
 		panic("Git service isn't set")
 	}
 	var task issue
-	target, ok := r.ch.Get("target")
-	if ok {
+	target := r.ch.Remote()
+	if target != "" {
 		url := fmt.Sprintf("%s/repos/%s/issues/%s", r.baseURL, target, number)
 		log.Printf("Trying to get an issue description using the following URL: %s\n", url)
 		req, err := http.NewRequest("GET", url, nil)
@@ -91,8 +91,8 @@ func (r *RealGithub) Labels() []string {
 		panic("Git service isn't set")
 	}
 	var labels []label
-	target, ok := r.ch.Get("target")
-	if ok {
+	target := r.ch.Remote()
+	if target != "" {
 		log.Printf("Choosing labels from '%s'\n", target)
 		url := fmt.Sprintf("%s/repos/%s/labels", r.baseURL, target)
 		log.Printf("Trying to get repository labels using the following URL: %s\n", url)
