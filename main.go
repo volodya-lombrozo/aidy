@@ -95,7 +95,7 @@ func main() {
 	case "help":
 		help()
 	case "pr", "pull-request":
-		pull_request(gitService, aiService, gh)
+		pull_request(gitService, aiService, gh, ch)
 	case "h", "heal":
 		heal(gitService, shell)
 	case "ci", "commit":
@@ -110,7 +110,7 @@ func main() {
 			log.Fatalf("Error: No input provided for issue generation.")
 		}
 		userInput := os.Args[2]
-		issue(userInput, aiService, gh)
+		issue(userInput, aiService, gh, ch)
 	case "conf", "config":
 		printConfig(yamlConfig)
 	default:
@@ -181,7 +181,7 @@ func help() {
 // This method implements the 'issue' command.
 // It creates a `gh` issue command.
 // For example `gh issue create --title "Issue title" --body "Issue body"`
-func issue(userInput string, aiService ai.AI, gh github.Github) {
+func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.Cache) {
 	title, err := aiService.GenerateIssueTitle(userInput)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
@@ -195,11 +195,20 @@ func issue(userInput string, aiService ai.AI, gh github.Github) {
 	if err != nil {
 		log.Fatalf("Error generating labels: %v", err)
 	}
-	if len(suitable) > 0 {
-		fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", healQoutes(title), healQoutes(body), strings.Join(suitable, ","))))
+	remote, ok := ch.Get("target")
+	var repo string
+	if ok && remote != "" {
+		repo = " --repo=" + remote
 	} else {
-		fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQoutes(title), healQoutes(body))))
+		repo = ""
 	}
+	var cmd string
+	if len(suitable) > 0 {
+		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", healQoutes(title), healQoutes(body), strings.Join(suitable, ","))))
+	} else {
+		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQoutes(title), healQoutes(body))))
+	}
+	fmt.Printf("%s%s\n", cmd, repo)
 }
 
 func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
@@ -245,7 +254,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 	heal(gitService, shell)
 }
 
-func pull_request(gitService git.Git, aiService ai.AI, gh github.Github) {
+func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cache.Cache) {
 	branchName, err := gitService.GetBranchName()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
@@ -263,7 +272,14 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github) {
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
-	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"", healQoutes(title), healQoutes(body))))
+	remote, ok := ch.Get("target")
+	var repo string
+	if ok && remote != "" {
+		repo = " --repo=" + remote
+	} else {
+		repo = ""
+	}
+	fmt.Printf("\n%s%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"", healQoutes(title), healQoutes(body))), repo)
 }
 
 func heal(gitService git.Git, shell executor.Executor) {

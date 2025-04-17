@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/volodya-lombrozo/aidy/ai"
+	"github.com/volodya-lombrozo/aidy/cache"
 	"github.com/volodya-lombrozo/aidy/executor"
 	"github.com/volodya-lombrozo/aidy/git"
 	"github.com/volodya-lombrozo/aidy/github"
@@ -65,7 +66,7 @@ func TestPullRequest(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	pull_request(mockGit, mockAI, mockGithub)
+	pull_request(mockGit, mockAI, mockGithub, cache.NewGitMockCache())
 
 	if err := w.Close(); err != nil {
 		t.Fatalf("Error closing pipe writer: %v", err)
@@ -119,7 +120,7 @@ func TestHandleIssue(t *testing.T) {
 	old := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	issue(userInput, mockAI, gh)
+	issue(userInput, mockAI, gh, cache.NewGitMockCache())
 	if err := w.Close(); err != nil {
 		t.Fatalf("Error closing pipe writer: %v", err)
 	}
