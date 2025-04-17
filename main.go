@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -108,6 +109,8 @@ func main() {
 		issue(userInput, aiService, gh, ch)
 	case "conf", "config":
 		printConfig(yamlConfig)
+	case "clean":
+		cleanCache()
 	default:
 		log.Fatalf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
 	}
@@ -317,4 +320,16 @@ func extractIssueNumber(branchName string) string {
 
 func escapeBackticks(input string) string {
 	return strings.ReplaceAll(input, "`", "\\`")
+}
+
+func cleanCache() {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Can't understand what is the current directory, '%v'", err)
+	}
+	cache := filepath.Join(dir, ".aidy")
+	err = os.RemoveAll(cache)
+	if err != nil {
+		log.Fatalf("Can't clear '.aidy' directory, '%v'", err)
+	}
 }
