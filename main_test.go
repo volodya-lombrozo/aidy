@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/volodya-lombrozo/aidy/ai"
 	"github.com/volodya-lombrozo/aidy/cache"
 	"github.com/volodya-lombrozo/aidy/executor"
@@ -66,7 +67,7 @@ func TestPullRequest(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	pull_request(mockGit, mockAI, mockGithub, cache.NewGitMockCache())
+	pull_request(mockGit, mockAI, mockGithub, cache.NewMockAidyCache())
 
 	if err := w.Close(); err != nil {
 		t.Fatalf("Error closing pipe writer: %v", err)
@@ -79,10 +80,8 @@ func TestPullRequest(t *testing.T) {
 	}
 	output := buf.String()
 
-	expected := "\ngh pr create --title \"Mock Title for 41_working_branch\" --body \"Mock Body for 41_working_branch\""
-	if strings.TrimSpace(output) != strings.TrimSpace(expected) {
-		t.Errorf("Unexpected output:\n%s", output)
-	}
+	expected := "\ngh pr create --title \"Mock Title for 41_working_branch\" --body \"Mock Body for 41_working_branch\" --repo=mock/remote"
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }
 
 func TestHealQoutes(t *testing.T) {
@@ -120,20 +119,16 @@ func TestHandleIssue(t *testing.T) {
 	old := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	issue(userInput, mockAI, gh, cache.NewGitMockCache())
-	if err := w.Close(); err != nil {
-		t.Fatalf("Error closing pipe writer: %v", err)
-	}
+	issue(userInput, mockAI, gh, cache.NewMockAidyCache())
+	err := w.Close()
+	require.NoError(t, err)
 	os.Stdout = old
 	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, r); err != nil {
-		t.Fatalf("Error copying data: %v", err)
-	}
+	_, err = io.Copy(&buf, r)
+	require.NoError(t, err)
 	output := buf.String()
-	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\""
-	if strings.TrimSpace(output) != strings.TrimSpace(expected) {
-		t.Errorf("Unexpected output:\n%s", output)
-	}
+	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo=mock/remote"
+	assert.Equal(t, strings.TrimSpace(output), strings.TrimSpace(expected))
 }
 
 func TestHandleHelp(t *testing.T) {

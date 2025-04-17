@@ -22,10 +22,11 @@ func main() {
 	command := os.Args[1]
 	shell := &executor.RealExecutor{}
 
-	ch, err := cache.NewGitCache(".aidy/cache.js")
+	gitcache, err := cache.NewGitCache(".aidy/cache.js")
 	if err != nil {
 		log.Fatalf("Can't open cache %v", err)
 	}
+	ch := cache.NewAidyCache(gitcache)
 	yamlConfig := readConfiguration()
 	githubKey, err := yamlConfig.GetGithubAPIKey()
 	if err != nil {
@@ -60,17 +61,14 @@ func main() {
 	}
 	gitService := git.NewRealGit(shell)
 	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey, ch)
-	target, ok := ch.Get("target")
-	if ok {
+	target := ch.Remote()
+	if target != "" {
 		log.Printf("Target repo is: %s\n", target)
 	} else {
 		log.Println("Can't find target")
 		repos := gh.Remotes()
 		if len(repos) == 1 {
-			seterr := ch.Set("target", repos[0])
-			if seterr != nil {
-				panic(seterr)
-			}
+			ch.WithRemote(repos[0])
 		} else if len(repos) < 1 {
 			log.Fatal("I can't find remore repositories :(")
 		} else {
@@ -85,10 +83,7 @@ func main() {
 				panic("Invalid choice")
 			}
 			selectedRepo := repos[choice-1]
-			seterr := ch.Set("target", selectedRepo)
-			if seterr != nil {
-				panic(seterr)
-			}
+			ch.WithRemote(selectedRepo)
 		}
 	}
 	switch command {
@@ -181,7 +176,7 @@ func help() {
 // This method implements the 'issue' command.
 // It creates a `gh` issue command.
 // For example `gh issue create --title "Issue title" --body "Issue body"`
-func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.Cache) {
+func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCache) {
 	title, err := aiService.GenerateIssueTitle(userInput)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
@@ -195,9 +190,9 @@ func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.Cache) 
 	if err != nil {
 		log.Fatalf("Error generating labels: %v", err)
 	}
-	remote, ok := ch.Get("target")
+	remote := ch.Remote()
 	var repo string
-	if ok && remote != "" {
+	if remote != "" {
 		repo = " --repo=" + remote
 	} else {
 		repo = ""
@@ -254,7 +249,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 	heal(gitService, shell)
 }
 
-func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cache.Cache) {
+func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cache.AidyCache) {
 	branchName, err := gitService.GetBranchName()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
@@ -272,9 +267,9 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
-	remote, ok := ch.Get("target")
+	remote := ch.Remote()
 	var repo string
-	if ok && remote != "" {
+	if remote != "" {
 		repo = " --repo=" + remote
 	} else {
 		repo = ""
