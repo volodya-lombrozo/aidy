@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/volodya-lombrozo/aidy/executor"
 	"github.com/volodya-lombrozo/aidy/git"
 	"github.com/volodya-lombrozo/aidy/github"
+	"os"
+	"path/filepath"
 )
 
 func TestHeal(t *testing.T) {
@@ -33,6 +34,26 @@ func TestHeal(t *testing.T) {
 			t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
 		}
 	}
+}
+
+func TestCleanCache(t *testing.T) {
+	tempDir := t.TempDir()
+	aidyDir := filepath.Join(tempDir, ".aidy")
+	err := os.Mkdir(aidyDir, 0755)
+	require.NoError(t, err, "Failed to create .aidy directory")
+
+	originalDir, err := os.Getwd()
+	require.NoError(t, err, "Failed to get current working directory")
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+	err = os.Chdir(tempDir)
+	require.NoError(t, err, "Failed to change working directory")
+
+	cleanCache()
+
+	_, err = os.Stat(aidyDir)
+	assert.True(t, os.IsNotExist(err), ".aidy directory should be removed")
 }
 
 func TestSquash(t *testing.T) {
