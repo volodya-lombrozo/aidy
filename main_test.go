@@ -106,10 +106,14 @@ func TestPullRequest(t *testing.T) {
 }
 
 func TestHealQoutes(t *testing.T) {
-	message := healQoutes("\"with \" qoutes\"")
+	message := healQuotes("\"with \" qoutes\"")
 	assert.Equal(t, "with \" qoutes", message)
-	message = healQoutes("'with ' qoutes'")
+
+	message = healQuotes("'with ' qoutes'")
 	assert.Equal(t, "with ' qoutes", message)
+
+	message = healQuotes("`with ` qoutes`")
+	assert.Equal(t, "with ` qoutes", message)
 }
 
 func TestCommit(t *testing.T) {
