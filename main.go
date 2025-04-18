@@ -262,7 +262,7 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 		log.Fatalf("Error getting git diff: %v", err)
 	}
 	nissue := extractIssueNumber(branchName)
-	issue := gh.IssueDescription(nissue)
+	issue := gh.Description(nissue)
 	title, err := aiService.GenerateTitle(branchName, diff, issue)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
