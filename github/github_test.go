@@ -21,7 +21,7 @@ func TestMockGithub_IssueDescription(t *testing.T) {
 	issueNumber := "123"
 	expectedDescription := "Mock description for issue #" + issueNumber
 
-	description := mockGithub.IssueDescription(issueNumber)
+	description := mockGithub.Description(issueNumber)
 	if description != expectedDescription {
 		t.Errorf("expected %s, got %s", expectedDescription, description)
 	}
@@ -36,7 +36,7 @@ func TestMockGithub_Labels(t *testing.T) {
 	}
 }
 
-func TestRealGithub_IssueDescription(t *testing.T) {
+func TestRealGithub_Description(t *testing.T) {
 	// Create a test server to mock GitHub API
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -49,7 +49,7 @@ func TestRealGithub_IssueDescription(t *testing.T) {
 	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockAidyCache())
 
 	issueNumber := "123"
-	description := realGithub.IssueDescription(issueNumber)
+	description := realGithub.Description(issueNumber)
 	expectedDescription := fmt.Sprintf("Title: '%s'\nBody: '%s'", "Title", "Body")
 
 	if description != expectedDescription {

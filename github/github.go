@@ -1,7 +1,7 @@
 package github
 
 type Github interface {
-	IssueDescription(number string) string
+	Description(number string) string
 	Labels() []string
 	Remotes() []string
 }
