@@ -101,7 +101,7 @@ func TestPullRequest(t *testing.T) {
 	}
 	output := buf.String()
 
-	expected := "\ngh pr create --title \"Mock Title for 41_working_branch\" --body \"Mock Body for 41_working_branch\" --repo=mock/remote"
+	expected := "\ngh pr create --title \"Mock Title for 41_working_branch\" --body \"Mock Body for 41_working_branch\" --repo mock/remote"
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }
 
@@ -148,7 +148,7 @@ func TestHandleIssue(t *testing.T) {
 	_, err = io.Copy(&buf, r)
 	require.NoError(t, err)
 	output := buf.String()
-	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo=mock/remote"
+	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo mock/remote"
 	assert.Equal(t, strings.TrimSpace(output), strings.TrimSpace(expected))
 }
 
@@ -201,5 +201,43 @@ func TestEscapeBackticks(t *testing.T) {
 
 	if result != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, result)
+	}
+}
+
+func TestHealPRTitle(t *testing.T) {
+	tests := []struct {
+		actual   string
+		expected string
+	}{
+		{"feat(#75): Add clean command to clear cache", "feat(#42): Add clean command to clear cache"},
+		{"feat(#master): Add clean command to clear cache", "feat(#master): Add clean command to clear cache"},
+		{"feat(#7523): Add clean command to clear cache", "feat(#42): Add clean command to clear cache"},
+		{"fix(#7523): Add clean command to clear cache", "fix(#42): Add clean command to clear cache"},
+		{"test(#7523): Add clean command to clear cache", "test(#42): Add clean command to clear cache"},
+	}
+	for _, test := range tests {
+		result := healPRTitle(test.actual, "42")
+		assert.Equal(t, test.expected, result)
+	}
+}
+
+func TestHealPRBody(t *testing.T) {
+	tests := []struct {
+		actual   string
+		expected string
+	}{
+		{"Add clean command to clear cache\nCloses: #75", "Add clean command to clear cache\nCloses #42"},
+		{"add clean command to clear cache\ncloses: #75", "add clean command to clear cache\ncloses #42"},
+		{"add clean command to clear cache\ncloses #75", "add clean command to clear cache\ncloses #42"},
+		{"Add clean command to clear cache", "Add clean command to clear cache"},
+		{"Add clean command to clear cache\nCloses: #master", "Add clean command to clear cache\nCloses: #master"},
+		{"Add clean command to clear cache\nRelated to #7523", "Add clean command to clear cache\nRelated to #42"},
+		{"add clean command to clear cache\nrelated to #7523", "add clean command to clear cache\nrelated to #42"},
+		{"add clean command to clear cache\nrelated to: #7523", "add clean command to clear cache\nrelated to #42"},
+		{"add clean command to clear cache\ntest #7523", "add clean command to clear cache\ntest #7523"},
+	}
+	for _, test := range tests {
+		result := healPRBody(test.actual, "42")
+		assert.Equal(t, test.expected, result)
 	}
 }

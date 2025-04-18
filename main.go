@@ -196,7 +196,7 @@ func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCac
 	remote := ch.Remote()
 	var repo string
 	if remote != "" {
-		repo = " --repo=" + remote
+		repo = " --repo " + remote
 	} else {
 		repo = ""
 	}
@@ -261,7 +261,8 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	if err != nil {
 		log.Fatalf("Error getting git diff: %v", err)
 	}
-	issue := gh.IssueDescription(extractIssueNumber(branchName))
+    nissue := extractIssueNumber(branchName)
+	issue := gh.IssueDescription(nissue)
 	title, err := aiService.GenerateTitle(branchName, diff, issue)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
@@ -273,11 +274,13 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	remote := ch.Remote()
 	var repo string
 	if remote != "" {
-		repo = " --repo=" + remote
+		repo = " --repo " + remote
 	} else {
 		repo = ""
 	}
-	fmt.Printf("\n%s%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"", healQoutes(title), healQoutes(body))), repo)
+	prtitle := healPRTitle(healQoutes(title), nissue)
+	prbody := healPRBody(healQoutes(body), nissue)
+	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo)))
 }
 
 func heal(gitService git.Git, shell executor.Executor) {
@@ -300,6 +303,32 @@ func heal(gitService git.Git, shell executor.Executor) {
 
 func healQoutes(text string) string {
 	return strings.Trim(text, `"'`)
+}
+
+func healPRBody(body string, issue string) string {
+	re := regexp.MustCompile(`(Closes|closes|related to|Related to)\s?:?\s?#(\d+)`)
+	replaced := re.ReplaceAllStringFunc(body, func(m string) string {
+		groups := re.FindStringSubmatch(m)
+		if len(groups) == 3 {
+			verb := groups[1]
+			return fmt.Sprintf("%s #%s", verb, issue)
+		}
+		return m
+	})
+	return replaced
+}
+
+func healPRTitle(text string, issue string) string {
+	re := regexp.MustCompile(`(fix|feat|build|chore|ci|docs|style|refactor|perf|test)\(#(\d+)\)`)
+	replaced := re.ReplaceAllStringFunc(text, func(m string) string {
+		groups := re.FindStringSubmatch(m)
+		if len(groups) == 3 {
+			commitType := groups[1]
+			return fmt.Sprintf("%s(#%s)", commitType, issue)
+		}
+		return m
+	})
+	return replaced
 }
 
 func appendToCommit(gitService git.Git) {
