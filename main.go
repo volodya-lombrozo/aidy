@@ -202,9 +202,9 @@ func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCac
 	}
 	var cmd string
 	if len(suitable) > 0 {
-		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", healQoutes(title), healQoutes(body), strings.Join(suitable, ","))))
+		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", healQuotes(title), healQuotes(body), strings.Join(suitable, ","))))
 	} else {
-		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQoutes(title), healQoutes(body))))
+		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQuotes(title), healQuotes(body))))
 	}
 	fmt.Printf("%s%s\n", cmd, repo)
 }
@@ -261,7 +261,7 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	if err != nil {
 		log.Fatalf("Error getting git diff: %v", err)
 	}
-    nissue := extractIssueNumber(branchName)
+	nissue := extractIssueNumber(branchName)
 	issue := gh.IssueDescription(nissue)
 	title, err := aiService.GenerateTitle(branchName, diff, issue)
 	if err != nil {
@@ -278,8 +278,8 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	} else {
 		repo = ""
 	}
-	prtitle := healPRTitle(healQoutes(title), nissue)
-	prbody := healPRBody(healQoutes(body), nissue)
+	prtitle := healPRTitle(healQuotes(title), nissue)
+	prbody := healPRBody(healQuotes(body), nissue)
 	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo)))
 }
 
@@ -301,8 +301,8 @@ func heal(gitService git.Git, shell executor.Executor) {
 	}
 }
 
-func healQoutes(text string) string {
-	return strings.Trim(text, `"'`)
+func healQuotes(text string) string {
+	return strings.Trim(text, "\"'`")
 }
 
 func healPRBody(body string, issue string) string {
