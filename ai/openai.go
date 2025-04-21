@@ -72,7 +72,7 @@ func (o *MyOpenAI) generateText(prompt string) (string, error) {
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "system",
-				Content: prompt,
+				Content: TrimPrompt(prompt),
 			},
 		},
 		Temperature: o.temperature,
