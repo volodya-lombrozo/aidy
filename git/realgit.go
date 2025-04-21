@@ -2,9 +2,11 @@ package git
 
 import (
 	"fmt"
-	"github.com/volodya-lombrozo/aidy/executor"
+	"log"
 	"os"
 	"strings"
+
+	"github.com/volodya-lombrozo/aidy/executor"
 )
 
 type RealGit struct {
@@ -101,7 +103,15 @@ func (r *RealGit) GetDiff() (string, error) {
 		return "", err
 	} else {
 		diff := out
-		return diff, nil
+		names, err := r.shell.RunCommandInDir(r.dir, "git", "diff", baseBranch, "--cached", "--name-status")
+		if err != nil {
+			log.Fatalf("Can't run get a files status diff: '%v'", err)
+		}
+		stat, err := r.shell.RunCommandInDir(r.dir, "git", "diff", baseBranch, "--cached", "--stat")
+		if err != nil {
+			log.Fatalf("Can't run get a stat diff: '%v'", err)
+		}
+		return NewSummary(diff, stat, names).Render(), nil
 	}
 }
 
@@ -115,7 +125,7 @@ func (r *RealGit) GetCurrentDiff() (string, error) {
 		return "", stErr
 	}
 	diff := unstaged + "\n" + staged
-	return diff, nil
+	return firstNLines(firstNChars(diff, 120*400), 400), nil
 }
 
 func (r *RealGit) GetCurrentCommitMessage() (string, error) {
