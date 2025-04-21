@@ -111,8 +111,19 @@ func main() {
 		printConfig(yamlConfig)
 	case "clean":
 		cleanCache()
+	case "diff":
+		printDiff(gitService)
 	default:
 		log.Fatalf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
+	}
+}
+
+func printDiff(gs git.Git) {
+	diff, err := gs.GetDiff()
+	if err != nil {
+		log.Fatalf("Failed to get diff: '%v'", err)
+	} else {
+		fmt.Printf("Diff with the base branch:\n%s\n", diff)
 	}
 }
 
