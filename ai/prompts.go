@@ -23,7 +23,13 @@ Carefully review both the diff and the issue description. Then, generate a PR ti
 - Always include the issue number #%s in the title.
 - Use the imperative mood (e.g., "add feature", not "added feature" or "adding feature").
 - Keep the title within 72 characters.
-- Do not include explanations, comments, or line breaks. Return only the title line.`
+- Do not include explanations, comments, or line breaks. Return only the title line.
+
+Also, this is the project summary for which you need to create the PR title:
+<summary>
+%s
+</summary>
+`
 
 	GenerateBodyPrompt = `You are an expert software engineer who writes clear and professional pull request descriptions on GitHub.
 
@@ -54,7 +60,13 @@ The description must:
 Formatting rules:
 - Do not add section headers.
 - Do not include line breaks except before the "Closes" line.
-- Reply only with the pull request body — no additional text or explanations.`
+- Reply only with the pull request body — no additional text or explanations.
+
+Also, this is the project summary for which you need to create the PR body:
+<summary>
+%s
+</summary>
+`
 
 	GenerateCommitPrompt = `You are an expert software engineer who writes concise, one-line Git commit messages based on code diffs.
 
@@ -94,7 +106,13 @@ The title should:
 - Use backticks for code identifiers or technical terms, where appropriate
 - Not exceed 72 characters
 
-Reply only with the issue title — no explanations, comments, or line breaks.`
+Reply only with the issue title — no explanations, comments, or line breaks.
+
+Also, this is the project summary for which you need to create the issue title:
+<summary>
+%s
+</summary>
+`
 
 	GenerateIssueBodyPrompt = `You are an expert software engineer who writes clear and informative descriptions for GitHub issues.
 
@@ -112,7 +130,14 @@ The description should:
 - Be grammatically correct
 - Use backticks for code or technical terms where appropriate
 
-Reply only with the issue body — no explanations, comments, or extra formatting.`
+Reply only with the issue body — no explanations, comments, or extra formatting.
+
+Also, this is the project summary for which you need to create the issue body:
+<summary>
+%s
+</summary>
+
+`
 
 	GenerateLabelsPrompt = `You are an expert software engineer who understands how to assign appropriate labels to GitHub issues.
 
@@ -129,4 +154,14 @@ Available labels:
 </labels>
 
 Reply only with the list of selected labels — no explanations, comments, or additional formatting.`
+
+    SummaryPrompt = `Read the following README.md of a software project and generate a short, single-paragraph summary suitable for AI agents.
+Focus on key features, purpose, technologies used, and any setup or usage highlights. 
+The summary must be concise, comprehensive, and free of any additional commentary or explanation — just the raw summary text.
+
+<readme>
+%s
+</readme>
+
+Reply only with the issue body — no explanations, comments, or extra formatting.`
 )

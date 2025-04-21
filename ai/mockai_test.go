@@ -10,7 +10,7 @@ func TestMockGenerateCommitMessage(t *testing.T) {
 	diff := "some changes"
 	branchName := "100"
 	expected := "Mock Commit Message for " + diff + " and branch " + branchName
-	msg, err := mockAI.GenerateCommitMessage(branchName, diff)
+	msg, err := mockAI.CommitMessage(branchName, diff)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -22,7 +22,7 @@ func TestMockGenerateCommitMessage(t *testing.T) {
 func TestMockGenerateLabels(t *testing.T) {
 	mockAI := &MockAI{}
 	labels := []string{"bug", "feature"}
-	actual, err := mockAI.GenerateIssueLabels("issue", labels)
+	actual, err := mockAI.IssueLabels("issue", labels)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -34,7 +34,7 @@ func TestMockGenerateTitle(t *testing.T) {
 	branchName := "feature-branch"
 	expected := "'Mock Title for " + branchName + "'"
 
-	title, err := mockAI.GenerateTitle(branchName, "diff", "issue")
+	title, err := mockAI.PrTitle(branchName, "diff", "issue", "summary")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -48,7 +48,7 @@ func TestMockGenerateIssueTitle(t *testing.T) {
 	userInput := "issue input"
 	expected := "'Mock Issue Title for " + userInput + "'"
 
-	title, err := mockAI.GenerateIssueTitle(userInput)
+	title, err := mockAI.IssueTitle(userInput, "summary")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -62,7 +62,7 @@ func TestMockGenerateIssueBody(t *testing.T) {
 	userInput := "issue input"
 	expected := "Mock Issue Body for " + userInput
 
-	body, err := mockAI.GenerateIssueBody(userInput)
+	body, err := mockAI.IssueBody(userInput, "summary")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -76,7 +76,7 @@ func TestMockGenerateBody(t *testing.T) {
 	branchName := "feature-branch"
 	expected := "Mock Body for " + branchName
 
-	body, err := mockAI.GenerateBody(branchName, "diff", "issue")
+	body, err := mockAI.PrBody(branchName, "diff", "issue", "summary")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

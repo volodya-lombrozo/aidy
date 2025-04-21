@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+    "hash/fnv"
 
 	"github.com/volodya-lombrozo/aidy/ai"
 	"github.com/volodya-lombrozo/aidy/cache"
@@ -87,6 +88,7 @@ func main() {
 			ch.WithRemote(selectedRepo)
 		}
 	}
+    initSummary(aiService, ch)
 	switch command {
 	case "help":
 		help()
@@ -191,16 +193,17 @@ func help() {
 // It creates a `gh` issue command.
 // For example `gh issue create --title "Issue title" --body "Issue body"`
 func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCache) {
-	title, err := aiService.GenerateIssueTitle(userInput)
+    summary, _ := ch.Summary()
+	title, err := aiService.IssueTitle(userInput, summary)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
 	}
-	body, err := aiService.GenerateIssueBody(userInput)
+	body, err := aiService.IssueBody(userInput, summary)
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
 	labels := gh.Labels()
-	suitable, err := aiService.GenerateIssueLabels(body, labels)
+	suitable, err := aiService.IssueLabels(body, labels)
 	if err != nil {
 		log.Fatalf("Error generating labels: %v", err)
 	}
@@ -252,7 +255,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		if diffErr != nil {
 			log.Fatalf("Error getting diff: %v", err)
 		}
-		msg, cerr := aiService.GenerateCommitMessage(branchName, diff)
+		msg, cerr := aiService.CommitMessage(branchName, diff)
 		if cerr != nil {
 			log.Fatalf("Error generating commit message: %v", cerr)
 		}
@@ -272,13 +275,14 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	if err != nil {
 		log.Fatalf("Error getting git diff: %v", err)
 	}
+    summary, _ := ch.Summary()
 	nissue := extractIssueNumber(branchName)
 	issue := gh.Description(nissue)
-	title, err := aiService.GenerateTitle(branchName, diff, issue)
+	title, err := aiService.PrTitle(branchName, diff, issue, summary)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
 	}
-	body, err := aiService.GenerateBody(branchName, diff, issue)
+	body, err := aiService.PrBody(branchName, diff, issue, summary)
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
@@ -372,4 +376,29 @@ func cleanCache() {
 	if err != nil {
 		log.Fatalf("Can't clear '.aidy' directory, '%v'", err)
 	}
+}
+
+func initSummary(aiService ai.AI, ch cache.AidyCache) {
+    log.Println("Undertstanding the project summary") 
+    content, err  := os.ReadFile("README.md") 
+    if err != nil {
+        log.Printf("Can't retrieve content of README.md, because of '%v'", err)
+        return
+    }
+    readme := string(content) 
+    hash := fnv.New64a()
+    hash.Write([]byte(readme))
+    shash := fmt.Sprintf("%x", hash.Sum64())
+    _, chash  := ch.Summary()
+    if shash != chash {
+        summary, err  := aiService.Summary(readme)
+        if err != nil {
+            log.Printf("Can't generate summary for README.md, because of '%v'", err)
+            return
+        }
+        ch.WithSummary(summary, shash)
+        log.Printf("Project '%s' summary was successfully saved\n", shash) 
+    } else {
+        log.Printf("No need to update the project summary '%s'\n", shash) 
+    }
 }

@@ -44,29 +44,29 @@ func NewDeepSeekAI(apiKey string) *DeepSeekAI {
 	}
 }
 
-func (d *DeepSeekAI) GenerateTitle(branchName string, diff string, issue string) (string, error) {
+func (d *DeepSeekAI) PrTitle(branchName string, diff string, issue string, summary string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber)
+	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber, summary)
 	return d.sendPrompt("You are a helpful assistant generating Git commit titles.", prompt)
 }
 
-func (d *DeepSeekAI) GenerateBody(branchName string, diff string, issue string) (string, error) {
+func (d *DeepSeekAI) PrBody(branchName string, diff string, issue string, summary string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, issueNumber)
+	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, issueNumber, summary)
 	return d.sendPrompt("You are a helpful assistant generating Git commit messages.", prompt)
 }
 
-func (d *DeepSeekAI) GenerateIssueTitle(userInput string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput)
+func (d *DeepSeekAI) IssueTitle(userInput string, summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput, summary)
 	return d.sendPrompt("You are a helpful assistant creating GitHub issue titles.", prompt)
 }
 
-func (d *DeepSeekAI) GenerateIssueBody(userInput string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput)
+func (d *DeepSeekAI) IssueBody(userInput string, summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput, summary)
 	return d.sendPrompt("You are a helpful assistant writing GitHub issue descriptions.", prompt)
 }
 
-func (d *DeepSeekAI) GenerateIssueLabels(issue string, available []string) ([]string, error) {
+func (d *DeepSeekAI) IssueLabels(issue string, available []string) ([]string, error) {
 	alllabels := strings.Join(available, ", ")
 	prompt := fmt.Sprintf(GenerateLabelsPrompt, issue, alllabels)
 	resp, err := d.sendPrompt("You are a helpful assistant assigning GitHub issue labels.", prompt)
@@ -82,10 +82,15 @@ func (d *DeepSeekAI) GenerateIssueLabels(issue string, available []string) ([]st
 	return res, nil
 }
 
-func (d *DeepSeekAI) GenerateCommitMessage(branchName string, diff string) (string, error) {
+func (d *DeepSeekAI) CommitMessage(branchName string, diff string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
 	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, issueNumber, issueNumber)
 	return d.sendPrompt("You are a helpful assistant writing commit messages.", prompt)
+}
+
+func (d *DeepSeekAI) Summary(readme string) (string, error) {
+	prompt := fmt.Sprintf(SummaryPrompt, readme)
+	return d.sendPrompt("You are a helpful assistant writing project summaries.", prompt)
 }
 
 func (d *DeepSeekAI) sendPrompt(systemPrompt string, userPrompt string) (string, error) {
