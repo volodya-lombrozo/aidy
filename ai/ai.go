@@ -8,3 +8,12 @@ type AI interface {
 	GenerateIssueLabels(issue string, available []string) ([]string, error)
 	GenerateCommitMessage(branchName string, diff string) (string, error)
 }
+
+func TrimPrompt(prompt string) string {
+    limit := 120 * 400
+	runes := []rune(prompt)
+	if len(runes) > limit {
+		return string(runes[:limit])
+	}
+	return prompt
+}

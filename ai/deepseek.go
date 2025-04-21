@@ -93,7 +93,7 @@ func (d *DeepSeekAI) sendPrompt(systemPrompt string, userPrompt string) (string,
 		Model: d.Model,
 		Messages: []chatMessage{
 			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
+			{Role: "user", Content: TrimPrompt(userPrompt)},
 		},
 		Stream: false,
 	}
