@@ -52,20 +52,28 @@ func TestAidyCache_Summary(t *testing.T) {
 
 	err := mc.Set("summary", "Project Summary")
 	require.NoError(t, err)
-	summary := ac.Summary()
-	assert.Equal(t, "Project Summary", summary, "expected summary to be 'Project Summary'")
+	err = mc.Set("summary-hash", "Project Summary Hash")
+	require.NoError(t, err)
+	summary, hash := ac.Summary()
+    assert.Equal(t, "Project Summary", summary, "expected summary to be 'Project Summary'")
+	assert.Equal(t, "Project Summary Hash", hash, "expected summary hash to be 'Project Summary Hash'")
 
 	err = mc.Set("summary", "")
 	require.NoError(t, err)
-	summary = ac.Summary()
+	err = mc.Set("summary-hash", "")
+	require.NoError(t, err)
+	summary, hash = ac.Summary()
 	assert.Equal(t, "", summary, "expected summary to be ''")
+	assert.Equal(t, "", hash, "expected summary to be ''")
 }
 
 func TestAidyCache_WithSummary(t *testing.T) {
 	mc := &mapCache{store: make(map[string]string)}
 	ac := NewAidyCache(mc)
 
-	ac.WithSummary("Project Summary")
+	ac.WithSummary("Project Summary", "Project Summary Hash")
 	summary, _ := mc.Get("summary")
 	assert.Equal(t, "Project Summary", summary, "expected summary to be 'Project Summary'")
+	hash, _ := mc.Get("summary-hash")
+	assert.Equal(t, "Project Summary Hash", hash, "expected summary hash to be 'Project Summary Hash'")
 }

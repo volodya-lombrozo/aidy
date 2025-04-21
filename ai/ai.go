@@ -1,12 +1,13 @@
 package ai
 
 type AI interface {
-	GenerateTitle(branchName string, diff string, issue string) (string, error)
-	GenerateBody(branchName string, diff string, issue string) (string, error)
-	GenerateIssueTitle(userInput string) (string, error)
-	GenerateIssueBody(userInput string) (string, error)
-	GenerateIssueLabels(issue string, available []string) ([]string, error)
-	GenerateCommitMessage(branchName string, diff string) (string, error)
+	PrTitle(branch string, diff string, issue string, summary string) (string, error)
+	PrBody(branch string, diff string, issue string, summary string) (string, error)
+	IssueTitle(input string, summary string) (string, error)
+	IssueBody(input string, summary string) (string, error)
+	IssueLabels(issue string, available []string) ([]string, error)
+	CommitMessage(branch string, diff string) (string, error)
+    Summary(readme string) (string, error)
 }
 
 func TrimPrompt(prompt string) string {
