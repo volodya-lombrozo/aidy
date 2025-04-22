@@ -24,11 +24,6 @@ Carefully review both the diff and the issue description. Then, generate a PR ti
 - Use the imperative mood (e.g., "add feature", not "added feature" or "adding feature").
 - Keep the title within 72 characters.
 - Do not include explanations, comments, or line breaks. Return only the title line.
-
-Also, this is the project summary for which you need to create the PR title:
-<summary>
-%s
-</summary>
 `
 
 	GenerateBodyPrompt = `You are an expert software engineer who writes clear and professional pull request descriptions on GitHub.
@@ -61,11 +56,6 @@ Formatting rules:
 - Do not add section headers.
 - Do not include line breaks except before the "Closes" line.
 - Reply only with the pull request body — no additional text or explanations.
-
-Also, this is the project summary for which you need to create the PR body:
-<summary>
-%s
-</summary>
 `
 
 	GenerateCommitPrompt = `You are an expert software engineer who writes concise, one-line Git commit messages based on code diffs.
@@ -107,11 +97,6 @@ The title should:
 - Not exceed 72 characters
 
 Reply only with the issue title — no explanations, comments, or line breaks.
-
-Also, this is the project summary for which you need to create the issue title:
-<summary>
-%s
-</summary>
 `
 
 	GenerateIssueBodyPrompt = `You are an expert software engineer who writes clear and informative descriptions for GitHub issues.
@@ -131,12 +116,6 @@ The description should:
 - Use backticks for code or technical terms where appropriate
 
 Reply only with the issue body — no explanations, comments, or extra formatting.
-
-Also, this is the project summary for which you need to create the issue body:
-<summary>
-%s
-</summary>
-
 `
 
 	GenerateLabelsPrompt = `You are an expert software engineer who understands how to assign appropriate labels to GitHub issues.

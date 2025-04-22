@@ -3,57 +3,60 @@ package ai
 import (
 	"context"
 	"fmt"
-	openai "github.com/sashabaranov/go-openai"
 	"strings"
+
+	openai "github.com/sashabaranov/go-openai"
 )
 
 type MyOpenAI struct {
 	client      *openai.Client
 	model       string
 	temperature float32
+    summary     bool
 }
 
-func NewOpenAI(apiKey, model string, temperature float32) *MyOpenAI {
+func NewOpenAI(apiKey, model string, temperature float32, summary bool) *MyOpenAI {
 	client := openai.NewClient(apiKey)
 	return &MyOpenAI{
 		client:      client,
 		model:       model,
 		temperature: temperature,
+        summary:     summary,
 	}
 }
 
 func (o *MyOpenAI) PrTitle(branchName, diff string, issue string, summary string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber, summary)
-	return o.generateText(prompt)
+	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber)
+	return o.generateText(prompt, summary)
 }
 
 func (o *MyOpenAI) PrBody(branchName, diff string, issue string, summary string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, issueNumber, summary)
-	return o.generateText(prompt)
+	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, issueNumber)
+	return o.generateText(prompt, summary)
 }
 
 func (o *MyOpenAI) IssueTitle(userInput string, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput, summary)
-	return o.generateText(prompt)
+	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput)
+	return o.generateText(prompt, summary)
 }
 
 func (o *MyOpenAI) IssueBody(userInput string, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput, summary)
-	return o.generateText(prompt)
+	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput)
+	return o.generateText(prompt, summary)
 }
 
 func (o *MyOpenAI) CommitMessage(branchName, diff string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
 	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, issueNumber, issueNumber)
-	return o.generateText(prompt)
+	return o.generateText(prompt, "")
 }
 
 func (o *MyOpenAI) IssueLabels(issue string, available []string) ([]string, error) {
 	alllabels := strings.Join(available, ", ")
 	prompt := fmt.Sprintf(GenerateLabelsPrompt, issue, alllabels)
-	out, err := o.generateText(prompt)
+	out, err := o.generateText(prompt, "")
 	if err != nil {
 		return nil, err
 	}
@@ -68,16 +71,21 @@ func (o *MyOpenAI) IssueLabels(issue string, available []string) ([]string, erro
 
 func (o *MyOpenAI) Summary(readme string) (string, error) {
 	prompt := fmt.Sprintf(SummaryPrompt, readme)
-	return o.generateText(prompt)
+    return o.generateText(prompt, "")
 }
 
-func (o *MyOpenAI) generateText(prompt string) (string, error) {
+func (o *MyOpenAI) generateText(prompt, summary string) (string, error) {
+    content := prompt
+    if o.summary {
+        content = AppendSummary(content, summary)
+    }
+    content = TrimPrompt(content)
 	req := openai.ChatCompletionRequest{
 		Model: o.model,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "system",
-				Content: TrimPrompt(prompt),
+				Content: content,
 			},
 		},
 		Temperature: o.temperature,
