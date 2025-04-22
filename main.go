@@ -21,6 +21,7 @@ func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("Error: No command provided. Use 'aidy help' for usage.")
 	}
+
 	command := os.Args[1]
 	shell := &executor.RealExecutor{}
 
@@ -62,6 +63,7 @@ func main() {
 		aiService = ai.NewOpenAI(apiKey, model, 0.2)
 	}
 	gitService := git.NewRealGit(shell)
+    checkGitInstalled(gitService)
 	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey, ch)
 	target := ch.Remote()
 	if target != "" {
@@ -400,5 +402,15 @@ func initSummary(aiService ai.AI, ch cache.AidyCache) {
         log.Printf("Project '%s' summary was successfully saved\n", shash) 
     } else {
         log.Printf("No need to update the project summary '%s'\n", shash) 
+    }
+}
+
+func checkGitInstalled(gitService git.Git) {
+    installed, err := gitService.Installed()
+    if err != nil {
+        log.Fatalf("Can't understand whether git is installed or not, because of '%v'", err)
+    }
+    if !installed {
+        log.Fatal("git is not installed on the system")
     }
 }

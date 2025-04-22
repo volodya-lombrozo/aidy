@@ -74,3 +74,12 @@ func TestMockGetAllRemoteURLs(t *testing.T) {
 	assert.Equal(t, first, output[0])
 	assert.Equal(t, second, output[1])
 }
+
+func TestMockGitInstalled(t *testing.T) {
+    git := MockGit{}
+
+    installed, err  := git.Installed()
+
+    require.NoError(t,err)
+    assert.True(t, installed)
+}

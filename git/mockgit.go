@@ -33,3 +33,7 @@ func (m *MockGit) GetCurrentCommitMessage() (string, error) {
 func (r *MockGit) Remotes() ([]string, error) {
 	return []string{"https://github.com/volodya-lombrozo/aidy.git", "https://github.com/volodya-lombrozo/forked-aidy.git"}, nil
 }
+
+func (r *MockGit) Installed() (bool, error) {
+    return true, nil
+}
