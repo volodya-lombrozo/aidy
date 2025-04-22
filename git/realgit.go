@@ -162,9 +162,18 @@ func (r *RealGit) Remotes() ([]string, error) {
 }
 
 func (r *RealGit) Installed() (bool, error) {
-    _, err  := r.shell.RunCommandInDir(r.dir, "git", "--version")
-    if err != nil {
-        return false, err
-    }
-    return true, nil
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "--version")
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *RealGit) Root() (string, error) {
+	out, err := r.shell.RunCommandInDir(r.dir, "git", "rev-parse", "--show-toplevel")
+	if err != nil {
+		log.Printf("Can't find git root directory, '%v'", err)
+		return out, err
+	}
+	return out, nil
 }

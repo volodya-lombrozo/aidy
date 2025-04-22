@@ -21,15 +21,15 @@ func TestAppendSummary(t *testing.T) {
 			expected: "This is a prompt.",
 		},
 		{
-			name:   "With summary",
-			prompt: "This is a prompt.",
-			summary: "This is a summary.",
+			name:     "With summary",
+			prompt:   "This is a prompt.",
+			summary:  "This is a summary.",
 			expected: "This is a prompt.\nThis is the project summary for which you do it:\n<summary>\nThis is a summary.\n</summary>\n",
 		},
 		{
-			name:   "Empty prompt with summary",
-			prompt: "",
-			summary: "This is a summary.",
+			name:     "Empty prompt with summary",
+			prompt:   "",
+			summary:  "This is a summary.",
 			expected: "\nThis is the project summary for which you do it:\n<summary>\nThis is a summary.\n</summary>\n",
 		},
 		{

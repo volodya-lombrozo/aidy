@@ -12,7 +12,7 @@ type MyOpenAI struct {
 	client      *openai.Client
 	model       string
 	temperature float32
-    summary     bool
+	summary     bool
 }
 
 func NewOpenAI(apiKey, model string, temperature float32, summary bool) *MyOpenAI {
@@ -21,7 +21,7 @@ func NewOpenAI(apiKey, model string, temperature float32, summary bool) *MyOpenA
 		client:      client,
 		model:       model,
 		temperature: temperature,
-        summary:     summary,
+		summary:     summary,
 	}
 }
 
@@ -71,15 +71,15 @@ func (o *MyOpenAI) IssueLabels(issue string, available []string) ([]string, erro
 
 func (o *MyOpenAI) Summary(readme string) (string, error) {
 	prompt := fmt.Sprintf(SummaryPrompt, readme)
-    return o.generateText(prompt, "")
+	return o.generateText(prompt, "")
 }
 
 func (o *MyOpenAI) generateText(prompt, summary string) (string, error) {
-    content := prompt
-    if o.summary {
-        content = AppendSummary(content, summary)
-    }
-    content = TrimPrompt(content)
+	content := prompt
+	if o.summary {
+		content = AppendSummary(content, summary)
+	}
+	content = TrimPrompt(content)
 	req := openai.ChatCompletionRequest{
 		Model: o.model,
 		Messages: []openai.ChatCompletionMessage{

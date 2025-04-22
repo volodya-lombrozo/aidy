@@ -35,5 +35,9 @@ func (r *MockGit) Remotes() ([]string, error) {
 }
 
 func (r *MockGit) Installed() (bool, error) {
-    return true, nil
+	return true, nil
+}
+
+func (r *MockGit) Root() (string, error) {
+	return "/dev/null", nil
 }

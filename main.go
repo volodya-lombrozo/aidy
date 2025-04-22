@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"hash/fnv"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-    "hash/fnv"
 
 	"github.com/volodya-lombrozo/aidy/ai"
 	"github.com/volodya-lombrozo/aidy/cache"
@@ -30,7 +30,8 @@ func main() {
 		log.Fatalf("Can't open cache %v", err)
 	}
 	ch := cache.NewAidyCache(gitcache)
-	yamlConfig := readConfiguration()
+	gitService := git.NewRealGit(shell)
+	yamlConfig := readConfiguration(gitService)
 	githubKey, err := yamlConfig.GetGithubAPIKey()
 	if err != nil {
 		log.Printf("Can't find GitHub token in configuration")
@@ -40,12 +41,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Can't find GitHub token in configuration")
 	}
-    sumrequired := false
-    for _, arg := range os.Args {
-        if arg == "--summary" {
-            sumrequired = true
-        }
-    }
+	sumrequired := false
+	for _, arg := range os.Args {
+		if arg == "--summary" {
+			sumrequired = true
+		}
+	}
 	var aiService ai.AI
 	if model == "deepseek-chat" {
 		apiKey, err := yamlConfig.GetDeepseekAPIKey()
@@ -68,8 +69,7 @@ func main() {
 		}
 		aiService = ai.NewOpenAI(apiKey, model, 0.2, sumrequired)
 	}
-	gitService := git.NewRealGit(shell)
-    checkGitInstalled(gitService)
+	checkGitInstalled(gitService)
 	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey, ch)
 	target := ch.Remote()
 	if target != "" {
@@ -97,7 +97,7 @@ func main() {
 		}
 	}
 
-    initSummary(sumrequired, aiService, ch)
+	initSummary(sumrequired, aiService, ch)
 	switch command {
 	case "help":
 		help()
@@ -138,7 +138,7 @@ func printDiff(gs git.Git) {
 	}
 }
 
-func readConfiguration() config.Config {
+func readConfiguration(gs git.Git) config.Config {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("Error getting home directory: %v", err)
@@ -154,8 +154,7 @@ func readConfiguration() config.Config {
 		configPath := fmt.Sprintf("%s/.aider.conf.yml", homeDir)
 		conf = config.NewAiderConf(configPath)
 	} else {
-		configPath := fmt.Sprintf("%s/.aidy.conf.yml", homeDir)
-		conf = config.NewConf(configPath)
+		conf = config.NewCascadeConfig(gs)
 	}
 	return conf
 }
@@ -202,7 +201,7 @@ func help() {
 // It creates a `gh` issue command.
 // For example `gh issue create --title "Issue title" --body "Issue body"`
 func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCache) {
-    summary, _ := ch.Summary()
+	summary, _ := ch.Summary()
 	title, err := aiService.IssueTitle(userInput, summary)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
@@ -284,7 +283,7 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	if err != nil {
 		log.Fatalf("Error getting git diff: %v", err)
 	}
-    summary, _ := ch.Summary()
+	summary, _ := ch.Summary()
 	nissue := extractIssueNumber(branchName)
 	issue := gh.Description(nissue)
 	title, err := aiService.PrTitle(branchName, diff, issue, summary)
@@ -388,38 +387,38 @@ func cleanCache() {
 }
 
 func initSummary(required bool, aiService ai.AI, ch cache.AidyCache) {
-    if required {
-        log.Println("Undertstanding the project summary") 
-        content, err  := os.ReadFile("README.md") 
-        if err != nil {
-            log.Printf("Can't retrieve content of README.md, because of '%v'", err)
-            return
-        }
-        readme := string(content) 
-        hash := fnv.New64a()
-        hash.Write([]byte(readme))
-        shash := fmt.Sprintf("%x", hash.Sum64())
-        _, chash  := ch.Summary()
-        if shash != chash {
-            summary, err  := aiService.Summary(readme)
-            if err != nil {
-                log.Printf("Can't generate summary for README.md, because of '%v'", err)
-                return
-            }
-            ch.WithSummary(summary, shash)
-            log.Printf("Project '%s' summary was successfully saved\n", shash) 
-        } else {
-            log.Printf("No need to update the project summary '%s'\n", shash) 
-        }
-    }
+	if required {
+		log.Println("Undertstanding the project summary")
+		content, err := os.ReadFile("README.md")
+		if err != nil {
+			log.Printf("Can't retrieve content of README.md, because of '%v'", err)
+			return
+		}
+		readme := string(content)
+		hash := fnv.New64a()
+		hash.Write([]byte(readme))
+		shash := fmt.Sprintf("%x", hash.Sum64())
+		_, chash := ch.Summary()
+		if shash != chash {
+			summary, err := aiService.Summary(readme)
+			if err != nil {
+				log.Printf("Can't generate summary for README.md, because of '%v'", err)
+				return
+			}
+			ch.WithSummary(summary, shash)
+			log.Printf("Project '%s' summary was successfully saved\n", shash)
+		} else {
+			log.Printf("No need to update the project summary '%s'\n", shash)
+		}
+	}
 }
 
 func checkGitInstalled(gitService git.Git) {
-    installed, err := gitService.Installed()
-    if err != nil {
-        log.Fatalf("Can't understand whether git is installed or not, because of '%v'", err)
-    }
-    if !installed {
-        log.Fatal("git is not installed on the system")
-    }
+	installed, err := gitService.Installed()
+	if err != nil {
+		log.Fatalf("Can't understand whether git is installed or not, because of '%v'", err)
+	}
+	if !installed {
+		log.Fatal("git is not installed on the system")
+	}
 }
