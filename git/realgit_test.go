@@ -261,3 +261,14 @@ func TestRealGetCurrentCommitMessage(t *testing.T) {
 		t.Fatalf("Expected commit message '%s', got '%s'", commitMessage, message)
 	}
 }
+
+func TestRealGitInstalled(t *testing.T) {
+    repoDir, cleanup := setupTestRepo(t) 
+    defer cleanup()
+	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
+
+    installed, err  := gitService.Installed()
+
+    require.NoError(t, err)
+    assert.True(t, installed)
+}

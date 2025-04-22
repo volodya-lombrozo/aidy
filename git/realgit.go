@@ -160,3 +160,11 @@ func (r *RealGit) Remotes() ([]string, error) {
 	}
 	return result, nil
 }
+
+func (r *RealGit) Installed() (bool, error) {
+    _, err  := r.shell.RunCommandInDir(r.dir, "git", "--version")
+    if err != nil {
+        return false, err
+    }
+    return true, nil
+}
