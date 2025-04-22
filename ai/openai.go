@@ -25,38 +25,35 @@ func NewOpenAI(apiKey, model string, temperature float32, summary bool) *MyOpenA
 	}
 }
 
-func (o *MyOpenAI) PrTitle(branchName, diff string, issue string, summary string) (string, error) {
-	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber)
-	return o.generateText(prompt, summary)
+func (o *MyOpenAI) PrTitle(number, diff, issue, summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, number, number)
+	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) PrBody(branchName, diff string, issue string, summary string) (string, error) {
-	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, issueNumber)
-	return o.generateText(prompt, summary)
+func (o *MyOpenAI) PrBody(number, diff, issue, summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, number)
+	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) IssueTitle(userInput string, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput)
-	return o.generateText(prompt, summary)
+func (o *MyOpenAI) IssueTitle(input,  summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, input)
+	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) IssueBody(userInput string, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput)
-	return o.generateText(prompt, summary)
+func (o *MyOpenAI) IssueBody(input string, summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, input)
+	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) CommitMessage(branchName, diff string) (string, error) {
-	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, issueNumber, issueNumber)
-	return o.generateText(prompt, "")
+func (o *MyOpenAI) CommitMessage(number, diff string) (string, error) {
+	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, number, number)
+	return o.send(prompt, "")
 }
 
 func (o *MyOpenAI) IssueLabels(issue string, available []string) ([]string, error) {
 	alllabels := strings.Join(available, ", ")
 	prompt := fmt.Sprintf(GenerateLabelsPrompt, issue, alllabels)
-	out, err := o.generateText(prompt, "")
+	out, err := o.send(prompt, "")
 	if err != nil {
 		return nil, err
 	}
@@ -71,10 +68,10 @@ func (o *MyOpenAI) IssueLabels(issue string, available []string) ([]string, erro
 
 func (o *MyOpenAI) Summary(readme string) (string, error) {
 	prompt := fmt.Sprintf(SummaryPrompt, readme)
-	return o.generateText(prompt, "")
+	return o.send(prompt, "")
 }
 
-func (o *MyOpenAI) generateText(prompt, summary string) (string, error) {
+func (o *MyOpenAI) send(prompt, summary string) (string, error) {
 	content := prompt
 	if o.summary {
 		content = AppendSummary(content, summary)
@@ -100,11 +97,3 @@ func (o *MyOpenAI) generateText(prompt, summary string) (string, error) {
 	return "", fmt.Errorf("no text generated")
 }
 
-func extractIssueNumber(branchName string) string {
-	// Assuming the branch name format is "<issue-number>_<description>"
-	parts := strings.Split(branchName, "_")
-	if len(parts) > 0 {
-		return parts[0]
-	}
-	return "unknown"
-}

@@ -243,7 +243,6 @@ func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
 	commit(gitService, shell, false, aiService)
 }
 
-// Comment
 func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai.AI) {
 	if noAI {
 		err := gitService.CommitChanges()
@@ -263,7 +262,8 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		if diffErr != nil {
 			log.Fatalf("Error getting diff: %v", err)
 		}
-		msg, cerr := aiService.CommitMessage(branchName, diff)
+        nissue := extractIssueNumber(branchName)
+		msg, cerr := aiService.CommitMessage(nissue, diff)
 		if cerr != nil {
 			log.Fatalf("Error generating commit message: %v", cerr)
 		}
@@ -286,11 +286,11 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	summary, _ := ch.Summary()
 	nissue := extractIssueNumber(branchName)
 	issue := gh.Description(nissue)
-	title, err := aiService.PrTitle(branchName, diff, issue, summary)
+	title, err := aiService.PrTitle(nissue, diff, issue, summary)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
 	}
-	body, err := aiService.PrBody(branchName, diff, issue, summary)
+	body, err := aiService.PrBody(nissue, diff, issue, summary)
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
@@ -361,8 +361,8 @@ func appendToCommit(gitService git.Git) {
 	}
 }
 
+// Assuming the branch name format is "<issue-number>_<description>"
 func extractIssueNumber(branchName string) string {
-	// Assuming the branch name format is "<issue-number>_<description>"
 	parts := strings.Split(branchName, "_")
 	if len(parts) > 0 && branchName != "" {
 		return parts[0]
