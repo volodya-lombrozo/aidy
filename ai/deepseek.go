@@ -12,10 +12,10 @@ import (
 )
 
 type DeepSeekAI struct {
-	APIKey string
-	APIURL string // e.g., "https://api.deepseek.com/v1/chat/completions"
-	Model  string // e.g., "deepseek-chat" or similar
-    summary bool
+	APIKey  string
+	APIURL  string // e.g., "https://api.deepseek.com/v1/chat/completions"
+	Model   string // e.g., "deepseek-chat" or similar
+	summary bool
 }
 
 type chatMessage struct {
@@ -39,10 +39,10 @@ type chatResponse struct {
 
 func NewDeepSeekAI(apiKey string, summary bool) *DeepSeekAI {
 	return &DeepSeekAI{
-		APIKey: apiKey,
-		APIURL: "https://api.deepseek.com/chat/completions",
-		Model:  "deepseek-chat",
-        summary: summary,
+		APIKey:  apiKey,
+		APIURL:  "https://api.deepseek.com/chat/completions",
+		Model:   "deepseek-chat",
+		summary: summary,
 	}
 }
 
@@ -96,11 +96,11 @@ func (d *DeepSeekAI) Summary(readme string) (string, error) {
 }
 
 func (d *DeepSeekAI) sendPrompt(systemPrompt string, userPrompt string, summary string) (string, error) {
-    content := userPrompt
-    if d.summary {
-        content = AppendSummary(content, summary)
-    }
-    content = TrimPrompt(content)
+	content := userPrompt
+	if d.summary {
+		content = AppendSummary(content, summary)
+	}
+	content = TrimPrompt(content)
 	body := chatRequest{
 		Model: d.Model,
 		Messages: []chatMessage{

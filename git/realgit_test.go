@@ -29,6 +29,19 @@ func TestRealGit_Remotes(t *testing.T) {
 	assert.Equal(t, urls, expected)
 }
 
+func TestRealGitRoot(t *testing.T) {
+	repoDir, cleanup := setupTestRepo(t)
+	defer cleanup()
+	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
+
+	root, err := gitService.Root()
+
+	require.NoError(t, err)
+	expectedRoot, err := filepath.EvalSymlinks(strings.TrimSpace(repoDir))
+	require.NoError(t, err)
+	assert.Equal(t, filepath.ToSlash(expectedRoot), filepath.ToSlash(strings.TrimSpace(root)))
+}
+
 func TestRealGit_Remotes_Parametrised(t *testing.T) {
 	tests := []struct {
 		remotes  string
@@ -263,12 +276,12 @@ func TestRealGetCurrentCommitMessage(t *testing.T) {
 }
 
 func TestRealGitInstalled(t *testing.T) {
-    repoDir, cleanup := setupTestRepo(t) 
-    defer cleanup()
+	repoDir, cleanup := setupTestRepo(t)
+	defer cleanup()
 	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
 
-    installed, err  := gitService.Installed()
+	installed, err := gitService.Installed()
 
-    require.NoError(t, err)
-    assert.True(t, installed)
+	require.NoError(t, err)
+	assert.True(t, installed)
 }

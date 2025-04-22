@@ -134,7 +134,7 @@ Available labels:
 
 Reply only with the list of selected labels — no explanations, comments, or additional formatting.`
 
-    SummaryPrompt = `Read the following README.md of a software project and generate a short, single-paragraph summary suitable for AI agents.
+	SummaryPrompt = `Read the following README.md of a software project and generate a short, single-paragraph summary suitable for AI agents.
 Focus on key features, purpose, technologies used, and any setup or usage highlights. 
 The summary must be concise, comprehensive, and free of any additional commentary or explanation — just the raw summary text.
 

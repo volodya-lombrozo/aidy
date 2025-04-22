@@ -9,5 +9,6 @@ type Git interface {
 	AppendToCommit() error
 	CommitChanges(messages ...string) error
 	Remotes() ([]string, error)
-    Installed() (bool, error)
+	Installed() (bool, error)
+	Root() (string, error)
 }

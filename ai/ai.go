@@ -9,11 +9,11 @@ type AI interface {
 	IssueBody(input string, summary string) (string, error)
 	IssueLabels(issue string, available []string) ([]string, error)
 	CommitMessage(branch string, diff string) (string, error)
-    Summary(readme string) (string, error)
+	Summary(readme string) (string, error)
 }
 
 func TrimPrompt(prompt string) string {
-    limit := 120 * 400
+	limit := 120 * 400
 	runes := []rune(prompt)
 	if len(runes) > limit {
 		return string(runes[:limit])
@@ -22,9 +22,9 @@ func TrimPrompt(prompt string) string {
 }
 
 func AppendSummary(prompt, summary string) string {
-    if summary == "" {
-        return prompt
-    }
-    appendix := fmt.Sprintf("\nThis is the project summary for which you do it:\n<summary>\n%s\n</summary>\n", summary)
-    return prompt + appendix
+	if summary == "" {
+		return prompt
+	}
+	appendix := fmt.Sprintf("\nThis is the project summary for which you do it:\n<summary>\n%s\n</summary>\n", summary)
+	return prompt + appendix
 }

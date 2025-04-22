@@ -76,10 +76,10 @@ func TestMockGetAllRemoteURLs(t *testing.T) {
 }
 
 func TestMockGitInstalled(t *testing.T) {
-    git := MockGit{}
+	git := MockGit{}
 
-    installed, err  := git.Installed()
+	installed, err := git.Installed()
 
-    require.NoError(t,err)
-    assert.True(t, installed)
+	require.NoError(t, err)
+	assert.True(t, installed)
 }

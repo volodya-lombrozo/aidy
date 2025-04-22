@@ -27,5 +27,5 @@ func (m *MockAI) IssueLabels(issue string, available []string) ([]string, error)
 }
 
 func (m *MockAI) Summary(readme string) (string, error) {
-    return "summary: " + readme, nil
+	return "summary: " + readme, nil
 }

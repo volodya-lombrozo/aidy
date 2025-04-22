@@ -55,7 +55,7 @@ func TestAidyCache_Summary(t *testing.T) {
 	err = mc.Set("summary-hash", "Project Summary Hash")
 	require.NoError(t, err)
 	summary, hash := ac.Summary()
-    assert.Equal(t, "Project Summary", summary, "expected summary to be 'Project Summary'")
+	assert.Equal(t, "Project Summary", summary, "expected summary to be 'Project Summary'")
 	assert.Equal(t, "Project Summary Hash", hash, "expected summary hash to be 'Project Summary Hash'")
 
 	err = mc.Set("summary", "")
