@@ -46,15 +46,13 @@ func NewDeepSeekAI(apiKey string, summary bool) *DeepSeekAI {
 	}
 }
 
-func (d *DeepSeekAI) PrTitle(branchName string, diff string, issue string, summary string) (string, error) {
-	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber)
+func (d *DeepSeekAI) PrTitle(number, diff, issue, summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, number, number)
 	return d.sendPrompt("You are a helpful assistant generating Git commit titles.", prompt, summary)
 }
 
-func (d *DeepSeekAI) PrBody(branchName string, diff string, issue string, summary string) (string, error) {
-	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, issueNumber)
+func (d *DeepSeekAI) PrBody(number string, diff string, issue string, summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, number)
 	return d.sendPrompt("You are a helpful assistant generating Git commit messages.", prompt, summary)
 }
 
@@ -63,8 +61,8 @@ func (d *DeepSeekAI) IssueTitle(userInput string, summary string) (string, error
 	return d.sendPrompt("You are a helpful assistant creating GitHub issue titles.", prompt, summary)
 }
 
-func (d *DeepSeekAI) IssueBody(userInput string, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput)
+func (d *DeepSeekAI) IssueBody(input string, summary string) (string, error) {
+	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, input)
 	return d.sendPrompt("You are a helpful assistant writing GitHub issue descriptions.", prompt, summary)
 }
 
@@ -84,9 +82,8 @@ func (d *DeepSeekAI) IssueLabels(issue string, available []string) ([]string, er
 	return res, nil
 }
 
-func (d *DeepSeekAI) CommitMessage(branchName string, diff string) (string, error) {
-	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, issueNumber, issueNumber)
+func (d *DeepSeekAI) CommitMessage(number string, diff string) (string, error) {
+	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, number, number)
 	return d.sendPrompt("You are a helpful assistant writing commit messages.", prompt, "")
 }
 
@@ -95,8 +92,8 @@ func (d *DeepSeekAI) Summary(readme string) (string, error) {
 	return d.sendPrompt("You are a helpful assistant writing project summaries.", prompt, "")
 }
 
-func (d *DeepSeekAI) sendPrompt(systemPrompt string, userPrompt string, summary string) (string, error) {
-	content := userPrompt
+func (d *DeepSeekAI) sendPrompt(system string, user string, summary string) (string, error) {
+	content := user
 	if d.summary {
 		content = AppendSummary(content, summary)
 	}
@@ -104,7 +101,7 @@ func (d *DeepSeekAI) sendPrompt(systemPrompt string, userPrompt string, summary 
 	body := chatRequest{
 		Model: d.Model,
 		Messages: []chatMessage{
-			{Role: "system", Content: systemPrompt},
+			{Role: "system", Content: system},
 			{Role: "user", Content: content},
 		},
 		Stream: false,

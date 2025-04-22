@@ -101,7 +101,7 @@ func TestPullRequest(t *testing.T) {
 	}
 	output := buf.String()
 
-	expected := "\ngh pr create --title \"Mock Title for 41_working_branch\" --body \"Mock Body for 41_working_branch\" --repo mock/remote"
+	expected := "\ngh pr create --title \"Mock Title for 41\" --body \"Mock Body for 41\" --repo mock/remote"
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }
 
