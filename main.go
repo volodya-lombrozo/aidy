@@ -40,6 +40,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Can't find GitHub token in configuration")
 	}
+    sumrequired := false
+    for _, arg := range os.Args {
+        if arg == "--summary" {
+            sumrequired = true
+        }
+    }
 	var aiService ai.AI
 	if model == "deepseek-chat" {
 		apiKey, err := yamlConfig.GetDeepseekAPIKey()
@@ -51,7 +57,7 @@ func main() {
 		} else {
 			log.Println("Deepseek key is found")
 		}
-		aiService = ai.NewDeepSeekAI(apiKey)
+		aiService = ai.NewDeepSeekAI(apiKey, sumrequired)
 	} else {
 		apiKey, err := yamlConfig.GetOpenAIAPIKey()
 		if err != nil {
@@ -60,7 +66,7 @@ func main() {
 		if apiKey == "" {
 			log.Fatalf("OpenAI API key not found in config file")
 		}
-		aiService = ai.NewOpenAI(apiKey, model, 0.2)
+		aiService = ai.NewOpenAI(apiKey, model, 0.2, sumrequired)
 	}
 	gitService := git.NewRealGit(shell)
     checkGitInstalled(gitService)
@@ -90,7 +96,8 @@ func main() {
 			ch.WithRemote(selectedRepo)
 		}
 	}
-    initSummary(aiService, ch)
+
+    initSummary(sumrequired, aiService, ch)
 	switch command {
 	case "help":
 		help()
@@ -380,28 +387,30 @@ func cleanCache() {
 	}
 }
 
-func initSummary(aiService ai.AI, ch cache.AidyCache) {
-    log.Println("Undertstanding the project summary") 
-    content, err  := os.ReadFile("README.md") 
-    if err != nil {
-        log.Printf("Can't retrieve content of README.md, because of '%v'", err)
-        return
-    }
-    readme := string(content) 
-    hash := fnv.New64a()
-    hash.Write([]byte(readme))
-    shash := fmt.Sprintf("%x", hash.Sum64())
-    _, chash  := ch.Summary()
-    if shash != chash {
-        summary, err  := aiService.Summary(readme)
+func initSummary(required bool, aiService ai.AI, ch cache.AidyCache) {
+    if required {
+        log.Println("Undertstanding the project summary") 
+        content, err  := os.ReadFile("README.md") 
         if err != nil {
-            log.Printf("Can't generate summary for README.md, because of '%v'", err)
+            log.Printf("Can't retrieve content of README.md, because of '%v'", err)
             return
         }
-        ch.WithSummary(summary, shash)
-        log.Printf("Project '%s' summary was successfully saved\n", shash) 
-    } else {
-        log.Printf("No need to update the project summary '%s'\n", shash) 
+        readme := string(content) 
+        hash := fnv.New64a()
+        hash.Write([]byte(readme))
+        shash := fmt.Sprintf("%x", hash.Sum64())
+        _, chash  := ch.Summary()
+        if shash != chash {
+            summary, err  := aiService.Summary(readme)
+            if err != nil {
+                log.Printf("Can't generate summary for README.md, because of '%v'", err)
+                return
+            }
+            ch.WithSummary(summary, shash)
+            log.Printf("Project '%s' summary was successfully saved\n", shash) 
+        } else {
+            log.Printf("No need to update the project summary '%s'\n", shash) 
+        }
     }
 }
 

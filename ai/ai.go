@@ -1,5 +1,7 @@
 package ai
 
+import "fmt"
+
 type AI interface {
 	PrTitle(branch string, diff string, issue string, summary string) (string, error)
 	PrBody(branch string, diff string, issue string, summary string) (string, error)
@@ -17,4 +19,12 @@ func TrimPrompt(prompt string) string {
 		return string(runes[:limit])
 	}
 	return prompt
+}
+
+func AppendSummary(prompt, summary string) string {
+    if summary == "" {
+        return prompt
+    }
+    appendix := fmt.Sprintf("\nThis is the project summary for which you do it:\n<summary>\n%s\n</summary>\n", summary)
+    return prompt + appendix
 }

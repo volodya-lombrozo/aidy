@@ -15,6 +15,7 @@ type DeepSeekAI struct {
 	APIKey string
 	APIURL string // e.g., "https://api.deepseek.com/v1/chat/completions"
 	Model  string // e.g., "deepseek-chat" or similar
+    summary bool
 }
 
 type chatMessage struct {
@@ -36,40 +37,41 @@ type chatResponse struct {
 	Choices []chatChoice `json:"choices"`
 }
 
-func NewDeepSeekAI(apiKey string) *DeepSeekAI {
+func NewDeepSeekAI(apiKey string, summary bool) *DeepSeekAI {
 	return &DeepSeekAI{
 		APIKey: apiKey,
 		APIURL: "https://api.deepseek.com/chat/completions",
 		Model:  "deepseek-chat",
+        summary: summary,
 	}
 }
 
 func (d *DeepSeekAI) PrTitle(branchName string, diff string, issue string, summary string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber, summary)
-	return d.sendPrompt("You are a helpful assistant generating Git commit titles.", prompt)
+	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, issueNumber, issueNumber)
+	return d.sendPrompt("You are a helpful assistant generating Git commit titles.", prompt, summary)
 }
 
 func (d *DeepSeekAI) PrBody(branchName string, diff string, issue string, summary string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
-	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, issueNumber, summary)
-	return d.sendPrompt("You are a helpful assistant generating Git commit messages.", prompt)
+	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, issueNumber)
+	return d.sendPrompt("You are a helpful assistant generating Git commit messages.", prompt, summary)
 }
 
 func (d *DeepSeekAI) IssueTitle(userInput string, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput, summary)
-	return d.sendPrompt("You are a helpful assistant creating GitHub issue titles.", prompt)
+	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, userInput)
+	return d.sendPrompt("You are a helpful assistant creating GitHub issue titles.", prompt, summary)
 }
 
 func (d *DeepSeekAI) IssueBody(userInput string, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput, summary)
-	return d.sendPrompt("You are a helpful assistant writing GitHub issue descriptions.", prompt)
+	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, userInput)
+	return d.sendPrompt("You are a helpful assistant writing GitHub issue descriptions.", prompt, summary)
 }
 
 func (d *DeepSeekAI) IssueLabels(issue string, available []string) ([]string, error) {
 	alllabels := strings.Join(available, ", ")
 	prompt := fmt.Sprintf(GenerateLabelsPrompt, issue, alllabels)
-	resp, err := d.sendPrompt("You are a helpful assistant assigning GitHub issue labels.", prompt)
+	resp, err := d.sendPrompt("You are a helpful assistant assigning GitHub issue labels.", prompt, "")
 	if err != nil {
 		return nil, err
 	}
@@ -85,20 +87,25 @@ func (d *DeepSeekAI) IssueLabels(issue string, available []string) ([]string, er
 func (d *DeepSeekAI) CommitMessage(branchName string, diff string) (string, error) {
 	issueNumber := extractIssueNumber(branchName)
 	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, issueNumber, issueNumber)
-	return d.sendPrompt("You are a helpful assistant writing commit messages.", prompt)
+	return d.sendPrompt("You are a helpful assistant writing commit messages.", prompt, "")
 }
 
 func (d *DeepSeekAI) Summary(readme string) (string, error) {
 	prompt := fmt.Sprintf(SummaryPrompt, readme)
-	return d.sendPrompt("You are a helpful assistant writing project summaries.", prompt)
+	return d.sendPrompt("You are a helpful assistant writing project summaries.", prompt, "")
 }
 
-func (d *DeepSeekAI) sendPrompt(systemPrompt string, userPrompt string) (string, error) {
+func (d *DeepSeekAI) sendPrompt(systemPrompt string, userPrompt string, summary string) (string, error) {
+    content := userPrompt
+    if d.summary {
+        content = AppendSummary(content, summary)
+    }
+    content = TrimPrompt(content)
 	body := chatRequest{
 		Model: d.Model,
 		Messages: []chatMessage{
 			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: TrimPrompt(userPrompt)},
+			{Role: "user", Content: content},
 		},
 		Stream: false,
 	}
