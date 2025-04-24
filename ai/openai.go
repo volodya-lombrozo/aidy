@@ -35,7 +35,7 @@ func (o *MyOpenAI) PrBody(number, diff, issue, summary string) (string, error) {
 	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) IssueTitle(input,  summary string) (string, error) {
+func (o *MyOpenAI) IssueTitle(input, summary string) (string, error) {
 	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, input)
 	return o.send(prompt, summary)
 }
@@ -96,4 +96,3 @@ func (o *MyOpenAI) send(prompt, summary string) (string, error) {
 	}
 	return "", fmt.Errorf("no text generated")
 }
-
