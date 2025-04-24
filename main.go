@@ -236,7 +236,7 @@ func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
 	if err != nil {
 		log.Fatalf("Error determining base branch: %v", err)
 	}
-	_, resetErr := shell.RunCommand("git", "reset", "--soft", baseBranch)
+	_, resetErr := shell.RunCommand("git", "reset", "--soft", "refs/heads/"+baseBranch)
 	if resetErr != nil {
 		log.Fatalf("Error executing git reset: %v", err)
 	}
@@ -262,7 +262,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		if diffErr != nil {
 			log.Fatalf("Error getting diff: %v", err)
 		}
-        nissue := extractIssueNumber(branchName)
+		nissue := extractIssueNumber(branchName)
 		msg, cerr := aiService.CommitMessage(nissue, diff)
 		if cerr != nil {
 			log.Fatalf("Error generating commit message: %v", cerr)

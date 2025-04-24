@@ -67,7 +67,7 @@ func TestSquash(t *testing.T) {
 	squash(mockGit, mockExecutor, mockAI)
 
 	expectedCommands := []string{
-		"git reset --soft main",
+		"git reset --soft refs/heads/main",
 		"git add --all",
 		"git commit --amend -m feat(#41): current commit message",
 	}
