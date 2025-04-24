@@ -325,7 +325,31 @@ func heal(gitService git.Git, shell executor.Executor) {
 }
 
 func healQuotes(text string) string {
-	return strings.Trim(text, "\"'`")
+	clean := healQuote('`', text)
+	clean = healQuote('\'', clean)
+	clean = healQuote('"', clean)
+	return clean
+}
+
+func healQuote(open rune, text string) string {
+	stack := []int{}
+	runes := []rune(text)
+	size := len(runes)
+	for i := 0; i < size; i++ {
+		if runes[i] == open {
+			if len(stack) > 0 {
+				prev := stack[len(stack)-1]
+				if i == size-1 && prev == 0 {
+					return string(runes[1 : size-1])
+				} else {
+					stack = stack[:len(stack)-1]
+				}
+			} else {
+				stack = append(stack, i)
+			}
+		}
+	}
+	return text
 }
 
 func healPRBody(body string, issue string) string {

@@ -107,13 +107,31 @@ func TestPullRequest(t *testing.T) {
 
 func TestHealQoutes(t *testing.T) {
 	message := healQuotes("\"with \" qoutes\"")
-	assert.Equal(t, "with \" qoutes", message)
+	assert.Equal(t, "\"with \" qoutes\"", message)
 
 	message = healQuotes("'with ' qoutes'")
-	assert.Equal(t, "with ' qoutes", message)
+	assert.Equal(t, "'with ' qoutes'", message)
 
 	message = healQuotes("`with ` qoutes`")
-	assert.Equal(t, "with ` qoutes", message)
+	assert.Equal(t, "`with ` qoutes`", message)
+}
+
+func TestHealQuotesParametrized(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"`feat(#123):feature`", "feat(#123):feature"},
+		{"`top level quotes should be removed`", "top level quotes should be removed"},
+		{"`aidy pr` works incorrectly", "`aidy pr` works incorrectly"},
+		{"789", "789"},
+		{"`aidy ci` and `aidy issue` commands", "`aidy ci` and `aidy issue` commands"},
+		{"`aidy ci` and `aidy issue`", "`aidy ci` and `aidy issue`"},
+		{"", ""},
+	}
+	for _, test := range tests {
+		assert.Equal(t, test.expected, healQuotes(test.input))
+	}
 }
 
 func TestCommit(t *testing.T) {
@@ -153,7 +171,7 @@ func TestHandleIssue(t *testing.T) {
 	require.NoError(t, err)
 	output := buf.String()
 	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo mock/remote"
-	assert.Equal(t, strings.TrimSpace(output), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }
 
 func TestHandleHelp(t *testing.T) {
