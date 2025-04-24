@@ -335,7 +335,7 @@ func healQuote(open rune, text string) string {
 	stack := []int{}
 	runes := []rune(text)
 	size := len(runes)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		if runes[i] == open {
 			if len(stack) > 0 {
 				prev := stack[len(stack)-1]
@@ -385,13 +385,24 @@ func appendToCommit(gitService git.Git) {
 	}
 }
 
-// Assuming the branch name format is "<issue-number>_<description>"
-func extractIssueNumber(branchName string) string {
-	parts := strings.Split(branchName, "_")
-	if len(parts) > 0 && branchName != "" {
-		return parts[0]
+// Extract issue number from a branch name
+func extractIssueNumber(branch string) string {
+	if branch == "" {
+		return "unknown"
 	}
-	return "unknown"
+	if strings.Contains(branch, "/") {
+		parts := strings.Split(branch, "/")
+		branch = parts[len(parts)-1]
+	}
+	re, err := regexp.Compile(`\d+`)
+	if err != nil {
+		panic(err)
+	}
+	found := re.FindString(branch)
+	if found == "" {
+		return branch
+	}
+	return found
 }
 
 func escapeBackticks(input string) string {
