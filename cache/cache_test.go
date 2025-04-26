@@ -34,6 +34,32 @@ func TestSetAndGet(t *testing.T) {
 		t.Errorf("Expected 'bar', got '%s'", val)
 	}
 }
+func TestNewGitCache_InvalidPath(t *testing.T) {
+	_, err := NewGitCache("/invalid/path/to/cache.json")
+	assert.Error(t, err, "Expected error due to invalid file path")
+}
+
+func TestNewGitCache_Get(t *testing.T) {
+	tmpFile := tempCacheFile(t)
+	defer func() {
+		if err := os.Remove(tmpFile); err != nil {
+			t.Fatalf("Failed to remove temp file: %v", err)
+		}
+	}()
+	c, err := NewGitCache(tmpFile)
+	if err != nil {
+		t.Fatalf("Failed to create GitCache: %v", err)
+	}
+	err = c.Set("testKey", "testValue")
+	if err != nil {
+		t.Fatalf("Failed to set value in GitCache: %v", err)
+	}
+
+	val, ok := c.Get("testKey")
+
+	assert.True(t, ok, "Expected key to be found")
+	assert.Equal(t, "testValue", val, "Expected value to be 'testValue'")
+}
 
 func TestPersistence(t *testing.T) {
 	tmpFile := tempCacheFile(t)

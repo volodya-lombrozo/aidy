@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,6 +20,70 @@ func (m *mapCache) Get(key string) (string, bool) {
 func (m *mapCache) Set(key, value string) error {
 	m.store[key] = value
 	return nil
+}
+
+type errorCache struct {
+}
+
+func (e *errorCache) Get(key string) (string, bool) {
+	return "", false
+}
+
+func (e *errorCache) Set(key, value string) error {
+	return fmt.Errorf("simulated error")
+}
+
+func TestAidyCache_WithRemote_Error(t *testing.T) {
+	ac := NewAidyCache(&errorCache{})
+
+	assert.Panics(t, func() {
+		ac.WithRemote("https://example.com/repo.git")
+	}, "expected panic due to error in Set")
+}
+
+func TestAidyCache_Summary_Error(t *testing.T) {
+	ac := NewAidyCache(&errorCache{})
+
+	summary, hash := ac.Summary()
+
+	assert.Equal(t, "", summary, "expected summary to be '' due to error in Get")
+	assert.Equal(t, "", hash, "expected hash to be '' due to error in Get")
+}
+
+func TestAidyCache_WithSummary_Error(t *testing.T) {
+	ac := NewAidyCache(&errorCache{})
+
+	assert.Panics(t, func() {
+		ac.WithSummary("Project Summary", "Project Summary Hash")
+	}, "expected panic due to error in Set")
+}
+
+func TestMockAidyCache_Remote(t *testing.T) {
+	mc := NewMockAidyCache()
+	remote := mc.Remote()
+	assert.Equal(t, "mock/remote", remote, "expected remote to be 'mock/remote'")
+}
+
+func TestMockAidyCache_WithRemote(t *testing.T) {
+	mc := NewMockAidyCache()
+	mc.WithRemote("new/remote") // Should not change anything
+	remote := mc.Remote()
+	assert.Equal(t, "mock/remote", remote, "expected remote to be 'mock/remote'")
+}
+
+func TestMockAidyCache_Summary(t *testing.T) {
+	mc := NewMockAidyCache()
+	summary, hash := mc.Summary()
+	assert.Equal(t, "mock summary", summary, "expected summary to be 'mock summary'")
+	assert.Equal(t, "mock hash", hash, "expected hash to be 'mock hash'")
+}
+
+func TestMockAidyCache_WithSummary(t *testing.T) {
+	mc := NewMockAidyCache()
+	mc.WithSummary("new summary", "new hash") // Should not change anything
+	summary, hash := mc.Summary()
+	assert.Equal(t, "mock summary", summary, "expected summary to be 'mock summary'")
+	assert.Equal(t, "mock hash", hash, "expected hash to be 'mock hash'")
 }
 
 func TestAidyCache_Remote(t *testing.T) {

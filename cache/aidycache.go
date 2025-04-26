@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"log"
+	"fmt"
 )
 
 type AidyCache interface {
@@ -31,7 +31,7 @@ func (a *aidyCache) Remote() string {
 func (a *aidyCache) WithRemote(remote string) {
 	err := a.ch.Set("target", remote)
 	if err != nil {
-		log.Fatalf("Can't save the project remote address, because '%v'", err)
+		panic(fmt.Errorf("can't save the project remote address, because '%v'", err))
 	}
 }
 
@@ -50,11 +50,11 @@ func (a *aidyCache) Summary() (string, string) {
 func (a *aidyCache) WithSummary(summary string, hash string) {
 	err := a.ch.Set("summary", summary)
 	if err != nil {
-		log.Fatalf("Can't save the project summary, because '%v'", err)
+		panic(fmt.Errorf("can't save the project summary, because '%v'", err))
 	}
 	err = a.ch.Set("summary-hash", hash)
 	if err != nil {
-		log.Fatalf("Can't save the project summary hash, because '%v'", err)
+		panic(fmt.Errorf("can't save the project summary hash, because '%v'", err))
 	}
 }
 
