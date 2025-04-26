@@ -3,7 +3,6 @@ package cache
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -50,7 +49,7 @@ func NewFileCache(path string) (Cache, error) {
 			}
 		}()
 		_ = json.NewDecoder(f).Decode(&c.store)
-	} else if !errors.Is(err, os.ErrNotExist) {
+	} else {
 		return nil, err
 	}
 	return c, nil
