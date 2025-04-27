@@ -3,9 +3,11 @@ package cache
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/volodya-lombrozo/aidy/git"
 )
 
 func TestSetAndGet(t *testing.T) {
@@ -34,9 +36,16 @@ func TestSetAndGet(t *testing.T) {
 		t.Errorf("Expected 'bar', got '%s'", val)
 	}
 }
-func TestNewGitCache_InvalidPath(t *testing.T) {
-	_, err := NewGitCache("/invalid/path/to/cache.json")
-	assert.Error(t, err, "Expected error due to invalid file path")
+func TestNewGitCache_CreatesFileIfNotExists(t *testing.T) {
+	tmpDir := t.TempDir()
+	name := "cache.json"
+	tmpFile := filepath.Join(tmpDir, name)
+
+	_, err := NewGitCache(name, git.NewMockGitWithDir(tmpDir))
+	assert.NoError(t, err, "Expected no error when creating GitCache with a new file path")
+
+	_, err = os.Stat(tmpFile)
+	assert.NoError(t, err, "Expected file to be created")
 }
 
 func TestNewGitCache_Get(t *testing.T) {
@@ -46,7 +55,7 @@ func TestNewGitCache_Get(t *testing.T) {
 			t.Fatalf("Failed to remove temp file: %v", err)
 		}
 	}()
-	c, err := NewGitCache(tmpFile)
+	c, err := NewGitCache(filepath.Base(tmpFile), git.NewMockGitWithDir(filepath.Dir(tmpFile)))
 	if err != nil {
 		t.Fatalf("Failed to create GitCache: %v", err)
 	}
@@ -132,7 +141,7 @@ func TestEnsureIgnored_CreatesGitignoreWithEntry(t *testing.T) {
 	}()
 	_ = os.Chdir(tmp)
 
-	ch := NewGitMockCache()
+	ch := NewGitMockCache(tmp)
 	err := ch.Set("set", "mock value")
 
 	assert.NoError(t, err)
@@ -156,7 +165,7 @@ func TestEnsureIgnored_AppendsIfMissing(t *testing.T) {
 	_ = os.Chdir(tmp)
 	_ = os.WriteFile(".gitignore", []byte("something-else\n"), 0644)
 
-	ch := NewGitMockCache()
+	ch := NewGitMockCache(tmp)
 	err := ch.Set("set", "mock value")
 
 	assert.NoError(t, err)
@@ -181,7 +190,7 @@ func TestEnsureIgnored_DoesNothingIfAlreadyPresent(t *testing.T) {
 	_ = os.Chdir(tmp)
 	_ = os.WriteFile(".gitignore", []byte(".aidy\n"), 0644)
 
-	ch := NewGitMockCache()
+	ch := NewGitMockCache(tmp)
 	err := ch.Set("set", "mock value")
 
 	assert.NoError(t, err)

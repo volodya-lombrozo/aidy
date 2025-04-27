@@ -175,5 +175,5 @@ func (r *RealGit) Root() (string, error) {
 		log.Printf("Can't find git root directory, '%v'", err)
 		return out, err
 	}
-	return out, nil
+	return strings.TrimSpace(out), nil
 }

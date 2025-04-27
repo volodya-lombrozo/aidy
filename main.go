@@ -24,13 +24,12 @@ func main() {
 
 	command := os.Args[1]
 	shell := &executor.RealExecutor{}
-
-	gitcache, err := cache.NewGitCache(".aidy/cache.js")
+	gitService := git.NewRealGit(shell)
+	gitcache, err := cache.NewGitCache(".aidy/cache.js", gitService)
 	if err != nil {
 		log.Fatalf("Can't open cache %v", err)
 	}
 	ch := cache.NewAidyCache(gitcache)
-	gitService := git.NewRealGit(shell)
 	yamlConfig := readConfiguration(gitService)
 	githubKey, err := yamlConfig.GetGithubAPIKey()
 	if err != nil {
