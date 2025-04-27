@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/volodya-lombrozo/aidy/git"
 )
 
 type Cache interface {
@@ -21,6 +23,7 @@ type fileCache struct {
 
 type gitCache struct {
 	delegate Cache
+	gs       git.Git
 	path     string
 }
 
@@ -40,18 +43,37 @@ func (c *mockCache) Set(key, value string) error {
 }
 
 func NewFileCache(path string) (Cache, error) {
+	path = filepath.FromSlash(path)
 	c := &fileCache{path: path, store: map[string]string{}}
 	f, err := os.Open(path)
-	if err == nil {
+	if err != nil {
+		if os.IsNotExist(err) {
+			dir := filepath.Dir(path)
+			if mkerr := os.MkdirAll(dir, 0755); mkerr != nil {
+				return nil, mkerr
+			}
+			created, cerr := os.Create(path)
+			defer func() {
+				if cerr := created.Close(); cerr != nil {
+					err = cerr
+				}
+			}()
+			if cerr != nil {
+				return nil, cerr
+			}
+		} else {
+			return nil, err
+		}
+	} else {
+		// File exists, decode its content
 		defer func() {
 			if cerr := f.Close(); cerr != nil {
 				err = cerr
 			}
 		}()
 		_ = json.NewDecoder(f).Decode(&c.store)
-	} else {
-		return nil, err
 	}
+
 	return c, nil
 }
 
@@ -90,17 +112,21 @@ func (c *fileCache) save() error {
 	return enc.Encode(c.store)
 }
 
-func NewGitMockCache() Cache {
+func NewGitMockCache(gitdir string) Cache {
 	original := NewMockCache()
-	return &gitCache{delegate: original}
+	return &gitCache{delegate: original, gs: git.NewMockGitWithDir(gitdir)}
 }
 
-func NewGitCache(path string) (Cache, error) {
-	original, err := NewFileCache(path)
+func NewGitCache(path string, gs git.Git) (Cache, error) {
+	root, err := gs.Root()
 	if err != nil {
 		return nil, err
 	}
-	return &gitCache{delegate: original, path: path}, nil
+	original, err := NewFileCache(filepath.Join(root, path))
+	if err != nil {
+		return nil, err
+	}
+	return &gitCache{delegate: original, path: path, gs: gs}, nil
 }
 
 func (c *gitCache) Get(key string) (string, bool) {
@@ -108,15 +134,19 @@ func (c *gitCache) Get(key string) (string, bool) {
 }
 
 func (c *gitCache) Set(key, value string) error {
-	if err := ensureIgnored(c.path); err != nil {
+	if err := ensureIgnored(c.path, c.gs); err != nil {
 		return err
 	}
 	return c.delegate.Set(key, value)
 }
 
-func ensureIgnored(filePath string) error {
+func ensureIgnored(filePath string, gs git.Git) error {
 	const entry = ".aidy"
-	const gitignore = ".gitignore"
+	root, err := gs.Root()
+	if err != nil {
+		panic(err)
+	}
+	gitignore := filepath.Join(root, ".gitignore")
 	file, err := os.Open(gitignore)
 	if err != nil {
 		if os.IsNotExist(err) {
