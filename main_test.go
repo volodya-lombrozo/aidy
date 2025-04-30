@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"os"
+	"path/filepath"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/volodya-lombrozo/aidy/ai"
@@ -13,8 +16,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/executor"
 	"github.com/volodya-lombrozo/aidy/git"
 	"github.com/volodya-lombrozo/aidy/github"
-	"os"
-	"path/filepath"
+	"github.com/volodya-lombrozo/aidy/output"
 )
 
 func TestHeal(t *testing.T) {
@@ -82,24 +84,11 @@ func TestPullRequest(t *testing.T) {
 	mockGit := &git.MockGit{}
 	mockAI := &ai.MockAI{}
 	mockGithub := &github.MockGithub{}
+	out := output.NewMock()
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+	pull_request(mockGit, mockAI, mockGithub, cache.NewMockAidyCache(), out)
 
-	pull_request(mockGit, mockAI, mockGithub, cache.NewMockAidyCache())
-
-	if err := w.Close(); err != nil {
-		t.Fatalf("Error closing pipe writer: %v", err)
-	}
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, r); err != nil {
-		t.Fatalf("Error copying data: %v", err)
-	}
-	output := buf.String()
-
+	output := out.Last()
 	expected := "\ngh pr create --title \"Mock Title for 41\" --body \"Mock Body for 41\" --repo mock/remote"
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }
@@ -158,17 +147,11 @@ func TestHandleIssue(t *testing.T) {
 	mockAI := &ai.MockAI{}
 	gh := &github.MockGithub{}
 	userInput := "test input"
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	issue(userInput, mockAI, gh, cache.NewMockAidyCache())
-	err := w.Close()
-	require.NoError(t, err)
-	os.Stdout = old
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, r)
-	require.NoError(t, err)
-	output := buf.String()
+	out := output.NewMock()
+
+	issue(userInput, mockAI, gh, cache.NewMockAidyCache(), out)
+
+	output := out.Last()
 	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo mock/remote"
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/executor"
 	"github.com/volodya-lombrozo/aidy/git"
 	"github.com/volodya-lombrozo/aidy/github"
+	"github.com/volodya-lombrozo/aidy/output"
 )
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 	command := os.Args[1]
 	shell := &executor.RealExecutor{}
 	gitService := git.NewRealGit(shell)
+	out := output.NewEditor()
 	gitcache, err := cache.NewGitCache(".aidy/cache.js", gitService)
 	if err != nil {
 		log.Fatalf("Can't open cache %v", err)
@@ -100,7 +102,7 @@ func main() {
 	case "help":
 		help()
 	case "pr", "pull-request":
-		pull_request(gitService, aiService, gh, ch)
+		pull_request(gitService, aiService, gh, ch, out)
 	case "h", "heal":
 		heal(gitService, shell)
 	case "ci", "commit":
@@ -115,7 +117,7 @@ func main() {
 			log.Fatalf("Error: No input provided for issue generation.")
 		}
 		userInput := os.Args[2]
-		issue(userInput, aiService, gh, ch)
+		issue(userInput, aiService, gh, ch, out)
 	case "conf", "config":
 		printConfig(yamlConfig)
 	case "clean":
@@ -195,10 +197,7 @@ func help() {
 	fmt.Println("  aidy help - Show this help message.")
 }
 
-// This method implements the 'issue' command.
-// It creates a `gh` issue command.
-// For example `gh issue create --title "Issue title" --body "Issue body"`
-func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCache) {
+func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCache, out output.Output) {
 	summary, _ := ch.Summary()
 	title, err := aiService.IssueTitle(userInput, summary)
 	if err != nil {
@@ -226,7 +225,8 @@ func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCac
 	} else {
 		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQuotes(title), healQuotes(body))))
 	}
-	fmt.Printf("%s%s\n", cmd, repo)
+	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
+	out.Print(cmd)
 }
 
 func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
@@ -272,7 +272,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 	heal(gitService, shell)
 }
 
-func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cache.AidyCache) {
+func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cache.AidyCache, out output.Output) {
 	branchName, err := gitService.GetBranchName()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
@@ -301,7 +301,8 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	}
 	prtitle := healPRTitle(healQuotes(title), nissue)
 	prbody := healPRBody(healQuotes(body), nissue)
-	fmt.Printf("\n%s\n", escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo)))
+	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo))
+	out.Print(cmd)
 }
 
 func heal(gitService git.Git, shell executor.Executor) {
