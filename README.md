@@ -4,6 +4,8 @@
 
 Aidy is a command-line tool that generates GitHub pull request commands with AI-generated titles and body messages.
 
+[GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow)
+
 ## Features
 
 - Generate concise and structured pull request titles and bodies using OpenAI.

@@ -18,11 +18,11 @@ import (
 )
 
 func TestHeal(t *testing.T) {
-	mockGit := &git.MockGit{}
 	mockExecutor := &executor.MockExecutor{
 		Output: "",
 		Err:    nil,
 	}
+	mockGit := &git.MockGit{Shell: mockExecutor}
 
 	heal(mockGit, mockExecutor)
 
@@ -57,12 +57,12 @@ func TestCleanCache(t *testing.T) {
 }
 
 func TestSquash(t *testing.T) {
-	mockGit := &git.MockGit{}
 	mockAI := &ai.MockAI{}
 	mockExecutor := &executor.MockExecutor{
 		Output: "",
 		Err:    nil,
 	}
+	mockGit := &git.MockGit{Shell: mockExecutor}
 
 	squash(mockGit, mockExecutor, mockAI)
 
@@ -71,7 +71,6 @@ func TestSquash(t *testing.T) {
 		"git add --all",
 		"git commit --amend -m feat(#41): current commit message",
 	}
-
 	for i, expectedCommand := range expectedCommands {
 		if !strings.Contains(mockExecutor.Commands[i], expectedCommand) {
 			t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
@@ -135,12 +134,12 @@ func TestHealQuotesParametrized(t *testing.T) {
 }
 
 func TestCommit(t *testing.T) {
-	mockGit := &git.MockGit{}
 	mockAI := &ai.MockAI{}
 	mockExecutor := &executor.MockExecutor{
 		Output: "",
 		Err:    nil,
 	}
+	mockGit := &git.MockGit{Shell: mockExecutor}
 
 	commit(mockGit, mockExecutor, false, mockAI)
 

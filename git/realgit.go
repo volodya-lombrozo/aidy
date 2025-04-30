@@ -14,7 +14,14 @@ type RealGit struct {
 	shell executor.Executor
 }
 
-// NewRealGit creates a new RealGit instance. If no directory is provided, it uses the current working directory.
+func (r *RealGit) Amend(message string) error {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "commit", "--amend", "-m", message)
+	if err != nil {
+		return fmt.Errorf("error amending commit: %w", err)
+	}
+	return nil
+}
+
 func NewRealGit(shell executor.Executor, dir ...string) *RealGit {
 	var directory string
 	if len(dir) > 0 && dir[0] != "" {
@@ -27,6 +34,14 @@ func NewRealGit(shell executor.Executor, dir ...string) *RealGit {
 		}
 	}
 	return &RealGit{dir: directory, shell: shell}
+}
+
+func (r *RealGit) Reset(ref string) error {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "reset", "--soft", ref)
+	if err != nil {
+		return fmt.Errorf("error resetting to %s: %w", ref, err)
+	}
+	return nil
 }
 
 func (r *RealGit) CommitChanges(messages ...string) error {
@@ -176,4 +191,12 @@ func (r *RealGit) Root() (string, error) {
 		return out, err
 	}
 	return strings.TrimSpace(out), nil
+}
+
+func (r *RealGit) AddAll() error {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "add", "--all")
+	if err != nil {
+		return fmt.Errorf("error adding all changes: %w", err)
+	}
+	return nil
 }
