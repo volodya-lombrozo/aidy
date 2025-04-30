@@ -11,4 +11,7 @@ type Git interface {
 	Remotes() ([]string, error)
 	Installed() (bool, error)
 	Root() (string, error)
+	Reset(ref string) error
+	AddAll() error
+	Amend(message string) error
 }

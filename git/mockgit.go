@@ -1,9 +1,42 @@
 package git
 
-type MockGit struct{}
+import (
+	"github.com/volodya-lombrozo/aidy/executor"
+)
+
+type MockGit struct {
+	Shell executor.Executor
+}
+
+func (m *MockGit) Amend(message string) error {
+	if m.Shell != nil {
+		if _, err := m.Shell.RunCommand("git commit --amend -m " + message); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *MockGit) AddAll() error {
+	if m.Shell != nil {
+		if _, err := m.Shell.RunCommand("git add --all"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (m *MockGit) GetBaseBranchName() (string, error) {
 	return "main", nil
+}
+
+func (m *MockGit) Reset(ref string) error {
+	if m.Shell != nil {
+		if _, err := m.Shell.RunCommand("git reset --soft", ref); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (m *MockGit) AppendToCommit() error {
@@ -46,8 +79,12 @@ type MockGitWithDir struct {
 	dir string
 }
 
-func NewMockGitWithDir(dir string) *MockGitWithDir {
+func NewMockGitWithDir(dir string) Git {
 	return &MockGitWithDir{dir: dir}
+}
+
+func (m *MockGitWithDir) Reset(ref string) error {
+	return nil
 }
 
 func (m *MockGitWithDir) GetBaseBranchName() (string, error) {
@@ -88,4 +125,12 @@ func (m *MockGitWithDir) Installed() (bool, error) {
 
 func (m *MockGitWithDir) Root() (string, error) {
 	return m.dir, nil
+}
+
+func (m *MockGitWithDir) AddAll() error {
+	return nil
+}
+
+func (m *MockGitWithDir) Amend(message string) error {
+	panic("unimplemented")
 }

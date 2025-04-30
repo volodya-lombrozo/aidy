@@ -29,6 +29,82 @@ func TestRealGit_Remotes(t *testing.T) {
 	assert.Equal(t, urls, expected)
 }
 
+func TestRealGit_Amend(t *testing.T) {
+	mockExecutor := &executor.MockExecutor{}
+	gitService := NewRealGit(mockExecutor, "")
+
+	message := "Updated commit message"
+	err := gitService.Amend(message)
+	require.NoError(t, err)
+
+	expectedCommand := "git commit --amend -m " + message
+	if len(mockExecutor.Commands) != 1 {
+		t.Fatalf("Expected 1 command, got %d", len(mockExecutor.Commands))
+	}
+
+	if !strings.Contains(mockExecutor.Commands[0], expectedCommand) {
+		t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[0])
+	}
+}
+
+func TestRealGit_AddAll(t *testing.T) {
+	mockExecutor := &executor.MockExecutor{}
+	gitService := NewRealGit(mockExecutor, "")
+
+	err := gitService.AddAll()
+	require.NoError(t, err)
+
+	expectedCommand := "git add --all"
+	if len(mockExecutor.Commands) != 1 {
+		t.Fatalf("Expected 1 command, got %d", len(mockExecutor.Commands))
+	}
+
+	if !strings.Contains(mockExecutor.Commands[0], expectedCommand) {
+		t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[0])
+	}
+}
+
+func TestRealGit_Reset(t *testing.T) {
+	repoDir, cleanup := setupTestRepo(t)
+	defer cleanup()
+
+	gitService := NewRealGit(&executor.RealExecutor{}, repoDir)
+
+	filePath := filepath.Join(repoDir, "resetfile.txt")
+	if err := os.WriteFile(filePath, []byte("Reset content"), 0644); err != nil {
+		t.Fatalf("Error writing to file: %v", err)
+	}
+	cmd := exec.Command("git", "add", ".")
+	cmd.Dir = repoDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Error running command: %v", err)
+	}
+	cmd = exec.Command("git", "commit", "-m", "Commit for reset test")
+	cmd.Dir = repoDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Error running command: %v", err)
+	}
+
+	cmd = exec.Command("git", "rev-parse", "HEAD")
+	cmd.Dir = repoDir
+	commitHash, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("Error getting commit hash: %v", err)
+	}
+	hash := strings.TrimSpace(string(commitHash))
+
+	err = gitService.Reset(hash)
+
+	require.NoError(t, err)
+	cmd = exec.Command("git", "status", "--porcelain")
+	cmd.Dir = repoDir
+	statusOutput, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("Error getting git status: %v", err)
+	}
+	assert.Empty(t, strings.TrimSpace(string(statusOutput)), "Expected working directory to be clean after reset")
+}
+
 func TestRealGitRoot(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()

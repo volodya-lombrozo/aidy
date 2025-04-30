@@ -21,7 +21,6 @@ func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("Error: No command provided. Use 'aidy help' for usage.")
 	}
-
 	command := os.Args[1]
 	shell := &executor.RealExecutor{}
 	gitService := git.NewRealGit(shell)
@@ -235,7 +234,7 @@ func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
 	if err != nil {
 		log.Fatalf("Error determining base branch: %v", err)
 	}
-	_, resetErr := shell.RunCommand("git", "reset", "--soft", "refs/heads/"+baseBranch)
+	resetErr := gitService.Reset("refs/heads/" + baseBranch)
 	if resetErr != nil {
 		log.Fatalf("Error executing git reset: %v", err)
 	}
@@ -253,7 +252,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 		if err != nil {
 			log.Fatalf("Error getting branch name: %v", err)
 		}
-		_, addErr := shell.RunCommand("git", "add", "--all")
+		addErr := gitService.AddAll()
 		if addErr != nil {
 			log.Fatalf("Error adding git files: %v", err)
 		}
@@ -317,7 +316,7 @@ func heal(gitService git.Git, shell executor.Executor) {
 	}
 	re := regexp.MustCompile(`#\d+`)
 	newCommitMessage := re.ReplaceAllString(commitMessage, fmt.Sprintf("#%s", issueNumber))
-	_, err = shell.RunCommand("git", "commit", "--amend", "-m", newCommitMessage)
+	err = gitService.Amend(newCommitMessage)
 	if err != nil {
 		log.Fatalf("Error amending commit message: %v", err)
 	}
