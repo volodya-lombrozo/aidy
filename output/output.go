@@ -38,7 +38,8 @@ func NewMock() *Mock {
 }
 
 func (e *editor) Print(command string) {
-	fmt.Printf("generated command: %s\n", command)
+	cmd := prettyCommand(command)
+	fmt.Printf("\ngenerated command:\n%s\n", cmd)
 	for {
 		fmt.Fprint(os.Stderr, "[r]un, [e]dit, [c]ancel, [p]rint? ")
 		reader := bufio.NewReader(os.Stdin)
@@ -50,21 +51,21 @@ func (e *editor) Print(command string) {
 		choice := strings.ToLower(strings.TrimSpace(line))
 		switch choice {
 		case "r":
-			run(command)
+			run(cmd)
 			return
 		case "e":
-			updated := e.edit(command)
+			updated := e.edit(cmd)
 			if updated == "" {
 				return
 			}
-			command = updated
-			run(command)
+			cmd = updated
+			run(cmd)
 			return
 		case "c":
-			fmt.Println("Canceled.")
+			fmt.Println("canceled.")
 			return
 		case "p":
-			fmt.Println(command)
+			fmt.Println(cmd)
 			return
 		default:
 			fmt.Fprintln(os.Stderr, "please type r, e, c, or p and press enter.")
@@ -73,8 +74,8 @@ func (e *editor) Print(command string) {
 }
 
 func run(command string) {
-	fmt.Printf("Running '%s' command\n", command)
-	parts := splitCommand(command)
+	fmt.Printf("running '%s' command\n", command)
+	parts := cleanQoutes(splitCommand(command))
 	fmt.Printf("command parts '%v'\n", parts)
 	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Stdout = os.Stdout
@@ -84,6 +85,13 @@ func run(command string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func cleanQoutes(all []string) []string {
+	for i, s := range all {
+		all[i] = strings.Trim(s, `"`)
+	}
+	return all
 }
 
 func (e *editor) edit(input string) string {
@@ -123,6 +131,24 @@ func (e *editor) edit(input string) string {
 	return string(edited)
 }
 
+func prettyCommand(command string) string {
+	parts := splitCommand(command)
+	var res strings.Builder
+	for i, p := range parts {
+		if strings.HasPrefix(p, "--") {
+			res.WriteString("\n")
+			res.WriteString("  ")
+			res.WriteString(p)
+		} else {
+			if i != 0 {
+				res.WriteString(" ")
+			}
+			res.WriteString(p)
+		}
+	}
+	return res.String()
+}
+
 func (p *printer) Print(command string) {
 	fmt.Println(command)
 }
@@ -134,7 +160,7 @@ func (m *Mock) Print(command string) {
 func (m *Mock) Last() string {
 	size := len(m.captured)
 	if size < 1 {
-		panic("We weren't able to capture anything")
+		panic("we weren't able to capture anything")
 	}
 	return m.captured[size-1]
 }
@@ -165,12 +191,15 @@ func splitCommand(input string) []string {
 		case ch == '\\':
 			escaped = true
 		case ch == '"':
+			current.WriteRune(ch)
 			quoted = !quoted
 		case ch == ' ' && !quoted:
 			if current.Len() > 0 {
 				args = append(args, current.String())
 				current.Reset()
 			}
+		case ch == '\n' && !quoted:
+			continue
 		default:
 			current.WriteRune(ch)
 		}
