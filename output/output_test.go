@@ -2,11 +2,13 @@ package output
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"fmt"
 	"io"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPrettyCommand(t *testing.T) {
@@ -40,6 +42,81 @@ func TestPrettyCommand(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			got := prettyCommand(tt.input)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestFindEditor(t *testing.T) {
+	originalEditor := os.Getenv("EDITOR")
+	defer func() {
+		if err := os.Setenv("EDITOR", originalEditor); err != nil {
+			t.Errorf("failed to reset EDITOR environment variable: %v", err)
+		}
+	}()
+
+	tests := []struct {
+		envEditor string
+		os        string
+		expected  string
+	}{
+		{"", "windows", "notepad"},
+		{"", "darwin", "vi"},
+		{"", "linux", "vi"},
+		{"nano", "linux", "nano"},
+		{"code", "darwin", "code"},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("EDITOR=%s OS=%s", test.envEditor, test.os), func(t *testing.T) {
+			if err := os.Setenv("EDITOR", test.envEditor); err != nil {
+				t.Errorf("failed to set EDITOR environment variable: %v", err)
+			}
+			editor := findEditor(test.os)
+			assert.Equal(t, test.expected, editor)
+		})
+	}
+}
+
+func TestMockOutput(t *testing.T) {
+	mock := NewMock()
+
+	// Test capturing a single command
+	mock.Print("command1")
+	require.Equal(t, "command1", mock.Last(), "Last command should be 'command1'")
+
+	// Test capturing multiple commands
+	mock.Print("command2")
+	require.Equal(t, "command2", mock.Last(), "Last command should be 'command2'")
+
+	// Test capturing another command
+	mock.Print("command3")
+	require.Equal(t, "command3", mock.Last(), "Last command should be 'command3'")
+
+	// Test panic when no commands are captured
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic when no commands are captured")
+		}
+	}()
+	emptyMock := NewMock()
+	emptyMock.Last()
+}
+func TestCleanQoutes(t *testing.T) {
+	tests := []struct {
+		input    []string
+		expected []string
+	}{
+		{[]string{`"hello"`, `"world"`}, []string{"hello", "world"}},
+		{[]string{`"foo"`, `"bar"`, `"baz"`}, []string{"foo", "bar", "baz"}},
+		{[]string{`"quoted"`, `unquoted`, `"another"`}, []string{"quoted", "unquoted", "another"}},
+		{[]string{`""`, `"empty"`}, []string{"", "empty"}},
+		{[]string{`"noquotes"`}, []string{"noquotes"}},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%v", test.input), func(t *testing.T) {
+			result := cleanQoutes(test.input)
+			require.Equal(t, test.expected, result, "For input %v, expected %v, got %v", test.input, test.expected, result)
 		})
 	}
 }

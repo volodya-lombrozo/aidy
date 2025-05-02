@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -11,6 +12,23 @@ import (
 type RealExecutor struct{}
 
 const maxLogLength = 120
+
+func NewRealExecutor() Executor {
+	return &RealExecutor{}
+}
+
+func (r *RealExecutor) RunInteractively(cmd string, args ...string) (string, error) {
+	logShortf("Execute: \"%s\" with args: \"%v\"", cmd, args)
+	command := exec.Command(cmd, args...)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+	command.Stdin = os.Stdin
+	err := command.Run()
+	if err != nil {
+		return "", err
+	}
+	return "unimplemented", nil
+}
 
 func (r *RealExecutor) RunCommand(name string, args ...string) (string, error) {
 	logShortf("Execute: \"%s %s\"", name, strings.Join(args, " "))

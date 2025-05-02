@@ -8,14 +8,24 @@ type MockExecutor struct {
 	Commands []string
 }
 
-func (m *MockExecutor) RunCommand(name string, args ...string) (string, error) {
-	command := name + " " + strings.Join(args, " ")
+func NewMock() *MockExecutor {
+	return &MockExecutor{}
+}
+
+func (m *MockExecutor) RunInteractively(cmd string, args ...string) (string, error) {
+	command := cmd + " " + strings.Join(args, " ")
 	m.Commands = append(m.Commands, command)
 	return m.Output, m.Err
 }
 
-func (m *MockExecutor) RunCommandInDir(dir string, name string, args ...string) (string, error) {
-	command := "cd " + dir + " && " + name + " " + strings.Join(args, " ")
+func (m *MockExecutor) RunCommand(cmd string, args ...string) (string, error) {
+	command := cmd + " " + strings.Join(args, " ")
+	m.Commands = append(m.Commands, command)
+	return m.Output, m.Err
+}
+
+func (m *MockExecutor) RunCommandInDir(dir string, cmd string, args ...string) (string, error) {
+	command := "cd " + dir + " && " + cmd + " " + strings.Join(args, " ")
 	m.Commands = append(m.Commands, command)
 	return m.Output, m.Err
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func TestRealExecutor_RunCommand(t *testing.T) {
-	executor := &RealExecutor{}
+	executor := NewRealExecutor()
 
 	// Test the echo command
 	output, err := executor.RunCommand("echo", "Hello, World!")
@@ -36,7 +36,7 @@ func TestRealExecutor_RunCommandInDir(t *testing.T) {
 		}
 	}()
 
-	executor := &RealExecutor{}
+	executor := NewRealExecutor()
 	output, err := executor.RunCommandInDir(tempDir, "echo", "Hello, Directory!")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

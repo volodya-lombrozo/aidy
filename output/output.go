@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/volodya-lombrozo/aidy/executor"
 )
 
 type Output interface {
@@ -16,6 +17,7 @@ type Output interface {
 
 type editor struct {
 	external string
+	shell    executor.Executor
 }
 
 type printer struct {
@@ -25,8 +27,8 @@ type Mock struct {
 	captured []string
 }
 
-func NewEditor() Output {
-	return &editor{external: external()}
+func NewEditor(shell executor.Executor) Output {
+	return &editor{external: findEditor(runtime.GOOS), shell: shell}
 }
 
 func NewPrinter() Output {
@@ -51,7 +53,7 @@ func (e *editor) Print(command string) {
 		choice := strings.ToLower(strings.TrimSpace(line))
 		switch choice {
 		case "r":
-			run(cmd)
+			e.run(cmd)
 			return
 		case "e":
 			updated := e.edit(cmd)
@@ -59,7 +61,7 @@ func (e *editor) Print(command string) {
 				return
 			}
 			cmd = updated
-			run(cmd)
+			e.run(cmd)
 			return
 		case "c":
 			fmt.Println("canceled.")
@@ -73,15 +75,11 @@ func (e *editor) Print(command string) {
 	}
 }
 
-func run(command string) {
+func (e *editor) run(command string) {
 	fmt.Printf("running '%s' command\n", command)
 	parts := cleanQoutes(splitCommand(command))
 	fmt.Printf("command parts '%v'\n", parts)
-	cmd := exec.Command(parts[0], parts[1:]...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	err := cmd.Run()
+	_, err := e.shell.RunInteractively(parts[0], parts[1:]...)
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +103,6 @@ func (e *editor) edit(input string) string {
 			log.Printf("failed to remove temp file: %v", err)
 		}
 	}()
-
 	if _, err := tmp.WriteString(input); err != nil {
 		panic(err)
 	}
@@ -116,12 +113,8 @@ func (e *editor) edit(input string) string {
 	editor := e.external
 	parts := strings.Fields(editor)
 	args := append(parts[1:], tmp.Name())
-	cmd := exec.Command(parts[0], args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
+	_, err = e.shell.RunInteractively(parts[0], args...)
+	if err != nil {
 		panic(err)
 	}
 	edited, err := os.ReadFile(tmp.Name())
@@ -165,12 +158,12 @@ func (m *Mock) Last() string {
 	return m.captured[size-1]
 }
 
-func external() string {
+func findEditor(runtime string) string {
 	editor := os.Getenv("EDITOR")
 	if editor != "" {
 		return editor
 	}
-	switch runtime.GOOS {
+	switch runtime {
 	case "windows":
 		return "notepad"
 	default:
