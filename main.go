@@ -23,9 +23,9 @@ func main() {
 		log.Fatal("Error: No command provided. Use 'aidy help' for usage.")
 	}
 	command := os.Args[1]
-	shell := &executor.RealExecutor{}
+	shell := executor.NewRealExecutor()
 	gitService := git.NewRealGit(shell)
-	out := output.NewEditor()
+	out := output.NewEditor(shell)
 	gitcache, err := cache.NewGitCache(".aidy/cache.js", gitService)
 	if err != nil {
 		log.Fatalf("Can't open cache %v", err)

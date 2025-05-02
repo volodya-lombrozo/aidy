@@ -1,7 +1,9 @@
 package executor
 
 type Executor interface {
-	RunCommand(name string, args ...string) (string, error)
+	RunCommand(cmd string, args ...string) (string, error)
 
-	RunCommandInDir(dir string, name string, args ...string) (string, error)
+	RunCommandInDir(dir string, cmd string, args ...string) (string, error)
+
+	RunInteractively(cmd string, args ...string) (string, error)
 }
