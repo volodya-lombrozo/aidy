@@ -3,6 +3,8 @@ package executor
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMockExecutor_RunCommand(t *testing.T) {
@@ -12,12 +14,33 @@ func TestMockExecutor_RunCommand(t *testing.T) {
 	}
 
 	output, err := mock.RunCommand("any-command")
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
+	assert.NoError(t, err, "Expected no error")
+	assert.Equal(t, "mock output", output, "Expected 'mock output'")
+}
+func TestMockExecutor_RunInteractively(t *testing.T) {
+	mock := &MockExecutor{
+		Output: "mock output",
+		Err:    nil,
 	}
-	if output != "mock output" {
-		t.Fatalf("Expected 'mock output', got '%s'", output)
+
+	output, err := mock.RunInteractively("any-command", "arg1", "arg2")
+	assert.NoError(t, err, "Expected no error")
+	assert.Equal(t, "mock output", output, "Expected 'mock output'")
+	assert.Len(t, mock.Commands, 1, "Expected one command")
+	assert.Equal(t, "any-command arg1 arg2", mock.Commands[0], "Expected command 'any-command arg1 arg2'")
+}
+
+func TestMockExecutor_RunCommandInDir(t *testing.T) {
+	mock := &MockExecutor{
+		Output: "mock output",
+		Err:    nil,
 	}
+
+	output, err := mock.RunCommandInDir("/some/dir", "any-command", "arg1", "arg2")
+	assert.NoError(t, err, "Expected no error")
+	assert.Equal(t, "mock output", output, "Expected 'mock output'")
+	assert.Len(t, mock.Commands, 1, "Expected one command")
+	assert.Equal(t, "cd /some/dir && any-command arg1 arg2", mock.Commands[0], "Expected command 'cd /some/dir && any-command arg1 arg2'")
 }
 
 func TestMockExecutor_RunCommandWithError(t *testing.T) {
@@ -27,10 +50,6 @@ func TestMockExecutor_RunCommandWithError(t *testing.T) {
 	}
 
 	_, err := mock.RunCommand("any-command")
-	if err == nil {
-		t.Fatal("Expected error, got none")
-	}
-	if err.Error() != "mock error" {
-		t.Fatalf("Expected 'mock error', got '%v'", err)
-	}
+	assert.Error(t, err, "Expected error")
+	assert.EqualError(t, err, "mock error", "Expected 'mock error'")
 }
