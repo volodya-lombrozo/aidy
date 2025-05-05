@@ -1,9 +1,11 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const YAML_DATA = `
@@ -89,6 +91,32 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, "0.8", modelDeepseek["temperature"])
 	assert.Equal(t, "true", modelDeepseek["use-streaming"])
 	assert.Equal(t, "experimental-mode", modelDeepseek["custom-option"])
+}
+
+const data = `
+default-model: 4o
+models:
+  4o:
+    model-id: gpt-4o
+`
+
+func TestGetModel(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "configtest")
+	require.NoError(t, err)
+	defer func() {
+		if err := os.RemoveAll(tmp); err != nil {
+			t.Fatalf("Error removing temp directory: %v", err)
+		}
+	}()
+	path := tmp + "/config.yml"
+	err = os.WriteFile(path, []byte(data), 0644)
+	require.NoError(t, err)
+
+	config := NewConf(path)
+
+	model, err := config.GetModel()
+	assert.NoError(t, err, "Error should be nil")
+	assert.Equal(t, "gpt-4o", model, "Model ID should match")
 }
 
 func TestGetOpenAIAPIKey(t *testing.T) {
