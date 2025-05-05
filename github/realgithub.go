@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
+	"strconv"
 
 	"github.com/volodya-lombrozo/aidy/cache"
 	"github.com/volodya-lombrozo/aidy/git"
@@ -48,6 +49,9 @@ func NewRealGithub(baseURL string, gitService git.Git, authToken string, ch cach
 func (r *RealGithub) Description(number string) string {
 	if r.gitService == nil {
 		panic("Git service isn't set")
+	}
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Sprintf("Invalid issue number: '%s'", number)
 	}
 	var task issue
 	target := r.ch.Remote()
