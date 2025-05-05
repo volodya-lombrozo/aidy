@@ -22,9 +22,7 @@ func TestMockGithub_IssueDescription(t *testing.T) {
 	expectedDescription := "Mock description for issue #" + issueNumber
 
 	description := mockGithub.Description(issueNumber)
-	if description != expectedDescription {
-		t.Errorf("expected %s, got %s", expectedDescription, description)
-	}
+	assert.Equal(t, expectedDescription, description, "Description should match expected value")
 }
 
 func TestMockGithub_Labels(t *testing.T) {
@@ -45,16 +43,20 @@ func TestRealGithub_Description(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-
 	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockAidyCache())
 
-	issueNumber := "123"
-	description := realGithub.Description(issueNumber)
-	expectedDescription := fmt.Sprintf("Title: '%s'\nBody: '%s'", "Title", "Body")
+	description := realGithub.Description("123")
 
-	if description != expectedDescription {
-		t.Errorf("expected '%s', got '%s'", expectedDescription, description)
-	}
+	assert.Equal(t, fmt.Sprintf("Title: '%s'\nBody: '%s'", "Title", "Body"), description, "Description should match expected value")
+}
+
+func TestRealGithub_Description_NotNumber(t *testing.T) {
+	realGithub := NewRealGithub("http://google.com", &git.MockGit{}, "", cache.NewMockAidyCache())
+	issueNumber := "not-a-number"
+
+	description := realGithub.Description(issueNumber)
+
+	assert.Equal(t, "Invalid issue number: 'not-a-number'", description)
 }
 
 func TestRealGithub_Labels(t *testing.T) {
