@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const YAML_DATA = `
+const FULL = `
 # Global settings
 default-model: 4o
 
@@ -41,49 +41,45 @@ models:
     use-streaming: true
     custom-option: experimental-mode`
 
+const MODEL_ONLY = `
+default-model: 4o
+models:
+  4o:
+    model-id: gpt-4o
+`
+
+const KEYS = `
+api-keys:
+  openai: sk-test
+  github: gh-test
+`
+
 func TestNewConfig(t *testing.T) {
-
-	tempDir, err := os.MkdirTemp("", "configtest")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Fatalf("Error removing temp directory: %v", err)
-		}
-	}()
-
-	configFilePath := tempDir + "/config.yml"
-	configContent := []byte(YAML_DATA)
+	tmp, err := os.MkdirTemp("", "configtest")
+	require.NoError(t, err)
+	defer clean(t, tmp)
+	configFilePath := tmp + "/config.yml"
+	configContent := []byte(FULL)
 	err = os.WriteFile(configFilePath, configContent, 0644)
-	if err != nil {
-		t.Fatalf("Failed to write config file: %v", err)
-	}
+	require.NoError(t, err)
 
-	config := NewConf(configFilePath)
-	if err != nil {
-		t.Fatalf("Failed to create YAMLConfig: %v", err)
-	}
-	assert.NoError(t, err, "Failed to unmarshal YAML")
+	config := YamlConf(configFilePath)
 
 	assert.Equal(t, "4o", config.DefaultModel)
 	assert.Equal(t, "sk-...", config.APIKeys["openai"])
 	assert.Equal(t, "ds-...", config.APIKeys["deepseek"])
-
 	model4o := config.Models["4o"]
 	assert.Equal(t, "openai", model4o["provider"])
 	assert.Equal(t, "gpt-4o", model4o["model-id"])
 	assert.Equal(t, "8192", model4o["max-tokens"])
 	assert.Equal(t, "0.7", model4o["temperature"])
 	assert.Equal(t, "true", model4o["use-streaming"])
-
 	model4oMini := config.Models["4o-mini"]
 	assert.Equal(t, "openai", model4oMini["provider"])
 	assert.Equal(t, "gpt-4o-mini", model4oMini["model-id"])
 	assert.Equal(t, "4096", model4oMini["max-tokens"])
 	assert.Equal(t, "0.5", model4oMini["temperature"])
 	assert.Equal(t, "false", model4oMini["use-streaming"])
-
 	modelDeepseek := config.Models["deepseek"]
 	assert.Equal(t, "deepseek", modelDeepseek["provider"])
 	assert.Equal(t, "deepseek-chat", modelDeepseek["model-id"])
@@ -93,26 +89,15 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, "experimental-mode", modelDeepseek["custom-option"])
 }
 
-const data = `
-default-model: 4o
-models:
-  4o:
-    model-id: gpt-4o
-`
-
 func TestGetModel(t *testing.T) {
 	tmp, err := os.MkdirTemp("", "configtest")
 	require.NoError(t, err)
-	defer func() {
-		if err := os.RemoveAll(tmp); err != nil {
-			t.Fatalf("Error removing temp directory: %v", err)
-		}
-	}()
+	defer clean(t, tmp)
 	path := tmp + "/config.yml"
-	err = os.WriteFile(path, []byte(data), 0644)
+	err = os.WriteFile(path, []byte(MODEL_ONLY), 0644)
 	require.NoError(t, err)
 
-	config := NewConf(path)
+	config := YamlConf(path)
 
 	model, err := config.GetModel()
 	assert.NoError(t, err, "Error should be nil")
@@ -120,28 +105,14 @@ func TestGetModel(t *testing.T) {
 }
 
 func TestGetOpenAIAPIKey(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "configtest")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Fatalf("Error removing temp directory: %v", err)
-		}
-	}()
+	tmp, err := os.MkdirTemp("", "configtest")
+	require.NoError(t, err, "Failed to create temp dir")
+	defer clean(t, tmp)
+	path := tmp + "/config.yml"
+	err = os.WriteFile(path, []byte(KEYS), 0644)
+	require.NoError(t, err, "Failed to write config file")
 
-	configFilePath := tempDir + "/config.yml"
-	configContent := []byte(`
-api-keys:
-  openai: sk-test
-  github: gh-test
-`)
-	err = os.WriteFile(configFilePath, configContent, 0644)
-	if err != nil {
-		t.Fatalf("Failed to write config file: %v", err)
-	}
-
-	config := NewConf(configFilePath)
+	config := YamlConf(path)
 
 	apiKey, err := config.GetOpenAIAPIKey()
 	assert.NoError(t, err, "Error should be nil")
@@ -149,30 +120,22 @@ api-keys:
 }
 
 func TestGetGithubAPIKey(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "configtest")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Fatalf("Error removing temp directory: %v", err)
-		}
-	}()
+	tmp, err := os.MkdirTemp("", "configtest")
+	require.NoError(t, err, "Failed to create temo dir")
+	defer clean(t, tmp)
+	path := tmp + "/config.yml"
+	err = os.WriteFile(path, []byte(KEYS), 0644)
+	require.NoError(t, err, "Filed to write config file")
 
-	configFilePath := tempDir + "/config.yml"
-	configContent := []byte(`
-api-keys:
-  openai: sk-test
-  github: gh-test
-`)
-	err = os.WriteFile(configFilePath, configContent, 0644)
-	if err != nil {
-		t.Fatalf("Failed to write config file: %v", err)
-	}
-
-	config := NewConf(configFilePath)
+	config := YamlConf(path)
 
 	apiKey, err := config.GetGithubAPIKey()
 	assert.NoError(t, err, "Error should be nil")
 	assert.Equal(t, "gh-test", apiKey, "API key should match")
+}
+
+func clean(t *testing.T, tmp string) {
+	if err := os.RemoveAll(tmp); err != nil {
+		t.Fatalf("Error removing temp directory: %v", err)
+	}
 }

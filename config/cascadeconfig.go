@@ -41,7 +41,7 @@ func findAidyConf(gs git.Git) (Config, bool) {
 	all := possiblePaths(gs, ".aidy.conf")
 	for _, p := range all {
 		if exists(p) {
-			return NewConf(p), true
+			return YamlConf(p), true
 		}
 	}
 	return nil, false
