@@ -125,7 +125,9 @@ func main() {
 	case "diff":
 		printDiff(gitService)
 	default:
-		log.Fatalf("Error: Unknown command '%s'. Use 'aidy help' for usage.\n", command)
+		log.Printf("Error: Unknown command '%s'.\n", command)
+		help()
+		os.Exit(1)
 	}
 }
 
