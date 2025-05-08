@@ -18,6 +18,9 @@ type Output interface {
 type editor struct {
 	external string
 	shell    executor.Executor
+	err      *os.File
+	in       *os.File
+	out      *os.File
 }
 
 type printer struct {
@@ -27,8 +30,14 @@ type Mock struct {
 	captured []string
 }
 
-func NewEditor(shell executor.Executor) Output {
-	return &editor{external: findEditor(runtime.GOOS), shell: shell}
+func NewEditor(shell executor.Executor) *editor {
+	return &editor{
+		external: findEditor(runtime.GOOS),
+		shell:    shell,
+		err:      os.Stderr,
+		in:       os.Stdin,
+		out:      os.Stdout,
+	}
 }
 
 func NewPrinter() Output {
@@ -43,11 +52,11 @@ func (e *editor) Print(command string) {
 	cmd := prettyCommand(command)
 	fmt.Printf("\ngenerated command:\n%s\n", cmd)
 	for {
-		fmt.Fprint(os.Stderr, "[r]un, [e]dit, [c]ancel, [p]rint? ")
-		reader := bufio.NewReader(os.Stdin)
+		e.printf("%s", "[r]un, [e]dit, [c]ancel, [p]rint? ")
+		reader := bufio.NewReader(e.in)
 		line, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error reading input:", err)
+			e.printfErr("%s: %v\n", "Error reading input", err)
 			return
 		}
 		choice := strings.ToLower(strings.TrimSpace(line))
@@ -64,21 +73,21 @@ func (e *editor) Print(command string) {
 			e.run(cmd)
 			return
 		case "c":
-			fmt.Println("canceled.")
+			e.printf("%s\n", "canceled.")
 			return
 		case "p":
-			fmt.Println(cmd)
+			e.printf("%s\n", cmd)
 			return
 		default:
-			fmt.Fprintln(os.Stderr, "please type r, e, c, or p and press enter.")
+			e.printfErr("%s\n", "please type r, e, c, or p and press enter.")
 		}
 	}
 }
 
 func (e *editor) run(command string) {
-	fmt.Printf("running '%s' command\n", command)
+	e.printf("running '%s' command\n", command)
 	parts := cleanQoutes(splitCommand(command))
-	fmt.Printf("command parts '%v'\n", parts)
+	e.printf("command parts '%v'\n", parts)
 	_, err := e.shell.RunInteractively(parts[0], parts[1:]...)
 	if err != nil {
 		panic(err)
@@ -90,6 +99,18 @@ func cleanQoutes(all []string) []string {
 		all[i] = strings.Trim(s, `"`)
 	}
 	return all
+}
+
+func (e *editor) printf(format string, args ...any) {
+	if _, err := fmt.Fprintf(e.out, format, args...); err != nil {
+		panic(err)
+	}
+}
+
+func (e *editor) printfErr(format string, args ...any) {
+	if _, err := fmt.Fprintf(e.err, format, args...); err != nil {
+		panic(err)
+	}
 }
 
 func (e *editor) edit(input string) string {
