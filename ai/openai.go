@@ -71,6 +71,11 @@ func (o *MyOpenAI) Summary(readme string) (string, error) {
 	return o.send(prompt, "")
 }
 
+func (o *MyOpenAI) SuggestBranch(descr string) (string, error) {
+	prompt := fmt.Sprintf(SuggestBranchPrompt, descr)
+	return o.send(prompt, "")
+}
+
 func (o *MyOpenAI) send(prompt, summary string) (string, error) {
 	content := prompt
 	if o.summary {

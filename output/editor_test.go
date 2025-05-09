@@ -23,7 +23,7 @@ func TestEditor_Print_RunOption(t *testing.T) {
 	command := "echo 'Hello, World!'"
 
 	err = editor.Print(command)
-    
+
 	require.NoError(t, err, "Print should not return an error")
 	assert.Len(t, shell.Commands, 1, "expected 1 command to be run")
 	assert.Equal(t, "echo 'Hello, World!'", shell.Commands[0], "expected command to match")
