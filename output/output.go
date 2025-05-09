@@ -12,7 +12,7 @@ import (
 )
 
 type Output interface {
-	Print(command string)
+	Print(command string) error
 }
 
 type editor struct {
@@ -48,7 +48,7 @@ func NewMock() *Mock {
 	return &Mock{}
 }
 
-func (e *editor) Print(command string) {
+func (e *editor) Print(command string) error {
 	cmd := prettyCommand(command)
 	fmt.Printf("\ngenerated command:\n%s\n", cmd)
 	for {
@@ -57,40 +57,40 @@ func (e *editor) Print(command string) {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			e.printfErr("%s: %v\n", "Error reading input", err)
-			return
+			return err
 		}
 		choice := strings.ToLower(strings.TrimSpace(line))
 		switch choice {
 		case "r":
-			e.run(cmd)
-			return
+			return e.run(cmd)
 		case "e":
 			updated := e.edit(cmd)
 			if updated == "" {
-				return
+				return nil
 			}
 			cmd = updated
-			e.run(cmd)
-			return
+			return e.run(cmd)
 		case "c":
 			e.printf("%s\n", "canceled.")
-			return
+			return nil
 		case "p":
 			e.printf("%s\n", cmd)
-			return
+			return nil
 		default:
 			e.printfErr("%s\n", "please type r, e, c, or p and press enter.")
 		}
 	}
 }
 
-func (e *editor) run(command string) {
+func (e *editor) run(command string) error {
 	e.printf("running '%s' command\n", command)
 	parts := cleanQoutes(splitCommand(command))
 	e.printf("command parts '%v'\n", parts)
 	_, err := e.shell.RunInteractively(parts[0], parts[1:]...)
 	if err != nil {
-		panic(err)
+		return err
+	} else {
+		return nil
 	}
 }
 
@@ -163,12 +163,14 @@ func prettyCommand(command string) string {
 	return res.String()
 }
 
-func (p *printer) Print(command string) {
+func (p *printer) Print(command string) error {
 	fmt.Println(command)
+	return nil
 }
 
-func (m *Mock) Print(command string) {
+func (m *Mock) Print(command string) error {
 	m.captured = append(m.captured, command)
+	return nil
 }
 
 func (m *Mock) Last() string {

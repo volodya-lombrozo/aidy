@@ -104,7 +104,7 @@ func main() {
 	case "pr", "pull-request":
 		pull_request(gitService, aiService, gh, ch, out)
 	case "h", "heal":
-		heal(gitService, shell)
+		heal(gitService)
 	case "ci", "commit":
 		noAI := len(os.Args) > 2 && os.Args[2] == "-n"
 		commit(gitService, shell, noAI, aiService)
@@ -228,7 +228,10 @@ func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCac
 		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQuotes(title), healQuotes(body))))
 	}
 	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
-	out.Print(cmd)
+    err = out.Print(cmd)
+    if err != nil {
+        log.Fatalf("Error during making an issue: %v", err)
+    }
 }
 
 func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
@@ -271,7 +274,7 @@ func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai
 			log.Fatalf("Error committing changes: %v", err)
 		}
 	}
-	heal(gitService, shell)
+	heal(gitService)
 }
 
 func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cache.AidyCache, out output.Output) {
@@ -304,10 +307,13 @@ func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cach
 	prtitle := healPRTitle(healQuotes(title), nissue)
 	prbody := healPRBody(healQuotes(body), nissue)
 	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo))
-	out.Print(cmd)
+	err = out.Print(cmd)
+	if err != nil {
+		log.Fatalf("Error during making a pull-request: %v", err)
+	}
 }
 
-func heal(gitService git.Git, shell executor.Executor) {
+func heal(gitService git.Git) {
 	branchName, err := gitService.GetBranchName()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)

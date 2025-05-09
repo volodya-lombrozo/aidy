@@ -79,28 +79,26 @@ func TestFindEditor(t *testing.T) {
 
 func TestMockOutput(t *testing.T) {
 	mock := NewMock()
-
-	// Test capturing a single command
-	mock.Print("command1")
+	_ = mock.Print("command1")
 	require.Equal(t, "command1", mock.Last(), "Last command should be 'command1'")
 
-	// Test capturing multiple commands
-	mock.Print("command2")
+	_ = mock.Print("command2")
 	require.Equal(t, "command2", mock.Last(), "Last command should be 'command2'")
 
-	// Test capturing another command
-	mock.Print("command3")
+	_ = mock.Print("command3")
 	require.Equal(t, "command3", mock.Last(), "Last command should be 'command3'")
-
-	// Test panic when no commands are captured
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("Expected panic when no commands are captured")
-		}
-	}()
-	emptyMock := NewMock()
-	emptyMock.Last()
 }
+
+func TestMockOutput_Panics_WhenNoCommands(t *testing.T) {
+    mock := NewMock()
+    defer func() {
+        if r := recover(); r == nil {
+            t.Errorf("Expected panic when no commands are captured")
+        }
+    }()
+    mock.Last()
+}
+
 func TestCleanQoutes(t *testing.T) {
 	tests := []struct {
 		input    []string
@@ -127,15 +125,12 @@ func TestPrinter_Print(t *testing.T) {
 	os.Stdout = w
 	printer := NewPrinter()
 
-	printer.Print("hello")
-
-	if err := w.Close(); err != nil {
-		t.Errorf("failed to close write pipe: %v", err)
-	}
+	_ = printer.Print("hello")
+    err := w.Close();
+    require.NoError(t, err, "failed to close write pipe")
 	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, r); err != nil {
-		t.Errorf("failed to copy data: %v", err)
-	}
+    _, err = io.Copy(&buf, r);
+    require.NoError(t, err, "failed to copy data")
 	os.Stdout = originalStdout
 	expected := "hello\n"
 	require.Equal(t, expected, buf.String(), "Output should match expected value")

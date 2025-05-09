@@ -1,6 +1,7 @@
 package output
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -21,10 +22,29 @@ func TestEditor_Print_RunOption(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	editor.Print(command)
-
+	err = editor.Print(command)
+    
+	require.NoError(t, err, "Print should not return an error")
 	assert.Len(t, shell.Commands, 1, "expected 1 command to be run")
 	assert.Equal(t, "echo 'Hello, World!'", shell.Commands[0], "expected command to match")
+}
+
+func TestEditor_Print_RunOption_Error(t *testing.T) {
+	r, w, _ := os.Pipe()
+	shell := executor.NewMock()
+	shell.Err = fmt.Errorf("simulated error")
+	editor := NewEditor(shell)
+	editor.in = r
+	_, err := io.WriteString(w, "r\n")
+	require.NoError(t, err, "failed to write to pipe")
+	err = w.Close()
+	require.NoError(t, err, "failed to close write pipe")
+	command := "echo 'Hello, World!'"
+
+	err = editor.Print(command)
+
+	assert.Error(t, err, "expected an error when running the command")
+	assert.Equal(t, "simulated error", err.Error(), "expected error message to match")
 }
 
 func TestEditor_Print_PrintOption(t *testing.T) {
@@ -40,8 +60,9 @@ func TestEditor_Print_PrintOption(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	editor.Print(command)
+	err = editor.Print(command)
 
+	assert.NoError(t, err, "Print should not return an error")
 	err = output_w.Close()
 	require.NoError(t, err, "failed to close output pipe")
 	output, err := io.ReadAll(output_r)
@@ -63,7 +84,7 @@ func TestEditor_Print_CancelOption(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	editor.Print(command)
+	_ = editor.Print(command)
 
 	err = output_w.Close()
 	require.NoError(t, err, "failed to close output pipe")
@@ -82,9 +103,9 @@ func TestEditor_Print_EditOption(t *testing.T) {
 	require.NoError(t, err, "failed to write to pipe")
 	err = w.Close()
 	require.NoError(t, err, "failed to close write pipe")
-
 	command := "echo 'Hello, World!'"
-	editor.Print(command)
+
+	_ = editor.Print(command)
 
 	assert.Len(t, shell.Commands, 2, "expected 2 commands to be run")
 	assert.Equal(t, command, shell.Commands[1], "expected edited command to match")
