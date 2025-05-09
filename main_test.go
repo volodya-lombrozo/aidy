@@ -26,7 +26,7 @@ func TestHeal(t *testing.T) {
 	}
 	mockGit := &git.MockGit{Shell: mockExecutor}
 
-	heal(mockGit, mockExecutor)
+	heal(mockGit)
 
 	expectedCommands := []string{
 		"git commit --amend -m feat(#41): current commit message",
