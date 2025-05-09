@@ -24,14 +24,14 @@ func main() {
 	}
 	command := os.Args[1]
 	shell := executor.NewRealExecutor()
-	gitService := git.NewRealGit(shell)
+	gs := git.NewRealGit(shell)
 	out := output.NewEditor(shell)
-	gitcache, err := cache.NewGitCache(".aidy/cache.js", gitService)
+	gitcache, err := cache.NewGitCache(".aidy/cache.js", gs)
 	if err != nil {
 		log.Fatalf("Can't open cache %v", err)
 	}
 	ch := cache.NewAidyCache(gitcache)
-	yamlConfig := readConfiguration(gitService)
+	yamlConfig := readConfiguration(gs)
 	githubKey, err := yamlConfig.GetGithubAPIKey()
 	if err != nil {
 		log.Printf("Can't find GitHub token in configuration")
@@ -47,7 +47,7 @@ func main() {
 			sumrequired = true
 		}
 	}
-	var aiService ai.AI
+	var brain ai.AI
 	if model == "deepseek-chat" {
 		apiKey, err := yamlConfig.GetDeepseekAPIKey()
 		if err != nil {
@@ -58,7 +58,7 @@ func main() {
 		} else {
 			log.Println("Deepseek key is found")
 		}
-		aiService = ai.NewDeepSeekAI(apiKey, sumrequired)
+		brain = ai.NewDeepSeekAI(apiKey, sumrequired)
 	} else {
 		apiKey, err := yamlConfig.GetOpenAIAPIKey()
 		if err != nil {
@@ -67,10 +67,10 @@ func main() {
 		if apiKey == "" {
 			log.Fatalf("OpenAI API key not found in config file")
 		}
-		aiService = ai.NewOpenAI(apiKey, model, 0.2, sumrequired)
+		brain = ai.NewOpenAI(apiKey, model, 0.2, sumrequired)
 	}
-	checkGitInstalled(gitService)
-	gh := github.NewRealGithub("https://api.github.com", gitService, githubKey, ch)
+	checkGitInstalled(gs)
+	gh := github.NewRealGithub("https://api.github.com", gs, githubKey, ch)
 	target := ch.Remote()
 	if target != "" {
 		log.Printf("Target repo is: %s\n", target)
@@ -97,33 +97,35 @@ func main() {
 		}
 	}
 
-	initSummary(sumrequired, aiService, ch)
+	initSummary(sumrequired, brain, ch)
 	switch command {
 	case "help":
 		help()
 	case "pr", "pull-request":
-		pull_request(gitService, aiService, gh, ch, out)
+		pull_request(gs, brain, gh, ch, out)
 	case "h", "heal":
-		heal(gitService)
+		heal(gs)
 	case "ci", "commit":
 		noAI := len(os.Args) > 2 && os.Args[2] == "-n"
-		commit(gitService, shell, noAI, aiService)
+		commit(gs, shell, noAI, brain)
 	case "sq", "squash":
-		squash(gitService, shell, aiService)
+		squash(gs, shell, brain)
 	case "ap", "append":
-		appendToCommit(gitService)
+		appendToCommit(gs)
 	case "i", "issue":
 		if len(os.Args) < 3 {
 			log.Fatalf("Error: No input provided for issue generation.")
 		}
 		userInput := os.Args[2]
-		issue(userInput, aiService, gh, ch, out)
+		issue(userInput, brain, gh, ch, out)
 	case "conf", "config":
 		printConfig(yamlConfig)
 	case "clean":
 		cleanCache()
+	case "st", "start":
+		startIssue(os.Args[2], brain, gs, gh)
 	case "diff":
-		printDiff(gitService)
+		printDiff(gs)
 	default:
 		log.Printf("Error: Unknown command '%s'.\n", command)
 		help()
@@ -228,10 +230,10 @@ func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCac
 		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQuotes(title), healQuotes(body))))
 	}
 	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
-    err = out.Print(cmd)
-    if err != nil {
-        log.Fatalf("Error during making an issue: %v", err)
-    }
+	err = out.Print(cmd)
+	if err != nil {
+		log.Fatalf("Error during making an issue: %v", err)
+	}
 }
 
 func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
@@ -426,6 +428,35 @@ func cleanCache() {
 	if err != nil {
 		log.Fatalf("Can't clear '.aidy' directory, '%v'", err)
 	}
+}
+
+// Start an issue
+func startIssue(number string, brain ai.AI, gs git.Git, gh github.Github) {
+	if number == "" {
+		log.Fatal("Error: No issue number provided.")
+	}
+	re := regexp.MustCompile(`\d+`)
+	found := re.FindString(number)
+	if found == "" {
+		log.Fatalf("Error: Invalid issue number '%s'.", number)
+	}
+	descr := gh.Description(found)
+	raw, err := brain.SuggestBranch(descr)
+	if err != nil {
+		log.Fatalf("Error generating branch name: %v", err)
+	}
+	branch := branchName(found, raw)
+	err = gs.Checkout(branch)
+	if err != nil {
+		log.Fatalf("Error checking out branch '%s': %v", branch, err)
+	}
+}
+
+func branchName(number string, suggested string) string {
+	suggested = strings.ReplaceAll(suggested, " ", "-")
+	suggested = strings.ReplaceAll(suggested, "_", "-")
+	suggested = strings.ReplaceAll(suggested, "/", "-")
+	return fmt.Sprintf("%s-%s", number, suggested)
 }
 
 func initSummary(required bool, aiService ai.AI, ch cache.AidyCache) {

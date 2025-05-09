@@ -14,4 +14,5 @@ type Git interface {
 	Reset(ref string) error
 	AddAll() error
 	Amend(message string) error
+	Checkout(branch string) error
 }

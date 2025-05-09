@@ -75,6 +75,15 @@ func (r *MockGit) Root() (string, error) {
 	return "/dev/null", nil
 }
 
+func (r *MockGit) Checkout(branch string) error {
+	if r.Shell != nil {
+		if _, err := r.Shell.RunCommand("git checkout " + branch); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type MockGitWithDir struct {
 	dir string
 }
@@ -132,5 +141,10 @@ func (m *MockGitWithDir) AddAll() error {
 }
 
 func (m *MockGitWithDir) Amend(message string) error {
+	panic("unimplemented")
+}
+
+// Checkout implements Git.
+func (m *MockGitWithDir) Checkout(branch string) error {
 	panic("unimplemented")
 }

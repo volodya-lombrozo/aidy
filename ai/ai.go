@@ -10,6 +10,7 @@ type AI interface {
 	IssueLabels(issue string, available []string) ([]string, error)
 	CommitMessage(number string, diff string) (string, error)
 	Summary(readme string) (string, error)
+	SuggestBranch(descr string) (string, error)
 }
 
 func TrimPrompt(prompt string) string {

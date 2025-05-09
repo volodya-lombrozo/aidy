@@ -29,3 +29,7 @@ func (m *MockAI) IssueLabels(issue string, available []string) ([]string, error)
 func (m *MockAI) Summary(readme string) (string, error) {
 	return "summary: " + readme, nil
 }
+
+func (m *MockAI) SuggestBranch(descr string) (string, error) {
+	return "mock-branch-name", nil
+}

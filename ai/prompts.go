@@ -143,4 +143,21 @@ The summary must be concise, comprehensive, and free of any additional commentar
 </readme>
 
 Reply only with the issue body — no explanations, comments, or extra formatting.`
+	SuggestBranchPrompt = `You are an expert software engineer who suggests git branch names based on issue descriptions.
+Generate a branch name based on the following issue description:
+
+<description>
+%s
+</description>
+
+Create a branch name using one or two words that describe the issue.
+The branch name should:
+- Be concise and informative
+- Use lowercase letters
+- Use hyphens to separate words
+- Not exceed 20 characters
+- Now exceed 2 words
+
+Reply only with the branch name — no explanations, comments, or extra formatting.
+`
 )

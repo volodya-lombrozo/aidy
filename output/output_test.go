@@ -90,13 +90,13 @@ func TestMockOutput(t *testing.T) {
 }
 
 func TestMockOutput_Panics_WhenNoCommands(t *testing.T) {
-    mock := NewMock()
-    defer func() {
-        if r := recover(); r == nil {
-            t.Errorf("Expected panic when no commands are captured")
-        }
-    }()
-    mock.Last()
+	mock := NewMock()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic when no commands are captured")
+		}
+	}()
+	mock.Last()
 }
 
 func TestCleanQoutes(t *testing.T) {
@@ -126,11 +126,11 @@ func TestPrinter_Print(t *testing.T) {
 	printer := NewPrinter()
 
 	_ = printer.Print("hello")
-    err := w.Close();
-    require.NoError(t, err, "failed to close write pipe")
+	err := w.Close()
+	require.NoError(t, err, "failed to close write pipe")
 	var buf bytes.Buffer
-    _, err = io.Copy(&buf, r);
-    require.NoError(t, err, "failed to copy data")
+	_, err = io.Copy(&buf, r)
+	require.NoError(t, err, "failed to copy data")
 	os.Stdout = originalStdout
 	expected := "hello\n"
 	require.Equal(t, expected, buf.String(), "Output should match expected value")

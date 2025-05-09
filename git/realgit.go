@@ -200,3 +200,11 @@ func (r *RealGit) AddAll() error {
 	}
 	return nil
 }
+
+func (r *RealGit) Checkout(branch string) error {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "checkout", "-b", branch)
+	if err != nil {
+		return fmt.Errorf("error checking out branch %s: %w", branch, err)
+	}
+	return nil
+}

@@ -92,6 +92,11 @@ func (d *DeepSeekAI) Summary(readme string) (string, error) {
 	return d.sendPrompt("You are a helpful assistant writing project summaries.", prompt, "")
 }
 
+func (d *DeepSeekAI) SuggestBranch(descr string) (string, error) {
+	prompt := fmt.Sprintf(SuggestBranchPrompt, descr)
+	return d.sendPrompt("You are a helpful assistant suggesting branch names.", prompt, "")
+}
+
 func (d *DeepSeekAI) sendPrompt(system string, user string, summary string) (string, error) {
 	content := user
 	if d.summary {
