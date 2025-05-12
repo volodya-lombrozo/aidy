@@ -77,7 +77,7 @@ func (r *MockGit) Root() (string, error) {
 
 func (r *MockGit) Checkout(branch string) error {
 	if r.Shell != nil {
-		if _, err := r.Shell.RunCommand("git checkout " + branch); err != nil {
+		if _, err := r.Shell.RunCommand("git checkout -b " + branch); err != nil {
 			return err
 		}
 	}

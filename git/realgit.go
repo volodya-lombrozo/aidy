@@ -93,9 +93,7 @@ func (r *RealGit) GetBranchName() (string, error) {
 }
 
 func (r *RealGit) GetBaseBranchName() (string, error) {
-	// Check if 'main' branch exists
 	_, errMain := r.shell.RunCommandInDir(r.dir, "git", "show-ref", "--verify", "--quiet", "refs/heads/main")
-	// Check if 'master' branch exists
 	_, errMaster := r.shell.RunCommandInDir(r.dir, "git", "show-ref", "--verify", "--quiet", "refs/heads/master")
 	if errMain == nil && errMaster == nil {
 		return "", fmt.Errorf("both 'main' and 'master' branches exist")

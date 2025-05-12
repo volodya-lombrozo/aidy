@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -58,8 +59,84 @@ func TestCleanCache(t *testing.T) {
 	assert.True(t, os.IsNotExist(err), ".aidy directory should be removed")
 }
 
+func TestStart(t *testing.T) {
+	brain := ai.NewMockAI()
+	shell := &executor.MockExecutor{
+		Output: "",
+		Err:    nil,
+	}
+	gh := &github.MockGithub{}
+
+	err := startIssue("42", brain, &git.MockGit{Shell: shell}, gh)
+
+	assert.NoError(t, err, "Expected no error when starting issue")
+	expected := []string{"git checkout -b 42-mock-branch-name"}
+	assert.Equal(t, len(expected), len(shell.Commands), "number of commands should match")
+	for i, expectedCommand := range expected {
+		assert.Contains(t, shell.Commands[i], expectedCommand)
+	}
+}
+
+func TestStartIssueNoNumber(t *testing.T) {
+	brain := ai.NewMockAI()
+	shell := &executor.MockExecutor{
+		Output: "",
+		Err:    nil,
+	}
+	gh := &github.MockGithub{}
+
+	err := startIssue("", brain, &git.MockGit{Shell: shell}, gh)
+
+	assert.Error(t, err, "expected error when no issue number is provided")
+	assert.Contains(t, err.Error(), "error: no issue number provided")
+}
+
+func TestStartIssueInvalidNumber(t *testing.T) {
+	brain := ai.NewMockAI()
+	shell := &executor.MockExecutor{
+		Output: "",
+		Err:    nil,
+	}
+	gh := &github.MockGithub{}
+
+	err := startIssue("invalid", brain, &git.MockGit{Shell: shell}, gh)
+
+	assert.Error(t, err, "Expected error when an invalid issue number is provided")
+	assert.Contains(t, err.Error(), "error: invalid issue number 'invalid'")
+}
+
+func TestStartIssueBranchNameError(t *testing.T) {
+	brain := ai.NewFailedMockAI()
+	shell := &executor.MockExecutor{
+		Output: "",
+		Err:    nil,
+	}
+	gh := &github.MockGithub{}
+
+	err := startIssue("42", brain, &git.MockGit{Shell: shell}, gh)
+
+	assert.Error(t, err, "expected error when generating branch name fails")
+	assert.Contains(t, err.Error(), "error generating branch name")
+	assert.Contains(t, err.Error(), "failed to suggest branch")
+}
+
+func TestStartIssueCheckoutError(t *testing.T) {
+	brain := ai.NewMockAI()
+	shell := &executor.MockExecutor{
+		Output: "",
+		Err:    fmt.Errorf("error checking out branch"),
+	}
+	gh := &github.MockGithub{}
+	mockGit := &git.MockGit{Shell: shell}
+
+	err := startIssue("42", brain, mockGit, gh)
+
+	assert.Error(t, err, "expected error when checking out branch fails")
+	assert.Contains(t, err.Error(), "error checking out branch")
+}
+
 func TestSquash(t *testing.T) {
-	mockAI := &ai.MockAI{}
+	mockAI := ai.NewMockAI()
 	mockExecutor := &executor.MockExecutor{
 		Output: "",
 		Err:    nil,
@@ -82,7 +159,7 @@ func TestSquash(t *testing.T) {
 
 func TestPullRequest(t *testing.T) {
 	mockGit := &git.MockGit{}
-	mockAI := &ai.MockAI{}
+	mockAI := ai.NewMockAI()
 	mockGithub := &github.MockGithub{}
 	out := output.NewMock()
 
@@ -123,7 +200,7 @@ func TestHealQuotesParametrized(t *testing.T) {
 }
 
 func TestCommit(t *testing.T) {
-	mockAI := &ai.MockAI{}
+	mockAI := ai.NewMockAI()
 	mockExecutor := &executor.MockExecutor{
 		Output: "",
 		Err:    nil,
@@ -144,7 +221,7 @@ func TestCommit(t *testing.T) {
 }
 
 func TestHandleIssue(t *testing.T) {
-	mockAI := &ai.MockAI{}
+	mockAI := ai.NewMockAI()
 	gh := &github.MockGithub{}
 	userInput := "test input"
 	out := output.NewMock()

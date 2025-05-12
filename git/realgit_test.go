@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/volodya-lombrozo/aidy/executor"
@@ -27,6 +28,32 @@ func TestRealGit_Remotes(t *testing.T) {
 		"https://github.com/another/repo.git",
 	}
 	assert.Equal(t, urls, expected)
+}
+
+func TestRealGit_Checkout_Success(t *testing.T) {
+	shell := &executor.MockExecutor{}
+	gs := NewRealGit(shell, "")
+	branch := "feature-branch"
+
+	err := gs.Checkout(branch)
+
+	require.NoError(t, err)
+	expectedCommand := "git checkout -b " + branch
+	assert.Equal(t, len(shell.Commands), 1, "Expected 1 command to be executed")
+	assert.Contains(t, shell.Commands[0], expectedCommand)
+}
+
+func TestRealGit_Checkout_Failure(t *testing.T) {
+	shell := &executor.MockExecutor{
+		Err: fmt.Errorf("checkout error"),
+	}
+	gitService := NewRealGit(shell, "")
+	branchName := "feature-branch"
+
+	err := gitService.Checkout(branchName)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "checkout error")
 }
 
 func TestRealGit_Amend(t *testing.T) {
