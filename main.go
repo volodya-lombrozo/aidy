@@ -123,7 +123,10 @@ func main() {
 	case "clean":
 		cleanCache()
 	case "st", "start":
-		startIssue(os.Args[2], brain, gs, gh)
+		err := startIssue(os.Args[2], brain, gs, gh)
+		if err != nil {
+			log.Fatalf("Error starting issue: %v", err)
+		}
 	case "diff":
 		printDiff(gs)
 	default:
@@ -430,26 +433,26 @@ func cleanCache() {
 	}
 }
 
-// Start an issue
-func startIssue(number string, brain ai.AI, gs git.Git, gh github.Github) {
+func startIssue(number string, brain ai.AI, gs git.Git, gh github.Github) error {
 	if number == "" {
-		log.Fatal("Error: No issue number provided.")
+		return fmt.Errorf("error: no issue number provided")
 	}
 	re := regexp.MustCompile(`\d+`)
 	found := re.FindString(number)
 	if found == "" {
-		log.Fatalf("Error: Invalid issue number '%s'.", number)
+		return fmt.Errorf("error: invalid issue number '%s'", number)
 	}
 	descr := gh.Description(found)
 	raw, err := brain.SuggestBranch(descr)
 	if err != nil {
-		log.Fatalf("Error generating branch name: %v", err)
+		return fmt.Errorf("error generating branch name: %v", err)
 	}
 	branch := branchName(found, raw)
 	err = gs.Checkout(branch)
 	if err != nil {
-		log.Fatalf("Error checking out branch '%s': %v", branch, err)
+		return fmt.Errorf("error checking out branch '%s': %v", branch, err)
 	}
+	return nil
 }
 
 func branchName(number string, suggested string) string {

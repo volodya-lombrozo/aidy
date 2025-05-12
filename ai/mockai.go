@@ -1,6 +1,18 @@
 package ai
 
-type MockAI struct{}
+import "fmt"
+
+type MockAI struct {
+	fail bool
+}
+
+func NewMockAI() AI {
+	return &MockAI{fail: false}
+}
+
+func NewFailedMockAI() AI {
+	return &MockAI{fail: true}
+}
 
 func (m *MockAI) PrTitle(branchName string, diff string, issue string, summary string) (string, error) {
 	return "'Mock Title for " + branchName + "'", nil
@@ -31,5 +43,8 @@ func (m *MockAI) Summary(readme string) (string, error) {
 }
 
 func (m *MockAI) SuggestBranch(descr string) (string, error) {
+	if m.fail {
+		return "", fmt.Errorf("failed to suggest branch")
+	}
 	return "mock-branch-name", nil
 }
