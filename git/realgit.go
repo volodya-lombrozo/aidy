@@ -50,20 +50,19 @@ func (r *RealGit) CommitChanges(messages ...string) error {
 		return fmt.Errorf("error adding changes: %w", err)
 	}
 
-	changedFiles, err := r.shell.RunCommandInDir(r.dir, "git", "diff", "--name-only", "--cached")
+	changed, err := r.shell.RunCommandInDir(r.dir, "git", "diff", "--name-only", "--cached")
 	if err != nil {
 		return fmt.Errorf("error getting changed files: %w", err)
 	}
 
-	var commitMessage string
+	var msg string
 	if len(messages) > 0 {
-		commitMessage = messages[0]
+		msg = messages[0]
 	} else {
-		commitMessage = strings.TrimSpace("Committing changes to the following files:\n" + changedFiles)
+		msg = strings.TrimSpace("Committing changes to the following files:\n" + changed)
 	}
 
-	_, err = r.shell.RunCommandInDir(r.dir, "git", "commit", "-m", commitMessage)
-
+	_, err = r.shell.RunCommandInDir(r.dir, "git", "commit", "-m", msg)
 	if err != nil {
 		return fmt.Errorf("error committing changes: %w", err)
 	}

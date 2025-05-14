@@ -53,7 +53,7 @@ func TestCleanCache(t *testing.T) {
 	err = os.Chdir(tempDir)
 	require.NoError(t, err, "Failed to change working directory")
 
-	cleanCache()
+	clean()
 
 	_, err = os.Stat(aidyDir)
 	assert.True(t, os.IsNotExist(err), ".aidy directory should be removed")
@@ -143,7 +143,7 @@ func TestSquash(t *testing.T) {
 	}
 	mockGit := &git.MockGit{Shell: mockExecutor}
 
-	squash(mockGit, mockExecutor, mockAI)
+	squash(mockGit, mockAI)
 
 	expectedCommands := []string{
 		"git reset --soft refs/heads/main",
@@ -207,7 +207,7 @@ func TestCommit(t *testing.T) {
 	}
 	mockGit := &git.MockGit{Shell: mockExecutor}
 
-	commit(mockGit, mockExecutor, false, mockAI)
+	commit(mockGit, mockAI)
 
 	expectedCommands := []string{
 		"git add --all",
@@ -288,7 +288,7 @@ func TestExtractIssueNumber(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := extractIssueNumber(test.branchName)
+		result := inumber(test.branchName)
 		if result != test.expected {
 			t.Errorf("For branch name '%s', expected '%s', got '%s'", test.branchName, test.expected, result)
 		}

@@ -31,7 +31,7 @@ func main() {
 		log.Fatalf("Can't open cache %v", err)
 	}
 	ch := cache.NewAidyCache(gitcache)
-	yamlConfig := readConfiguration(gs)
+	yamlConfig := configuration(gs)
 	githubKey, err := yamlConfig.GetGithubAPIKey()
 	if err != nil {
 		log.Printf("Can't find GitHub token in configuration")
@@ -47,6 +47,7 @@ func main() {
 			sumrequired = true
 		}
 	}
+	var nobrain = ai.NewMockAI()
 	var brain ai.AI
 	if model == "deepseek-chat" {
 		apiKey, err := yamlConfig.GetDeepseekAPIKey()
@@ -107,11 +108,15 @@ func main() {
 		heal(gs)
 	case "ci", "commit":
 		noAI := len(os.Args) > 2 && os.Args[2] == "-n"
-		commit(gs, shell, noAI, brain)
+		if noAI {
+			commit(gs, nobrain)
+		} else {
+			commit(gs, brain)
+		}
 	case "sq", "squash":
-		squash(gs, shell, brain)
+		squash(gs, brain)
 	case "ap", "append":
-		appendToCommit(gs)
+		append_commit(gs)
 	case "i", "issue":
 		if len(os.Args) < 3 {
 			log.Fatalf("Error: No input provided for issue generation.")
@@ -119,16 +124,16 @@ func main() {
 		userInput := os.Args[2]
 		issue(userInput, brain, gh, ch, out)
 	case "conf", "config":
-		printConfig(yamlConfig)
+		pconfig(yamlConfig)
 	case "clean":
-		cleanCache()
+		clean()
 	case "st", "start":
 		err := startIssue(os.Args[2], brain, gs, gh)
 		if err != nil {
 			log.Fatalf("Error starting issue: %v", err)
 		}
 	case "diff":
-		printDiff(gs)
+		diff(gs)
 	default:
 		log.Printf("Error: Unknown command '%s'.\n", command)
 		help()
@@ -136,7 +141,8 @@ func main() {
 	}
 }
 
-func printDiff(gs git.Git) {
+// Prints current git diff
+func diff(gs git.Git) {
 	diff, err := gs.GetDiff()
 	if err != nil {
 		log.Fatalf("Failed to get diff: '%v'", err)
@@ -145,8 +151,9 @@ func printDiff(gs git.Git) {
 	}
 }
 
-func readConfiguration(gs git.Git) config.Config {
-	homeDir, err := os.UserHomeDir()
+// Configuration function to load the configuration file
+func configuration(gs git.Git) config.Config {
+	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("Error getting home directory: %v", err)
 	}
@@ -158,7 +165,7 @@ func readConfiguration(gs git.Git) config.Config {
 		}
 	}
 	if aider {
-		configPath := fmt.Sprintf("%s/.aider.conf.yml", homeDir)
+		configPath := fmt.Sprintf("%s/.aider.conf.yml", home)
 		conf = config.NewAiderConf(configPath)
 	} else {
 		conf = config.NewCascadeConfig(gs)
@@ -166,7 +173,7 @@ func readConfiguration(gs git.Git) config.Config {
 	return conf
 }
 
-func printConfig(cfg config.Config) {
+func pconfig(cfg config.Config) {
 	fmt.Println("Current Configuration:")
 	apiKey, err := cfg.GetOpenAIAPIKey()
 	if err != nil {
@@ -204,18 +211,18 @@ func help() {
 	fmt.Println("  aidy help - Show this help message.")
 }
 
-func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCache, out output.Output) {
+func issue(task string, brain ai.AI, gh github.Github, ch cache.AidyCache, out output.Output) {
 	summary, _ := ch.Summary()
-	title, err := aiService.IssueTitle(userInput, summary)
+	title, err := brain.IssueTitle(task, summary)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
 	}
-	body, err := aiService.IssueBody(userInput, summary)
+	body, err := brain.IssueBody(task, summary)
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
 	labels := gh.Labels()
-	suitable, err := aiService.IssueLabels(body, labels)
+	suitable, err := brain.IssueLabels(body, labels)
 	if err != nil {
 		log.Fatalf("Error generating labels: %v", err)
 	}
@@ -239,66 +246,59 @@ func issue(userInput string, aiService ai.AI, gh github.Github, ch cache.AidyCac
 	}
 }
 
-func squash(gitService git.Git, shell executor.Executor, aiService ai.AI) {
-	baseBranch, err := gitService.GetBaseBranchName()
+func squash(gs git.Git, brain ai.AI) {
+	baseBranch, err := gs.GetBaseBranchName()
 	if err != nil {
 		log.Fatalf("Error determining base branch: %v", err)
 	}
-	resetErr := gitService.Reset("refs/heads/" + baseBranch)
+	resetErr := gs.Reset("refs/heads/" + baseBranch)
 	if resetErr != nil {
 		log.Fatalf("Error executing git reset: %v", err)
 	}
-	commit(gitService, shell, false, aiService)
+	commit(gs, brain)
 }
 
-func commit(gitService git.Git, shell executor.Executor, noAI bool, aiService ai.AI) {
-	if noAI {
-		err := gitService.CommitChanges()
-		if err != nil {
-			log.Fatalf("Error committing changes: %v", err)
-		}
-	} else {
-		branchName, err := gitService.GetBranchName()
-		if err != nil {
-			log.Fatalf("Error getting branch name: %v", err)
-		}
-		addErr := gitService.AddAll()
-		if addErr != nil {
-			log.Fatalf("Error adding git files: %v", err)
-		}
-		diff, diffErr := gitService.GetCurrentDiff()
-		if diffErr != nil {
-			log.Fatalf("Error getting diff: %v", err)
-		}
-		nissue := extractIssueNumber(branchName)
-		msg, cerr := aiService.CommitMessage(nissue, diff)
-		if cerr != nil {
-			log.Fatalf("Error generating commit message: %v", cerr)
-		}
-		if err := gitService.CommitChanges(msg); err != nil {
-			log.Fatalf("Error committing changes: %v", err)
-		}
-	}
-	heal(gitService)
-}
-
-func pull_request(gitService git.Git, aiService ai.AI, gh github.Github, ch cache.AidyCache, out output.Output) {
-	branchName, err := gitService.GetBranchName()
+func commit(gs git.Git, brain ai.AI) {
+	branchName, err := gs.GetBranchName()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
 	}
-	diff, err := gitService.GetDiff()
+	err = gs.AddAll()
+	if err != nil {
+		log.Fatalf("Error adding git files: %v", err)
+	}
+	diff, diffErr := gs.GetCurrentDiff()
+	if diffErr != nil {
+		log.Fatalf("Error getting diff: %v", err)
+	}
+	nissue := inumber(branchName)
+	msg, cerr := brain.CommitMessage(nissue, diff)
+	if cerr != nil {
+		log.Fatalf("Error generating commit message: %v", cerr)
+	}
+	if err := gs.CommitChanges(msg); err != nil {
+		log.Fatalf("Error committing changes: %v", err)
+	}
+	heal(gs)
+}
+
+func pull_request(gs git.Git, brain ai.AI, gh github.Github, ch cache.AidyCache, out output.Output) {
+	branchName, err := gs.GetBranchName()
+	if err != nil {
+		log.Fatalf("Error getting branch name: %v", err)
+	}
+	diff, err := gs.GetDiff()
 	if err != nil {
 		log.Fatalf("Error getting git diff: %v", err)
 	}
 	summary, _ := ch.Summary()
-	nissue := extractIssueNumber(branchName)
+	nissue := inumber(branchName)
 	issue := gh.Description(nissue)
-	title, err := aiService.PrTitle(nissue, diff, issue, summary)
+	title, err := brain.PrTitle(nissue, diff, issue, summary)
 	if err != nil {
 		log.Fatalf("Error generating title: %v", err)
 	}
-	body, err := aiService.PrBody(nissue, diff, issue, summary)
+	body, err := brain.PrBody(nissue, diff, issue, summary)
 	if err != nil {
 		log.Fatalf("Error generating body: %v", err)
 	}
@@ -323,7 +323,7 @@ func heal(gitService git.Git) {
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
 	}
-	issueNumber := extractIssueNumber(branchName)
+	issueNumber := inumber(branchName)
 	commitMessage, gitErr := gitService.GetCurrentCommitMessage()
 	if gitErr != nil {
 		log.Fatalf("Error getting current commit message: %v", err)
@@ -390,15 +390,14 @@ func healPRTitle(text string, issue string) string {
 	return replaced
 }
 
-func appendToCommit(gitService git.Git) {
-	err := gitService.AppendToCommit()
+func append_commit(gs git.Git) {
+	err := gs.AppendToCommit()
 	if err != nil {
 		log.Fatalf("Error appending to commit: %v", err)
 	}
 }
 
-// Extract issue number from a branch name
-func extractIssueNumber(branch string) string {
+func inumber(branch string) string {
 	if branch == "" {
 		return "unknown"
 	}
@@ -421,7 +420,7 @@ func escapeBackticks(input string) string {
 	return strings.ReplaceAll(input, "`", "\\`")
 }
 
-func cleanCache() {
+func clean() {
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Can't understand what is the current directory, '%v'", err)
