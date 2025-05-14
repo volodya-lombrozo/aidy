@@ -56,48 +56,12 @@ func (r *RealGithub) Description(number string) string {
 	var task issue
 	target := r.ch.Remote()
 	if target != "" {
-		task = r.issueDescription(number, target)
+		task = r.description(number, target)
 	} else {
 		log.Fatalf("Cannot find a target repository to search for issue '%s'", number)
 	}
 	fmt.Printf("Title: %s\nBody: %s\n", task.Title, task.Body)
 	return fmt.Sprintf("Title: '%s'\nBody: '%s'", task.Title, task.Body)
-}
-
-// Here we retireve an issue or a PR description by thier number.
-// GitHub uses the same URL structure for both issues and pull requests in the context of their API
-// because every pull request is an issue under the hood.
-// In other words, GET "/issues/:number" works for both issues and PRs.
-func (r *RealGithub) issueDescription(number string, target string) issue {
-	url := fmt.Sprintf("%s/repos/%s/issues/%s", r.baseURL, target, number)
-	log.Printf("Trying to get an issue description using the following URL: %s\n", url)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatalf("Error creating request: %v", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+r.authToken)
-	resp, err := r.client.Do(req)
-	if err != nil {
-		log.Fatalf("Error fetching issue description: %v", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("Error closing response body: %v", err)
-		}
-	}()
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Cannot retrieve issue using the following URL: '%s'. Response: '%s'", url, resp.Status)
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Error reading response body: %v", err)
-	}
-	var task issue
-	err = json.Unmarshal(body, &task)
-	if err != nil {
-		log.Fatalf("Error unmarshaling issue JSON: %v", err)
-	}
-	return task
 }
 
 func (r *RealGithub) Labels() []string {
@@ -164,4 +128,40 @@ func (r *RealGithub) Remotes() []string {
 	}
 	sort.Strings(repos)
 	return repos
+}
+
+// Here we retireve an issue or a PR description by thier number.
+// GitHub uses the same URL structure for both issues and pull requests in the context of their API
+// because every pull request is an issue under the hood.
+// In other words, GET "/issues/:number" works for both issues and PRs.
+func (r *RealGithub) description(number string, target string) issue {
+	url := fmt.Sprintf("%s/repos/%s/issues/%s", r.baseURL, target, number)
+	log.Printf("Trying to get an issue description using the following URL: %s\n", url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatalf("Error creating request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+r.authToken)
+	resp, err := r.client.Do(req)
+	if err != nil {
+		log.Fatalf("Error fetching issue description: %v", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Error closing response body: %v", err)
+		}
+	}()
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Cannot retrieve issue using the following URL: '%s'. Response: '%s'", url, resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Error reading response body: %v", err)
+	}
+	var task issue
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		log.Fatalf("Error unmarshaling issue JSON: %v", err)
+	}
+	return task
 }
