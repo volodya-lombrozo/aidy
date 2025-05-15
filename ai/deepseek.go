@@ -46,6 +46,11 @@ func NewDeepSeekAI(apiKey string, summary bool) *DeepSeekAI {
 	}
 }
 
+func (d *DeepSeekAI) ReleaseNotes(changes string) (string, error) {
+	prompt := fmt.Sprintf(ReleaseNotesPrompt, changes)
+	return d.sendPrompt("You are a helpful assistant generating GitHub release notes.", prompt, "")
+}
+
 func (d *DeepSeekAI) PrTitle(number, diff, issue, summary string) (string, error) {
 	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, number, number)
 	return d.sendPrompt("You are a helpful assistant generating Git commit titles.", prompt, summary)

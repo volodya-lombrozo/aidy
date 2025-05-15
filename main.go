@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
+	msemver "github.com/Masterminds/semver/v3"
 	"github.com/volodya-lombrozo/aidy/ai"
 	"github.com/volodya-lombrozo/aidy/cache"
 	"github.com/volodya-lombrozo/aidy/config"
@@ -16,6 +18,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/git"
 	"github.com/volodya-lombrozo/aidy/github"
 	"github.com/volodya-lombrozo/aidy/output"
+	"golang.org/x/mod/semver"
 )
 
 func main() {
@@ -102,6 +105,14 @@ func main() {
 	switch command {
 	case "help":
 		help()
+	case "rl", "release":
+		if len(os.Args) < 3 {
+			log.Fatalf("Error: No release step provided. Use 'aidy help' for usage.")
+		}
+		err := release(os.Args[2], gs, brain, out)
+		if err != nil {
+			log.Fatalf("Error during release: %v", err)
+		}
 	case "pr", "pull-request":
 		pull_request(gs, brain, gh, ch, out)
 	case "h", "heal":
@@ -139,6 +150,101 @@ func main() {
 		help()
 		os.Exit(1)
 	}
+}
+
+func release(step string, gs git.Git, brain ai.AI, out output.Output) error {
+	tags, err := gs.Tags()
+	if err != nil {
+		return fmt.Errorf("failed to get tags: '%v'", err)
+	}
+	log.Printf("tags found: %v, size %d\n", tags, len(tags))
+	var notes string
+	var updated string
+	if len(tags) > 0 {
+		mtags := clearTags(tags)
+		latest := latest(keys(mtags))
+		messages, err := gs.Log(mtags[latest])
+		if err != nil {
+			return fmt.Errorf("failed to get git log: '%v'", err)
+		}
+		summary := strings.Join(messages, "\n")
+		notes, err = brain.ReleaseNotes(summary)
+		if err != nil {
+			return fmt.Errorf("failed to generate release notes: '%v'", err)
+		}
+		updated, err = upver(latest, step)
+		if err != nil {
+			return fmt.Errorf("failed to update version: '%v'", err)
+		}
+		if strings.HasPrefix(mtags[latest], "v") {
+			updated = "v" + updated
+		}
+	} else {
+		updated = "v0.0.1"
+		messages, err := gs.Log("")
+		if err != nil {
+			return fmt.Errorf("failed to get git log: '%v'", err)
+		}
+		summary := strings.Join(messages, "\n")
+		notes, err = brain.ReleaseNotes(summary)
+		if err != nil {
+			return fmt.Errorf("failed to generate release notes: '%v'", err)
+		}
+	}
+	command := gs.AddTagCommand(updated, notes)
+	return out.Print(command)
+}
+
+func keys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func upver(ver string, step string) (string, error) {
+	mver, err := msemver.NewVersion(ver)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse version: %v", err)
+	}
+	var newver msemver.Version
+	switch step {
+	case "patch":
+		newver = mver.IncPatch()
+	case "minor":
+		newver = mver.IncMinor()
+	case "major":
+		newver = mver.IncMajor()
+	default:
+		return "", fmt.Errorf("unknown version step: '%s'", step)
+	}
+	return newver.String(), nil
+}
+
+func clearTags(tags []string) map[string]string {
+	if len(tags) == 0 {
+		return nil
+	}
+	res := make(map[string]string)
+	for i := range tags {
+		if tags[i] == "" {
+			continue
+		}
+		if strings.HasPrefix(tags[i], "v") {
+			res[tags[i]] = tags[i]
+		} else {
+			res["v"+tags[i]] = tags[i]
+		}
+	}
+	return res
+}
+
+func latest(tags []string) string {
+	sort.Slice(tags, func(i, j int) bool {
+		return semver.Compare(tags[i], tags[j]) < 0
+	})
+	return tags[len(tags)-1]
 }
 
 // Prints current git diff

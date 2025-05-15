@@ -11,6 +11,7 @@ type AI interface {
 	CommitMessage(number string, diff string) (string, error)
 	Summary(readme string) (string, error)
 	SuggestBranch(descr string) (string, error)
+	ReleaseNotes(changes string) (string, error)
 }
 
 func TrimPrompt(prompt string) string {

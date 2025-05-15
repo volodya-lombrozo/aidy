@@ -1,11 +1,44 @@
 package git
 
 import (
+	"fmt"
+
 	"github.com/volodya-lombrozo/aidy/executor"
 )
 
 type MockGit struct {
 	Shell executor.Executor
+}
+
+func (m *MockGit) Log(since string) ([]string, error) {
+	if m.Shell != nil {
+		if _, err := m.Shell.RunCommand(fmt.Sprintf("git log %s..HEAD --pretty=format:%%s", since)); err != nil {
+			return nil, err
+		}
+	}
+	return []string{"ci(#120): Update CI to use Ubuntu 24.04 and add .aidy to gitignore", "chore(deps): update dependency ruby to v3.4.3 (#117)"}, nil
+}
+
+func (m *MockGit) AddTag(tag string, message string) error {
+	if m.Shell != nil {
+		if _, err := m.Shell.RunCommand(fmt.Sprintf("git tag -a %s -m %s", tag, message)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *MockGit) AddTagCommand(tag string, message string) string {
+	return fmt.Sprintf("git tag -a \"%s\" -m \"%s\"", tag, message)
+}
+
+func (m *MockGit) Tags() ([]string, error) {
+	if m.Shell != nil {
+		if _, err := m.Shell.RunCommand("git tag"); err != nil {
+			return nil, err
+		}
+	}
+	return []string{"v1.0", "v2.0"}, nil
 }
 
 func (m *MockGit) Amend(message string) error {
@@ -92,6 +125,21 @@ func NewMockGitWithDir(dir string) Git {
 	return &MockGitWithDir{dir: dir}
 }
 
+func (m *MockGitWithDir) AddTagCommand(tag string, message string) string {
+	return fmt.Sprintf("git tag -a \"%s\" -m \"%s\"", tag, message)
+}
+
+func (m *MockGitWithDir) Log(since string) ([]string, error) {
+	return []string{"ci(#120): Update CI to use Ubuntu 24.04 and add .aidy to gitignore", "chore(deps): update dependency ruby to v3.4.3 (#117)"}, nil
+}
+
+func (m *MockGitWithDir) AddTag(tag string, message string) error {
+	return nil
+}
+
+func (m *MockGitWithDir) Tags() ([]string, error) {
+	return []string{"v1.0", "v2.0"}, nil
+}
 func (m *MockGitWithDir) Reset(ref string) error {
 	return nil
 }
