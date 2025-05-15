@@ -25,6 +25,11 @@ func NewOpenAI(apiKey, model string, temperature float32, summary bool) *MyOpenA
 	}
 }
 
+func (o *MyOpenAI) ReleaseNotes(changes string) (string, error) {
+	prompt := fmt.Sprintf(ReleaseNotesPrompt, changes)
+	return o.send(prompt, "")
+}
+
 func (o *MyOpenAI) PrTitle(number, diff, issue, summary string) (string, error) {
 	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, number, number)
 	return o.send(prompt, summary)
@@ -76,6 +81,10 @@ func (o *MyOpenAI) SuggestBranch(descr string) (string, error) {
 	return o.send(prompt, "")
 }
 
+// send sends a prompt to the OpenAI API and returns the response.
+// Parameters:
+// - prompt: The prompt to send.
+// - summary: The project summary to append to the prompt (if applicable).
 func (o *MyOpenAI) send(prompt, summary string) (string, error) {
 	content := prompt
 	if o.summary {

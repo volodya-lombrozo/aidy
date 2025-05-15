@@ -17,6 +17,13 @@ func NewFailedMockAI() AI {
 	return &MockAI{fail: true}
 }
 
+func (m *MockAI) ReleaseNotes(changes string) (string, error) {
+	if m.fail {
+		return "", fmt.Errorf("failed to generate release notes")
+	}
+	return fmt.Sprintf("Mock Release Notes\n\n%s", changes), nil
+}
+
 func (m *MockAI) PrTitle(branchName string, diff string, issue string, summary string) (string, error) {
 	return "'Mock Title for " + branchName + "'", nil
 }

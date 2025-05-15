@@ -160,4 +160,23 @@ The branch name should:
 
 Reply only with the branch name — no explanations, comments, or extra formatting.
 `
+	ReleaseNotesPrompt = `You are an expert software engineer responsible for preparing professional release notes for a new software version.
+
+Generate clear, concise release notes based on the list of commit messages provided below.
+
+<commits>
+%s
+</commits>
+
+Your task:
+- Summarize the changes introduced in this release.
+- Group related changes together where appropriate (e.g., features, bug fixes, performance improvements).
+- Use bullet points for each notable change.
+- Write in a formal, professional tone suitable for end users and developers.
+- Avoid duplicating similar messages.
+- Do not include commit hashes.
+- Mention issue numbers (e.g., #42) when available in commit messages.
+- Do not list individual commits — summarize them meaningfully.
+
+Output only the release notes — no explanations, comments, or extra formatting.`
 )

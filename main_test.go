@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"testing"
 
@@ -341,4 +342,91 @@ func TestHealPRBody(t *testing.T) {
 		result := healPRBody(test.actual, "42")
 		assert.Equal(t, test.expected, result)
 	}
+}
+
+func TestLatestTag(t *testing.T) {
+	versions := []string{"v1.0.0", "v1.1.0", "2.0.0"}
+
+	tag := latest(versions)
+
+	assert.Equal(t, "v1.1.0", tag, "Expected latest tag to be 'v1.1.0'")
+}
+
+func TestKeys(t *testing.T) {
+	input := map[string]string{
+		"feat(#42)": "Add clean command to clear cache",
+		"fix(#42)":  "Fix bug in clean command",
+	}
+
+	result := keys(input)
+
+	expected := []string{"feat(#42)", "fix(#42)"}
+	sort.Strings(result)
+	assert.Equal(t, expected, result)
+}
+
+func TestUpver(t *testing.T) {
+	tests := []struct {
+		actual   string
+		step     string
+		expected string
+	}{
+		{"v1.0.0", "patch", "1.0.1"},
+		{"v1.0.0", "minor", "1.1.0"},
+		{"v1.0.0", "major", "2.0.0"},
+	}
+
+	for _, test := range tests {
+		tag, err := upver(test.actual, test.step)
+		require.NoError(t, err, "Should upgrade the version successfully")
+		assert.Equal(t, test.expected, tag)
+	}
+
+}
+func TestReleaseSuccess(t *testing.T) {
+	mgit := &git.MockGit{}
+	nobrain := ai.NewMockAI()
+	out := output.NewMock()
+
+	err := release("minor", mgit, nobrain, out)
+	assert.NoError(t, err, "expected no error during release")
+	expected := "git tag -a \"v2.1.0\" -m \""
+	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
+}
+
+func TestReleaseNoTags(t *testing.T) {
+	mockGit := &git.MockGit{}
+	mockAI := ai.NewMockAI()
+	out := output.NewMock()
+
+	err := release("", mockGit, mockAI, out)
+
+	assert.EqualError(t, err, "failed to update version: 'unknown version step: '''", "expected error when no tags are present")
+}
+
+func TestReleaseTagFetchError(t *testing.T) {
+	mgit := &git.MockGit{
+		Shell: &executor.MockExecutor{
+			Output: "",
+			Err:    fmt.Errorf("error fetching tags"),
+		},
+	}
+	nobrain := ai.NewMockAI()
+	out := output.NewMock()
+
+	err := release("patch", mgit, nobrain, out)
+
+	assert.Error(t, err, "expected error when fetching tags fails")
+	assert.Contains(t, err.Error(), "failed to get tags", "expected error message about fetching tags")
+}
+
+func TestReleaseNotesGenerationError(t *testing.T) {
+	mgit := &git.MockGit{}
+	nobrain := ai.NewFailedMockAI()
+	out := output.NewMock()
+
+	err := release("major", mgit, nobrain, out)
+
+	assert.Error(t, err, "expected error when generating release notes fails")
+	assert.Contains(t, err.Error(), "failed to generate release notes", "expected error message about release notes generation")
 }

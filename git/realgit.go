@@ -14,14 +14,6 @@ type RealGit struct {
 	shell executor.Executor
 }
 
-func (r *RealGit) Amend(message string) error {
-	_, err := r.shell.RunCommandInDir(r.dir, "git", "commit", "--amend", "-m", message)
-	if err != nil {
-		return fmt.Errorf("error amending commit: %w", err)
-	}
-	return nil
-}
-
 func NewRealGit(shell executor.Executor, dir ...string) *RealGit {
 	var directory string
 	if len(dir) > 0 && dir[0] != "" {
@@ -34,6 +26,14 @@ func NewRealGit(shell executor.Executor, dir ...string) *RealGit {
 		}
 	}
 	return &RealGit{dir: directory, shell: shell}
+}
+
+func (r *RealGit) Amend(message string) error {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "commit", "--amend", "-m", message)
+	if err != nil {
+		return fmt.Errorf("error amending commit: %w", err)
+	}
+	return nil
 }
 
 func (r *RealGit) Reset(ref string) error {
@@ -204,4 +204,47 @@ func (r *RealGit) Checkout(branch string) error {
 		return fmt.Errorf("error checking out branch %s: %w", branch, err)
 	}
 	return nil
+}
+
+func (r *RealGit) Tags() ([]string, error) {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "fetch", "--tags")
+	if err != nil {
+		return nil, fmt.Errorf("error fetching tags: %w", err)
+	}
+	out, err := r.shell.RunCommandInDir(r.dir, "git", "tag")
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(out) == "" {
+		return []string{}, nil
+	}
+	tags := strings.Split(strings.TrimSpace(out), "\n")
+	return tags, nil
+}
+
+func (r *RealGit) AddTag(tag string, message string) error {
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "tag", "-a", tag, "-m", message)
+	if err != nil {
+		return fmt.Errorf("error adding tag %s: %w", tag, err)
+	}
+	return nil
+}
+
+func (r *RealGit) AddTagCommand(tag string, message string) string {
+	return fmt.Sprintf("git tag -a \"%s\" -m \"%s\"", tag, message)
+}
+
+func (r *RealGit) Log(since string) ([]string, error) {
+	var args []string
+	if since == "" {
+		args = []string{"log", "--pretty=format:%s"}
+	} else {
+		args = []string{"log", fmt.Sprintf("%s..HEAD", since), "--pretty=format:%s"}
+	}
+	out, err := r.shell.RunCommandInDir(r.dir, "git", args...)
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	return lines, nil
 }
