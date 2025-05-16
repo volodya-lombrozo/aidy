@@ -30,6 +30,47 @@ func TestRealGit_Remotes(t *testing.T) {
 	assert.Equal(t, urls, expected)
 }
 
+func TestRealGit_Tags_Success(t *testing.T) {
+	shell := &executor.MockExecutor{
+		Output: "v1.0.0\nv1.1.0\nv2.1.0\n",
+		Err:    nil,
+	}
+	gs := NewRealGit(shell, "")
+
+	tags, err := gs.Tags()
+
+	require.NoError(t, err)
+	expectedTags := []string{"v1.0.0", "v1.1.0", "v2.1.0"}
+	assert.Equal(t, expectedTags, tags)
+}
+
+func TestRealGit_Tags_FetchError(t *testing.T) {
+	shell := &executor.MockExecutor{
+		Err: fmt.Errorf("fetch error"),
+	}
+	gs := NewRealGit(shell, "")
+
+	tags, err := gs.Tags()
+
+	require.Error(t, err)
+	assert.Nil(t, tags)
+	assert.Contains(t, err.Error(), "error fetching tags")
+}
+
+func TestRealGit_Tags_ListError(t *testing.T) {
+	shell := &executor.MockExecutor{
+		Output: "",
+		Err:    fmt.Errorf("list error"),
+	}
+	gs := NewRealGit(shell, "")
+
+	tags, err := gs.Tags()
+
+	require.Error(t, err)
+	assert.Nil(t, tags)
+	assert.Contains(t, err.Error(), "list error")
+}
+
 func TestRealGit_Checkout_Success(t *testing.T) {
 	shell := &executor.MockExecutor{}
 	gs := NewRealGit(shell, "")
