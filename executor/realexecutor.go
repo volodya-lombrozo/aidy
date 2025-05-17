@@ -18,7 +18,10 @@ func NewRealExecutor() Executor {
 }
 
 func (r *RealExecutor) RunInteractively(cmd string, args ...string) (string, error) {
-	logShortf("Execute: \"%s\" with args: \"%v\"", cmd, args)
+	logShortf("execute: \"%s\" with args(%d): \"%v\"", cmd, len(args), args)
+	for i, arg := range args {
+		logShortf("arg[%d]: \"%s\"", i, arg)
+	}
 	command := exec.Command(cmd, args...)
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
@@ -31,7 +34,7 @@ func (r *RealExecutor) RunInteractively(cmd string, args ...string) (string, err
 }
 
 func (r *RealExecutor) RunCommand(name string, args ...string) (string, error) {
-	logShortf("Execute: \"%s %s\"", name, strings.Join(args, " "))
+	logShortf("execute: \"%s %s\"", name, strings.Join(args, " "))
 	cmd := exec.Command(name, args...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -43,7 +46,7 @@ func (r *RealExecutor) RunCommand(name string, args ...string) (string, error) {
 }
 
 func (r *RealExecutor) RunCommandInDir(dir string, name string, args ...string) (string, error) {
-	logShortf("Execute (%s): \"%s %s\"", dir, name, strings.Join(args, " "))
+	logShortf("execute (%s): \"%s %s\"", dir, name, strings.Join(args, " "))
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	var out bytes.Buffer

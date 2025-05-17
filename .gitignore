@@ -3,3 +3,5 @@ aidy
 .idea
 coverage.out
 .aidy
+# Added by goreleaser init:
+dist/
