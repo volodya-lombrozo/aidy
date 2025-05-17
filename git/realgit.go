@@ -223,7 +223,7 @@ func (r *RealGit) Tags() ([]string, error) {
 }
 
 func (r *RealGit) AddTag(tag string, message string) error {
-	_, err := r.shell.RunCommandInDir(r.dir, "git", "tag", "-a", tag, "-m", message)
+	_, err := r.shell.RunCommandInDir(r.dir, "git", "tag", "--cleanup=verbatim", "-a", tag, "-m", message)
 	if err != nil {
 		return fmt.Errorf("error adding tag %s: %w", tag, err)
 	}
@@ -231,7 +231,7 @@ func (r *RealGit) AddTag(tag string, message string) error {
 }
 
 func (r *RealGit) AddTagCommand(tag string, message string) string {
-	return fmt.Sprintf("git tag -a \"%s\" -m \"%s\"", tag, message)
+	return fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", tag, message)
 }
 
 func (r *RealGit) Log(since string) ([]string, error) {
