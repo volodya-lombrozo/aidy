@@ -26,7 +26,7 @@ func TestHeal(t *testing.T) {
 		Output: "",
 		Err:    nil,
 	}
-	mockGit := &git.MockGit{Shell: mockExecutor}
+	mockGit := git.NewMockWithShell(mockExecutor)
 
 	heal(mockGit)
 
@@ -68,7 +68,7 @@ func TestStart(t *testing.T) {
 	}
 	gh := &github.MockGithub{}
 
-	err := startIssue("42", brain, &git.MockGit{Shell: shell}, gh)
+	err := startIssue("42", brain, git.NewMockWithShell(shell), gh)
 
 	assert.NoError(t, err, "Expected no error when starting issue")
 	expected := []string{"git checkout -b 42-mock-branch-name"}
@@ -86,7 +86,7 @@ func TestStartIssueNoNumber(t *testing.T) {
 	}
 	gh := &github.MockGithub{}
 
-	err := startIssue("", brain, &git.MockGit{Shell: shell}, gh)
+	err := startIssue("", brain, git.NewMockWithShell(shell), gh)
 
 	assert.Error(t, err, "expected error when no issue number is provided")
 	assert.Contains(t, err.Error(), "error: no issue number provided")
@@ -100,7 +100,7 @@ func TestStartIssueInvalidNumber(t *testing.T) {
 	}
 	gh := &github.MockGithub{}
 
-	err := startIssue("invalid", brain, &git.MockGit{Shell: shell}, gh)
+	err := startIssue("invalid", brain, git.NewMockWithShell(shell), gh)
 
 	assert.Error(t, err, "Expected error when an invalid issue number is provided")
 	assert.Contains(t, err.Error(), "error: invalid issue number 'invalid'")
@@ -114,7 +114,7 @@ func TestStartIssueBranchNameError(t *testing.T) {
 	}
 	gh := &github.MockGithub{}
 
-	err := startIssue("42", brain, &git.MockGit{Shell: shell}, gh)
+	err := startIssue("42", brain, git.NewMockWithShell(shell), gh)
 
 	assert.Error(t, err, "expected error when generating branch name fails")
 	assert.Contains(t, err.Error(), "error generating branch name")
@@ -128,7 +128,7 @@ func TestStartIssueCheckoutError(t *testing.T) {
 		Err:    fmt.Errorf("error checking out branch"),
 	}
 	gh := &github.MockGithub{}
-	mockGit := &git.MockGit{Shell: shell}
+	mockGit := git.NewMockWithShell(shell)
 
 	err := startIssue("42", brain, mockGit, gh)
 
@@ -142,24 +142,23 @@ func TestSquash(t *testing.T) {
 		Output: "",
 		Err:    nil,
 	}
-	mockGit := &git.MockGit{Shell: mockExecutor}
+	mockGit := git.NewMockWithShell(mockExecutor)
 
 	squash(mockGit, mockAI)
 
-	expectedCommands := []string{
+	expected := []string{
 		"git reset --soft refs/heads/main",
 		"git add --all",
+		"git commit -m feat(#41): no files changed",
 		"git commit --amend -m feat(#41): current commit message",
 	}
-	for i, expectedCommand := range expectedCommands {
-		if !strings.Contains(mockExecutor.Commands[i], expectedCommand) {
-			t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
-		}
+	for i, cmd := range expected {
+		assert.Contains(t, mockExecutor.Commands[i], cmd, "Wrong command")
 	}
 }
 
 func TestPullRequest(t *testing.T) {
-	mockGit := &git.MockGit{}
+	mockGit := git.NewMock()
 	mockAI := ai.NewMockAI()
 	mockGithub := &github.MockGithub{}
 	out := output.NewMock()
@@ -201,23 +200,23 @@ func TestHealQuotesParametrized(t *testing.T) {
 }
 
 func TestCommit(t *testing.T) {
-	mockAI := ai.NewMockAI()
-	mockExecutor := &executor.MockExecutor{
+	brain := ai.NewMockAI()
+	shell := &executor.MockExecutor{
 		Output: "",
 		Err:    nil,
 	}
-	mockGit := &git.MockGit{Shell: mockExecutor}
+	mgit := git.NewMockWithShell(shell)
 
-	commit(mockGit, mockAI)
+	commit(mgit, brain)
 
-	expectedCommands := []string{
+	expected := []string{
 		"git add --all",
+		"git commit -m feat(#41): no files changed",
 		"git commit --amend -m feat(#41): current commit message",
 	}
-	for i, expectedCommand := range expectedCommands {
-		if !strings.Contains(mockExecutor.Commands[i], expectedCommand) {
-			t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
-		}
+	fmt.Println(shell.Commands)
+	for i, cmd := range expected {
+		assert.Contains(t, shell.Commands[i], cmd, "Expected command '%s', got '%s'", cmd, shell.Commands[i])
 	}
 }
 
@@ -383,19 +382,19 @@ func TestUpver(t *testing.T) {
 	}
 
 }
-func TestReleaseSuccess(t *testing.T) {
-	mgit := &git.MockGit{}
+func TestRelease_Success(t *testing.T) {
+	mgit := git.NewMock()
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
 
 	err := release("minor", mgit, nobrain, out)
 	assert.NoError(t, err, "expected no error during release")
-	expected := "git tag -a \"v2.1.0\" -m \""
+	expected := "git tag --cleanup=verbatim -a \"v2.1.0\" -m \""
 	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
 }
 
 func TestReleaseNoTags(t *testing.T) {
-	mockGit := &git.MockGit{}
+	mockGit := git.NewMock()
 	mockAI := ai.NewMockAI()
 	out := output.NewMock()
 
@@ -405,12 +404,12 @@ func TestReleaseNoTags(t *testing.T) {
 }
 
 func TestReleaseTagFetchError(t *testing.T) {
-	mgit := &git.MockGit{
-		Shell: &executor.MockExecutor{
+	mgit := git.NewMockWithShell(
+		&executor.MockExecutor{
 			Output: "",
 			Err:    fmt.Errorf("error fetching tags"),
 		},
-	}
+	)
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
 
@@ -421,7 +420,7 @@ func TestReleaseTagFetchError(t *testing.T) {
 }
 
 func TestReleaseNotesGenerationError(t *testing.T) {
-	mgit := &git.MockGit{}
+	mgit := git.NewMock()
 	nobrain := ai.NewFailedMockAI()
 	out := output.NewMock()
 

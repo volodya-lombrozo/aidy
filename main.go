@@ -27,7 +27,7 @@ func main() {
 	}
 	command := os.Args[1]
 	shell := executor.NewRealExecutor()
-	gs := git.NewRealGit(shell)
+	gs := git.NewGit(shell)
 	out := output.NewEditor(shell)
 	gitcache, err := cache.NewGitCache(".aidy/cache.js", gs)
 	if err != nil {
@@ -74,7 +74,7 @@ func main() {
 		brain = ai.NewOpenAI(apiKey, model, 0.2, sumrequired)
 	}
 	checkGitInstalled(gs)
-	gh := github.NewRealGithub("https://api.github.com", gs, githubKey, ch)
+	gh := github.NewGithub("https://api.github.com", gs, githubKey, ch)
 	target := ch.Remote()
 	if target != "" {
 		log.Printf("Target repo is: %s\n", target)
@@ -191,7 +191,7 @@ func release(step string, gs git.Git, brain ai.AI, out output.Output) error {
 			return fmt.Errorf("failed to generate release notes: '%v'", err)
 		}
 	}
-	command := gs.AddTagCommand(updated, notes)
+	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, notes)
 	return out.Print(command)
 }
 
@@ -247,9 +247,8 @@ func latest(tags []string) string {
 	return tags[len(tags)-1]
 }
 
-// Prints current git diff
 func diff(gs git.Git) {
-	diff, err := gs.GetDiff()
+	diff, err := gs.Diff()
 	if err != nil {
 		log.Fatalf("Failed to get diff: '%v'", err)
 	} else {
@@ -353,11 +352,11 @@ func issue(task string, brain ai.AI, gh github.Github, ch cache.AidyCache, out o
 }
 
 func squash(gs git.Git, brain ai.AI) {
-	baseBranch, err := gs.GetBaseBranchName()
+	base, err := gs.BaseBranch()
 	if err != nil {
 		log.Fatalf("Error determining base branch: %v", err)
 	}
-	resetErr := gs.Reset("refs/heads/" + baseBranch)
+	resetErr := gs.Reset("refs/heads/" + base)
 	if resetErr != nil {
 		log.Fatalf("Error executing git reset: %v", err)
 	}
@@ -365,40 +364,41 @@ func squash(gs git.Git, brain ai.AI) {
 }
 
 func commit(gs git.Git, brain ai.AI) {
-	branchName, err := gs.GetBranchName()
+	branch, err := gs.CurrentBranch()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
 	}
-	err = gs.AddAll()
+	_, err = gs.Run("add", "--all")
 	if err != nil {
-		log.Fatalf("Error adding git files: %v", err)
+		log.Fatalf("Error adding changes: %v", err)
 	}
-	diff, diffErr := gs.GetCurrentDiff()
+	diff, diffErr := gs.CurrentDiff()
 	if diffErr != nil {
 		log.Fatalf("Error getting diff: %v", err)
 	}
-	nissue := inumber(branchName)
+	nissue := inumber(branch)
 	msg, cerr := brain.CommitMessage(nissue, diff)
 	if cerr != nil {
 		log.Fatalf("Error generating commit message: %v", cerr)
 	}
-	if err := gs.CommitChanges(msg); err != nil {
+	_, err = gs.Run("commit", "-m", msg)
+	if err != nil {
 		log.Fatalf("Error committing changes: %v", err)
 	}
 	heal(gs)
 }
 
 func pull_request(gs git.Git, brain ai.AI, gh github.Github, ch cache.AidyCache, out output.Output) {
-	branchName, err := gs.GetBranchName()
+	branch, err := gs.CurrentBranch()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
 	}
-	diff, err := gs.GetDiff()
+	diff, err := gs.Diff()
 	if err != nil {
 		log.Fatalf("Error getting git diff: %v", err)
 	}
 	summary, _ := ch.Summary()
-	nissue := inumber(branchName)
+	nissue := inumber(branch)
 	issue := gh.Description(nissue)
 	title, err := brain.PrTitle(nissue, diff, issue, summary)
 	if err != nil {
@@ -425,12 +425,12 @@ func pull_request(gs git.Git, brain ai.AI, gh github.Github, ch cache.AidyCache,
 }
 
 func heal(gitService git.Git) {
-	branchName, err := gitService.GetBranchName()
+	name, err := gitService.CurrentBranch()
 	if err != nil {
 		log.Fatalf("Error getting branch name: %v", err)
 	}
-	issueNumber := inumber(branchName)
-	commitMessage, gitErr := gitService.GetCurrentCommitMessage()
+	issueNumber := inumber(name)
+	commitMessage, gitErr := gitService.CommitMessage()
 	if gitErr != nil {
 		log.Fatalf("Error getting current commit message: %v", err)
 	}
@@ -497,7 +497,7 @@ func healPRTitle(text string, issue string) string {
 }
 
 func append_commit(gs git.Git) {
-	err := gs.AppendToCommit()
+	err := gs.Append()
 	if err != nil {
 		log.Fatalf("Error appending to commit: %v", err)
 	}

@@ -7,71 +7,63 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/volodya-lombrozo/aidy/git"
 )
 
 func TestSetAndGet(t *testing.T) {
-	fmt.Println("Start test")
-	tmpFile := tempCacheFile(t)
+	tmp := temp(t)
 	defer func() {
-		if err := os.Remove(tmpFile); err != nil {
+		if err := os.Remove(tmp); err != nil {
 			t.Fatalf("Failed to remove temp file: %v", err)
 		}
 	}()
 
-	c, err := NewFileCache(tmpFile)
-	if err != nil {
-		t.Fatalf("Failed to create cache: %v", err)
-	}
+	c, err := NewFileCache(tmp)
 
-	if _, ok := c.Get("missing"); ok {
-		t.Errorf("Expected missing key to return false")
-	}
-
-	if err := c.Set("foo", "bar"); err != nil {
-		t.Errorf("Set failed: %v", err)
-	}
-
-	if val, ok := c.Get("foo"); !ok || val != "bar" {
-		t.Errorf("Expected 'bar', got '%s'", val)
-	}
+	require.NoError(t, err, "Failed to create cache")
+	_, ok := c.Get("missing")
+	require.False(t, ok, "Expected missing key to return false")
+	err = c.Set("foo", "bar")
+	require.NoError(t, err, "Failed to set value in cache")
+	val, ok := c.Get("foo")
+	require.True(t, ok, "Expected key to be found")
+	assert.Equal(t, "bar", val, "Expected value to be 'bar'")
 }
+
 func TestNewGitCache_CreatesFileIfNotExists(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmp := t.TempDir()
 	name := "cache.json"
-	tmpFile := filepath.Join(tmpDir, name)
+	file := filepath.Join(tmp, name)
 
-	_, err := NewGitCache(name, git.NewMockGitWithDir(tmpDir))
+	_, err := NewGitCache(name, git.NewMockWithDir(tmp))
+
 	assert.NoError(t, err, "Expected no error when creating GitCache with a new file path")
-
-	_, err = os.Stat(tmpFile)
+	_, err = os.Stat(file)
 	assert.NoError(t, err, "Expected file to be created")
 }
 
 func TestNewGitCache_Get(t *testing.T) {
-	tmpFile := tempCacheFile(t)
+	tmp := temp(t)
 	defer func() {
-		if err := os.Remove(tmpFile); err != nil {
+		if err := os.Remove(tmp); err != nil {
 			t.Fatalf("Failed to remove temp file: %v", err)
 		}
 	}()
-	c, err := NewGitCache(filepath.Base(tmpFile), git.NewMockGitWithDir(filepath.Dir(tmpFile)))
-	if err != nil {
-		t.Fatalf("Failed to create GitCache: %v", err)
-	}
+
+	c, err := NewGitCache(filepath.Base(tmp), git.NewMockWithDir(filepath.Dir(tmp)))
+	require.NoError(t, err, "Failed to create GitCache")
+
 	err = c.Set("testKey", "testValue")
-	if err != nil {
-		t.Fatalf("Failed to set value in GitCache: %v", err)
-	}
+	require.NoError(t, err, "Failed to set value in GitCache")
 
 	val, ok := c.Get("testKey")
-
 	assert.True(t, ok, "Expected key to be found")
 	assert.Equal(t, "testValue", val, "Expected value to be 'testValue'")
 }
 
 func TestPersistence(t *testing.T) {
-	tmpFile := tempCacheFile(t)
+	tmpFile := temp(t)
 	defer func() {
 		if err := os.Remove(tmpFile); err != nil {
 			t.Fatalf("Failed to remove temp file: %v", err)
@@ -97,7 +89,7 @@ func TestPersistence(t *testing.T) {
 }
 
 func TestOverwrite(t *testing.T) {
-	tmpFile := tempCacheFile(t)
+	tmpFile := temp(t)
 	defer func() {
 		if err := os.Remove(tmpFile); err != nil {
 			t.Fatalf("Failed to remove temp file: %v", err)
@@ -113,7 +105,7 @@ func TestOverwrite(t *testing.T) {
 	}
 }
 
-func tempCacheFile(t *testing.T) string {
+func temp(t *testing.T) string {
 	t.Helper()
 	f, err := os.CreateTemp("", "cache_test_*.json")
 	if err != nil {

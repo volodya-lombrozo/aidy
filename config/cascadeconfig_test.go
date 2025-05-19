@@ -48,7 +48,7 @@ models:
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change directory: %v", err)
 	}
-	mockGit := &git.MockGit{}
+	mockGit := git.NewMock()
 
 	conf := NewCascadeConfig(mockGit)
 

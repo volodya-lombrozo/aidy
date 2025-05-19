@@ -13,12 +13,35 @@ import (
 	"github.com/volodya-lombrozo/aidy/executor"
 )
 
+func TestRealGit_Run_Successful(t *testing.T) {
+	mock := &executor.MockExecutor{
+		Output: "success",
+		Err:    nil,
+	}
+	service := NewGit(mock)
+	output, err := service.Run("status")
+	require.NoError(t, err)
+	assert.Equal(t, "success", output)
+}
+
+func TestRealGit_Run_Failure(t *testing.T) {
+	mock := &executor.MockExecutor{
+		Output: "",
+		Err:    fmt.Errorf("error"),
+	}
+	service := NewGit(mock)
+	output, err := service.Run("status")
+	require.Error(t, err)
+	assert.Equal(t, "", output)
+	assert.Contains(t, err.Error(), "error running git command")
+}
+
 func TestRealGit_Remotes(t *testing.T) {
 	mock := &executor.MockExecutor{
 		Output: "origin\thttps://github.com/user/repo.git (fetch)\norigin\thttps://github.com/user/repo.git (push)\nupstream\thttps://github.com/another/repo.git (fetch)\nupstream\thttps://github.com/another/repo.git (push)\n",
 		Err:    nil,
 	}
-	service := NewRealGit(mock, "")
+	service := NewGit(mock)
 
 	urls, err := service.Remotes()
 
@@ -35,7 +58,7 @@ func TestRealGit_Tags_Success(t *testing.T) {
 		Output: "v1.0.0\nv1.1.0\nv2.1.0\n",
 		Err:    nil,
 	}
-	gs := NewRealGit(shell, "")
+	gs := NewGit(shell)
 
 	tags, err := gs.Tags()
 
@@ -48,7 +71,7 @@ func TestRealGit_Tags_FetchError(t *testing.T) {
 	shell := &executor.MockExecutor{
 		Err: fmt.Errorf("fetch error"),
 	}
-	gs := NewRealGit(shell, "")
+	gs := NewGit(shell)
 
 	tags, err := gs.Tags()
 
@@ -62,7 +85,7 @@ func TestRealGit_Tags_ListError(t *testing.T) {
 		Output: "",
 		Err:    fmt.Errorf("list error"),
 	}
-	gs := NewRealGit(shell, "")
+	gs := NewGit(shell)
 
 	tags, err := gs.Tags()
 
@@ -73,7 +96,7 @@ func TestRealGit_Tags_ListError(t *testing.T) {
 
 func TestRealGit_Checkout_Success(t *testing.T) {
 	shell := &executor.MockExecutor{}
-	gs := NewRealGit(shell, "")
+	gs := NewGit(shell)
 	branch := "feature-branch"
 
 	err := gs.Checkout(branch)
@@ -88,7 +111,7 @@ func TestRealGit_Checkout_Failure(t *testing.T) {
 	shell := &executor.MockExecutor{
 		Err: fmt.Errorf("checkout error"),
 	}
-	gitService := NewRealGit(shell, "")
+	gitService := NewGit(shell)
 	branchName := "feature-branch"
 
 	err := gitService.Checkout(branchName)
@@ -99,7 +122,7 @@ func TestRealGit_Checkout_Failure(t *testing.T) {
 
 func TestRealGit_Amend(t *testing.T) {
 	mockExecutor := &executor.MockExecutor{}
-	gitService := NewRealGit(mockExecutor, "")
+	gitService := NewGit(mockExecutor, "")
 
 	message := "Updated commit message"
 	err := gitService.Amend(message)
@@ -117,7 +140,7 @@ func TestRealGit_Amend(t *testing.T) {
 
 func TestRealGit_AddAll(t *testing.T) {
 	mockExecutor := &executor.MockExecutor{}
-	gitService := NewRealGit(mockExecutor, "")
+	gitService := NewGit(mockExecutor, "")
 
 	err := gitService.AddAll()
 	require.NoError(t, err)
@@ -136,7 +159,7 @@ func TestRealGit_Reset(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
 
-	gitService := NewRealGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewRealExecutor(), repoDir)
 
 	filePath := filepath.Join(repoDir, "resetfile.txt")
 	if err := os.WriteFile(filePath, []byte("Reset content"), 0644); err != nil {
@@ -176,7 +199,7 @@ func TestRealGit_Reset(t *testing.T) {
 func TestRealGitRoot(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gitService := NewRealGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewRealExecutor(), repoDir)
 
 	root, err := gitService.Root()
 
@@ -199,7 +222,7 @@ func TestRealGit_Remotes_Parametrised(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.remotes, func(t *testing.T) {
 			mock := &executor.MockExecutor{Output: tc.remotes, Err: nil}
-			result, err := NewRealGit(mock).Remotes()
+			result, err := NewGit(mock).Remotes()
 			require.NoError(t, err)
 			assert.Equal(t, tc.expected, result)
 		})
@@ -208,9 +231,9 @@ func TestRealGit_Remotes_Parametrised(t *testing.T) {
 
 func TestRealGit_AppendToCommit(t *testing.T) {
 	mockExecutor := &executor.MockExecutor{}
-	gitService := NewRealGit(mockExecutor, "")
+	gitService := NewGit(mockExecutor, "")
 
-	err := gitService.AppendToCommit()
+	err := gitService.Append()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -231,103 +254,26 @@ func TestRealGit_AppendToCommit(t *testing.T) {
 	}
 }
 
-func TestRealGit_CommitChanges(t *testing.T) {
-	repoDir, cleanup := setupTestRepo(t)
-	defer cleanup()
-
-	// Create a new file and stage it
-	filePath := filepath.Join(repoDir, "newfile.txt")
-	if err := os.WriteFile(filePath, []byte("New content"), 0644); err != nil {
-		t.Fatalf("Error writing to file: %v", err)
-	}
-
-	gitService := NewRealGit(executor.NewRealExecutor(), repoDir)
-
-	// Commit the changes
-	err := gitService.CommitChanges()
-	if err != nil {
-		t.Fatalf("Error committing changes: %v", err)
-	}
-
-	// Verify the commit message
-	cmd := exec.Command("git", "log", "-1", "--pretty=%B")
-	cmd.Dir = repoDir
-	out, err := cmd.Output()
-	if err != nil {
-		t.Fatalf("Error getting commit message: %v", err)
-	}
-
-	expectedMessage := "Committing changes to the following files:\nnewfile.txt\n\n"
-	if string(out) != expectedMessage {
-		t.Fatalf("Expected commit message '%s', got '%s'", expectedMessage, string(out))
-	}
-}
-
-func setupTestRepo(t *testing.T) (string, func()) {
-	tempDir, err := os.MkdirTemp("", "testrepo")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	cmd := exec.Command("git", "init", "--initial-branch", "main")
-	cmd.Dir = tempDir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to initialize git repo: %v", err)
-	}
-
-	cmd = exec.Command("git", "config", "user.name", "Test User")
-	cmd.Dir = tempDir
-	_ = cmd.Run()
-
-	cmd = exec.Command("git", "config", "user.email", "test@example.com")
-	cmd.Dir = tempDir
-	_ = cmd.Run()
-
-	cmd = exec.Command("git", "commit", "-m", "initial commit", "--allow-empty")
-	cmd.Dir = tempDir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to make an initial commit: %v", err)
-	}
-	cmd = exec.Command("git", "checkout", "-b", "main-branch")
-	cmd.Dir = tempDir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to create 'main-branch' branch: %v", err)
-	}
-	cmd = exec.Command("git", "commit", "-m", "second commit", "--allow-empty")
-	cmd.Dir = tempDir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to make an initial commit: %v", err)
-	}
-	return tempDir, func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Fatalf("Error removing temp directory: %v", err)
-		}
-	}
-}
-
 func TestRealGetBranchName(t *testing.T) {
 	dir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gitService := NewRealGit(executor.NewRealExecutor(), dir)
-	branchName, err := gitService.GetBranchName()
-	if err != nil {
-		t.Fatalf("Error getting branch name: %v", err)
-	}
-	if branchName != "main-branch" {
-		t.Fatalf("Expected branch name 'main-branch', got '%s'", branchName)
-	}
+	gs := NewGit(executor.NewRealExecutor(), dir)
+
+	branch, err := gs.CurrentBranch()
+
+	require.NoError(t, err, "Expected no error during branch retrieval")
+	assert.Equal(t, "main-branch", branch, "Expected branch name to be 'main-branch'")
 }
 
 func TestRealGetBaseBranchName(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gitService := NewRealGit(executor.NewRealExecutor(), repoDir)
-	baseBranch, err := gitService.GetBaseBranchName()
-	if err != nil {
-		t.Fatalf("Error getting base branch name: %v", err)
-	}
-	if baseBranch != "main" {
-		t.Fatalf("Expected base branch name 'main', got '%s'", baseBranch)
-	}
+	gs := NewGit(executor.NewRealExecutor(), repoDir)
+
+	base, err := gs.BaseBranch()
+
+	require.NoError(t, err, "Expected no error during base branch retrieval")
+	assert.Equal(t, "main", base, "Expected base branch name to be 'main'")
 }
 
 func TestRealGetDiff(t *testing.T) {
@@ -350,8 +296,8 @@ func TestRealGetDiff(t *testing.T) {
 	if err := os.WriteFile(filePath, []byte("Hello, Git!"), 0644); err != nil {
 		t.Fatalf("Error writing to file: %v", err)
 	}
-	gitService := NewRealGit(executor.NewRealExecutor(), repoDir)
-	diff, err := gitService.GetDiff()
+	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	diff, err := gitService.Diff()
 	if err != nil {
 		t.Fatalf("Error getting diff: %v", err)
 	}
@@ -380,8 +326,8 @@ func TestRealGetCurrentDiff(t *testing.T) {
 	if err := os.WriteFile(filePath, []byte("Hello, Git!"), 0644); err != nil {
 		t.Fatalf("Error writing to file: %v", err)
 	}
-	gitService := NewRealGit(executor.NewRealExecutor(), repoDir)
-	diff, err := gitService.GetDiff()
+	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	diff, err := gitService.Diff()
 	if err != nil {
 		t.Fatalf("Error getting diff: %v", err)
 	}
@@ -409,8 +355,8 @@ func TestRealGetCurrentCommitMessage(t *testing.T) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Error running command: %v", err)
 	}
-	gitService := NewRealGit(executor.NewRealExecutor(), repoDir)
-	message, err := gitService.GetCurrentCommitMessage()
+	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	message, err := gitService.CommitMessage()
 	if err != nil {
 		t.Fatalf("Error getting current commit message: %v", err)
 	}
@@ -422,10 +368,48 @@ func TestRealGetCurrentCommitMessage(t *testing.T) {
 func TestRealGitInstalled(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gitService := NewRealGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewRealExecutor(), repoDir)
 
 	installed, err := gitService.Installed()
 
 	require.NoError(t, err)
 	assert.True(t, installed)
+}
+
+func setupTestRepo(t *testing.T) (string, func()) {
+	tempDir, err := os.MkdirTemp("", "testrepo")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	cmd := exec.Command("git", "init", "--initial-branch", "main")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to initialize git repo: %v", err)
+	}
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = tempDir
+	_ = cmd.Run()
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = tempDir
+	_ = cmd.Run()
+	cmd = exec.Command("git", "commit", "-m", "initial commit", "--allow-empty")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to make an initial commit: %v", err)
+	}
+	cmd = exec.Command("git", "checkout", "-b", "main-branch")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to create 'main-branch' branch: %v", err)
+	}
+	cmd = exec.Command("git", "commit", "-m", "second commit", "--allow-empty")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to make an initial commit: %v", err)
+	}
+	return tempDir, func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Fatalf("Error removing temp directory: %v", err)
+		}
+	}
 }

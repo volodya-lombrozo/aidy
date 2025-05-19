@@ -99,5 +99,8 @@ func summary(diff string) string {
 	for file := range unique {
 		files = append(files, file)
 	}
+	if len(files) == 0 {
+		return "no files changed"
+	}
 	return fmt.Sprintf("changed files: %s", strings.Join(files, ", "))
 }

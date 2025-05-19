@@ -35,7 +35,6 @@ func TestMockGithub_Labels(t *testing.T) {
 }
 
 func TestRealGithub_Description(t *testing.T) {
-	// Create a test server to mock GitHub API
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte(JsonIssue)); err != nil {
@@ -43,7 +42,7 @@ func TestRealGithub_Description(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockAidyCache())
+	realGithub := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
 
 	description := realGithub.Description("123")
 
@@ -51,7 +50,7 @@ func TestRealGithub_Description(t *testing.T) {
 }
 
 func TestRealGithub_Description_NotNumber(t *testing.T) {
-	realGithub := NewRealGithub("http://google.com", &git.MockGit{}, "", cache.NewMockAidyCache())
+	realGithub := NewGithub("http://google.com", git.NewMock(), "", cache.NewMockAidyCache())
 	issueNumber := "not-a-number"
 
 	description := realGithub.Description(issueNumber)
@@ -89,7 +88,7 @@ func TestRealGithub_Labels(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	realGithub := NewRealGithub(ts.URL, &git.MockGit{}, "", cache.NewMockAidyCache())
+	realGithub := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
 
 	labels := realGithub.Labels()
 
@@ -100,7 +99,7 @@ func TestRealGithub_Labels(t *testing.T) {
 }
 
 func TestRealGithub_Remotes(t *testing.T) {
-	gh := NewRealGithub("", &git.MockGit{}, "", cache.NewMockAidyCache())
+	gh := NewGithub("", git.NewMock(), "", cache.NewMockAidyCache())
 
 	actual := gh.Remotes()
 
