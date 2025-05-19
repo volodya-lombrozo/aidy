@@ -1,22 +1,26 @@
 package git
 
+// This file defines the Git interface and its methods for interacting with git repositories.
+// In most cases only the Run method is used, which executes git commands.
+// All other methods are wrappers around Run.
+// Don't add new methods to this interface.
+// If you need to add a new method, consider if it can be implemented using Run.
 type Git interface {
-	GetBranchName() (string, error)
-	GetDiff() (string, error)
-	GetCurrentDiff() (string, error)
-	GetBaseBranchName() (string, error)
-	GetCurrentCommitMessage() (string, error)
-	AppendToCommit() error
-	CommitChanges(messages ...string) error
-	Remotes() ([]string, error)
+	Run(args ...string) (string, error)
+
 	Installed() (bool, error)
+	CurrentBranch() (string, error)
+	BaseBranch() (string, error)
+	Diff() (string, error)
+	CurrentDiff() (string, error)
+	CommitMessage() (string, error)
+	Append() error
+	Remotes() ([]string, error)
 	Root() (string, error)
 	Reset(ref string) error
 	AddAll() error
 	Amend(message string) error
 	Checkout(branch string) error
 	Tags() ([]string, error)
-	AddTag(tag string, message string) error
-	AddTagCommand(tag string, message string) string
 	Log(since string) ([]string, error)
 }

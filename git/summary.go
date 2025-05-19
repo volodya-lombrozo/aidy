@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-type Summary struct {
+type summary struct {
 	diff  string
 	stat  string
 	names string
 }
 
-type FileChange struct {
+type change struct {
 	Name        string
 	Status      string // A, M, D, etc.
 	StatLine    string
@@ -20,21 +20,21 @@ type FileChange struct {
 	LineChanges int
 }
 
-type DiffReport struct {
-	Files      []FileChange
+type report struct {
+	Files      []change
 	TotalLines int
 }
 
-func NewSummary(diff string, stat string, names string) *Summary {
-	return &Summary{diff: diff, stat: stat, names: names}
+func NewSummary(diff string, stat string, names string) *summary {
+	return &summary{diff: diff, stat: stat, names: names}
 }
 
-func (s *Summary) Render() string {
-	rep := buildReport(s.names, s.stat, s.diff)
+func (s *summary) Render() string {
+	rep := combine(s.names, s.stat, s.diff)
 	return rep.pretty()
 }
 
-func (report *DiffReport) pretty() string {
+func (report *report) pretty() string {
 	sort.Slice(report.Files, func(i, j int) bool {
 		return report.Files[i].Name < report.Files[j].Name
 	})
@@ -85,7 +85,7 @@ func (report *DiffReport) pretty() string {
 	return firstNLines(firstNChars(sb.String(), 120*400), 400)
 }
 
-func (report *DiffReport) large() bool {
+func (report *report) large() bool {
 	return report.TotalLines > 400
 }
 
@@ -111,32 +111,26 @@ func firstNChars(s string, n int) string {
 }
 
 // Combine everything
-func buildReport(nameStatus, stat, diff string) *DiffReport {
-	statusMap := parseNames(nameStatus)
+func combine(names, stat, diff string) *report {
+	statusMap := parseNames(names)
 	statMap := parseStat(stat)
 	diffMap := parseDiff(diff)
-
-	report := &DiffReport{}
-
-	for file, fileStatus := range statusMap {
-		entry := FileChange{
+	report := &report{}
+	for file, files := range statusMap {
+		entry := change{
 			Name:   file,
-			Status: fileStatus,
+			Status: files,
 		}
-
 		if s, ok := statMap[file]; ok {
 			entry.StatLine = s.StatLine
 			entry.LineChanges = s.LineChanges
 		}
-
 		if d, ok := diffMap[file]; ok {
 			entry.DiffBlock = d
 		}
-
 		report.Files = append(report.Files, entry)
 		report.TotalLines += entry.LineChanges
 	}
-
 	return report
 }
 
@@ -165,9 +159,9 @@ func parseNames(input string) map[string]string {
 // simple.txt | 7 +++++++
 // u1.txt     | 7 +++++++
 // 3 files changed, 15 insertions(+)
-func parseStat(input string) map[string]*FileChange {
+func parseStat(input string) map[string]*change {
 	lines := strings.Split(strings.TrimSpace(input), "\n")
-	result := make(map[string]*FileChange)
+	result := make(map[string]*change)
 	for _, line := range lines {
 		if !strings.Contains(line, "|") {
 			continue
@@ -176,7 +170,7 @@ func parseStat(input string) map[string]*FileChange {
 		file := strings.TrimSpace(parts[0])
 		meta := strings.TrimSpace(parts[1])
 		count := strings.Count(meta, "+") + strings.Count(meta, "-")
-		result[file] = &FileChange{
+		result[file] = &change{
 			Name:        file,
 			StatLine:    line,
 			LineChanges: count,

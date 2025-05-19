@@ -114,7 +114,7 @@ func (c *fileCache) save() error {
 
 func NewGitMockCache(gitdir string) Cache {
 	original := NewMockCache()
-	return &gitCache{delegate: original, gs: git.NewMockGitWithDir(gitdir)}
+	return &gitCache{delegate: original, gs: git.NewMockWithDir(gitdir)}
 }
 
 func NewGitCache(path string, gs git.Git) (Cache, error) {

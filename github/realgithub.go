@@ -14,12 +14,12 @@ import (
 	"github.com/volodya-lombrozo/aidy/git"
 )
 
-type RealGithub struct {
-	client     *http.Client
-	baseURL    string
-	gitService git.Git
-	authToken  string
-	ch         cache.AidyCache
+type github struct {
+	client *http.Client
+	url    string
+	gs     git.Git
+	token  string
+	ch     cache.AidyCache
 }
 
 type issue struct {
@@ -36,20 +36,17 @@ type label struct {
 	Description string `json:"description"`
 }
 
-func NewRealGithub(baseURL string, gitService git.Git, authToken string, ch cache.AidyCache) *RealGithub {
-	return &RealGithub{
-		client:     &http.Client{},
-		baseURL:    baseURL,
-		gitService: gitService,
-		authToken:  authToken,
-		ch:         ch,
+func NewGithub(baseURL string, gs git.Git, authToken string, ch cache.AidyCache) *github {
+	return &github{
+		client: &http.Client{},
+		url:    baseURL,
+		gs:     gs,
+		token:  authToken,
+		ch:     ch,
 	}
 }
 
-func (r *RealGithub) Description(number string) string {
-	if r.gitService == nil {
-		panic("Git service isn't set")
-	}
+func (r *github) Description(number string) string {
 	if _, err := strconv.Atoi(number); err != nil {
 		return fmt.Sprintf("Invalid issue number: '%s'", number)
 	}
@@ -64,21 +61,18 @@ func (r *RealGithub) Description(number string) string {
 	return fmt.Sprintf("Title: '%s'\nBody: '%s'", task.Title, task.Body)
 }
 
-func (r *RealGithub) Labels() []string {
-	if r.gitService == nil {
-		panic("Git service isn't set")
-	}
+func (r *github) Labels() []string {
 	var labels []label
 	target := r.ch.Remote()
 	if target != "" {
 		log.Printf("Choosing labels from '%s'\n", target)
-		url := fmt.Sprintf("%s/repos/%s/labels", r.baseURL, target)
+		url := fmt.Sprintf("%s/repos/%s/labels", r.url, target)
 		log.Printf("Trying to get repository labels using the following URL: %s\n", url)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			log.Fatalf("Cannot create a new GET request to retrieve labels, because of '%v'", err)
 		}
-		req.Header.Set("Authorization", "Bearer "+r.authToken)
+		req.Header.Set("Authorization", "Bearer "+r.token)
 		resp, err := r.client.Do(req)
 		if err != nil {
 			log.Fatalf("Error fetching issue description: %v", err)
@@ -109,8 +103,8 @@ func (r *RealGithub) Labels() []string {
 	return res
 }
 
-func (r *RealGithub) Remotes() []string {
-	lines, err := r.gitService.Remotes()
+func (r *github) Remotes() []string {
+	lines, err := r.gs.Remotes()
 	if err != nil {
 		log.Fatalf("Cannot retrive git remotes: %v", err)
 	}
@@ -134,14 +128,14 @@ func (r *RealGithub) Remotes() []string {
 // GitHub uses the same URL structure for both issues and pull requests in the context of their API
 // because every pull request is an issue under the hood.
 // In other words, GET "/issues/:number" works for both issues and PRs.
-func (r *RealGithub) description(number string, target string) issue {
-	url := fmt.Sprintf("%s/repos/%s/issues/%s", r.baseURL, target, number)
+func (r *github) description(number string, target string) issue {
+	url := fmt.Sprintf("%s/repos/%s/issues/%s", r.url, target, number)
 	log.Printf("Trying to get an issue description using the following URL: %s\n", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Fatalf("Error creating request: %v", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+r.authToken)
+	req.Header.Set("Authorization", "Bearer "+r.token)
 	resp, err := r.client.Do(req)
 	if err != nil {
 		log.Fatalf("Error fetching issue description: %v", err)
