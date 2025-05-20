@@ -60,7 +60,7 @@ func TestRealGit_Tags_Success(t *testing.T) {
 	}
 	gs := NewGit(shell)
 
-	tags, err := gs.Tags()
+	tags, err := gs.Tags("upstream")
 
 	require.NoError(t, err)
 	expectedTags := []string{"v1.0.0", "v1.1.0", "v2.1.0"}
@@ -73,7 +73,7 @@ func TestRealGit_Tags_FetchError(t *testing.T) {
 	}
 	gs := NewGit(shell)
 
-	tags, err := gs.Tags()
+	tags, err := gs.Tags("errepo")
 
 	require.Error(t, err)
 	assert.Nil(t, tags)
@@ -87,7 +87,7 @@ func TestRealGit_Tags_ListError(t *testing.T) {
 	}
 	gs := NewGit(shell)
 
-	tags, err := gs.Tags()
+	tags, err := gs.Tags("origin")
 
 	require.Error(t, err)
 	assert.Nil(t, tags)

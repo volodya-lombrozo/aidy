@@ -387,7 +387,7 @@ func TestRelease_Success(t *testing.T) {
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
 
-	err := release("minor", mgit, nobrain, out)
+	err := release("minor", "origin", mgit, nobrain, out)
 	assert.NoError(t, err, "expected no error during release")
 	expected := "git tag --cleanup=verbatim -a \"v2.1.0\" -m \""
 	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
@@ -398,7 +398,7 @@ func TestReleaseNoTags(t *testing.T) {
 	mockAI := ai.NewMockAI()
 	out := output.NewMock()
 
-	err := release("", mockGit, mockAI, out)
+	err := release("", "origin", mockGit, mockAI, out)
 
 	assert.EqualError(t, err, "failed to update version: 'unknown version step: '''", "expected error when no tags are present")
 }
@@ -413,7 +413,7 @@ func TestReleaseTagFetchError(t *testing.T) {
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
 
-	err := release("patch", mgit, nobrain, out)
+	err := release("patch", "origin", mgit, nobrain, out)
 
 	assert.Error(t, err, "expected error when fetching tags fails")
 	assert.Contains(t, err.Error(), "failed to get tags", "expected error message about fetching tags")
@@ -424,7 +424,7 @@ func TestReleaseNotesGenerationError(t *testing.T) {
 	nobrain := ai.NewFailedMockAI()
 	out := output.NewMock()
 
-	err := release("major", mgit, nobrain, out)
+	err := release("major", "origin", mgit, nobrain, out)
 
 	assert.Error(t, err, "expected error when generating release notes fails")
 	assert.Contains(t, err.Error(), "failed to generate release notes", "expected error message about release notes generation")

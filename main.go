@@ -109,7 +109,13 @@ func main() {
 		if len(os.Args) < 3 {
 			log.Fatalf("Error: No release step provided. Use 'aidy help' for usage.")
 		}
-		err := release(os.Args[2], gs, brain, out)
+		var repo string
+		if len(os.Args) >= 4 {
+			repo = os.Args[3]
+		} else {
+			repo = ""
+		}
+		err := release(os.Args[2], repo, gs, brain, out)
 		if err != nil {
 			log.Fatalf("Error during release: %v", err)
 		}
@@ -152,8 +158,8 @@ func main() {
 	}
 }
 
-func release(step string, gs git.Git, brain ai.AI, out output.Output) error {
-	tags, err := gs.Tags()
+func release(step string, repo string, gs git.Git, brain ai.AI, out output.Output) error {
+	tags, err := gs.Tags(repo)
 	if err != nil {
 		return fmt.Errorf("failed to get tags: '%v'", err)
 	}

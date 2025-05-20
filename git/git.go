@@ -21,6 +21,6 @@ type Git interface {
 	AddAll() error
 	Amend(message string) error
 	Checkout(branch string) error
-	Tags() ([]string, error)
+	Tags(repo string) ([]string, error)
 	Log(since string) ([]string, error)
 }
