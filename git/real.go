@@ -188,8 +188,13 @@ func (r *real) Checkout(branch string) error {
 	return nil
 }
 
-func (r *real) Tags() ([]string, error) {
-	_, err := r.Run("fetch", "--tags")
+func (r *real) Tags(repo string) ([]string, error) {
+	var err error
+	if repo == "" {
+		_, err = r.Run("fetch", "--tags")
+	} else {
+		_, err = r.Run("fetch", repo, "--tags")
+	}
 	if err != nil {
 		return nil, fmt.Errorf("error fetching tags: %w", err)
 	}

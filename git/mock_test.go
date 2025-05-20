@@ -207,7 +207,7 @@ func TestMock_Checkout(t *testing.T) {
 func TestMock_Tags(t *testing.T) {
 	git := NewMock()
 
-	output, err := git.Tags()
+	output, err := git.Tags("does-not-matter")
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{"v1.0", "v2.0"}, output)

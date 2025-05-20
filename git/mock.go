@@ -42,8 +42,8 @@ func (m *mock) Log(since string) ([]string, error) {
 	}, nil
 }
 
-func (m *mock) Tags() ([]string, error) {
-	if _, err := m.shell.RunCommand("git tag"); err != nil {
+func (m *mock) Tags(repo string) ([]string, error) {
+	if _, err := m.Run("fetch", repo, "--tags"); err != nil {
 		return nil, err
 	}
 	return []string{"v1.0", "v2.0"}, nil
