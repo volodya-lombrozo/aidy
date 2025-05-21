@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/volodya-lombrozo/aidy/executor"
+	"github.com/volodya-lombrozo/aidy/internal/executor"
 )
 
 func TestEditor_Print_RunOption(t *testing.T) {

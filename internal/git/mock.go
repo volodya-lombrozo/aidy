@@ -3,7 +3,7 @@ package git
 import (
 	"fmt"
 
-	"github.com/volodya-lombrozo/aidy/executor"
+	"github.com/volodya-lombrozo/aidy/internal/executor"
 )
 
 type mock struct {

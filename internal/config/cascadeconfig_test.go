@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/volodya-lombrozo/aidy/git"
+	"github.com/volodya-lombrozo/aidy/internal/git"
 )
 
 func createTempConfigFile(t *testing.T, dir, filename, content string) string {
