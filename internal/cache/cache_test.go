@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/volodya-lombrozo/aidy/git"
+	"github.com/volodya-lombrozo/aidy/internal/git"
 )
 
 func TestSetAndGet(t *testing.T) {

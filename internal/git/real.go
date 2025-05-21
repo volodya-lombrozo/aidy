@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/volodya-lombrozo/aidy/executor"
+	"github.com/volodya-lombrozo/aidy/internal/executor"
 )
 
 type real struct {

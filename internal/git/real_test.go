@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/volodya-lombrozo/aidy/executor"
+	"github.com/volodya-lombrozo/aidy/internal/executor"
 )
 
 func TestRealGit_Run_Successful(t *testing.T) {

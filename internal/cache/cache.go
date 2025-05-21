@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/volodya-lombrozo/aidy/git"
+	"github.com/volodya-lombrozo/aidy/internal/git"
 )
 
 type Cache interface {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/volodya-lombrozo/aidy/git"
+	"github.com/volodya-lombrozo/aidy/internal/git"
 )
 
 type CascadeConfig struct {

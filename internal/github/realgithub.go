@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/volodya-lombrozo/aidy/cache"
-	"github.com/volodya-lombrozo/aidy/git"
+	"github.com/volodya-lombrozo/aidy/internal/cache"
+	"github.com/volodya-lombrozo/aidy/internal/git"
 )
 
 type github struct {
