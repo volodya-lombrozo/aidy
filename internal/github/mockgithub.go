@@ -2,6 +2,10 @@ package github
 
 type MockGithub struct{}
 
+func NewMock() *MockGithub {
+	return &MockGithub{}
+}
+
 func (m *MockGithub) Description(number string) string {
 	return "Mock description for issue #" + number
 }

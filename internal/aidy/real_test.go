@@ -1,10 +1,7 @@
 package aidy
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"sort"
 	"strings"
 	"testing"
 
@@ -21,54 +18,47 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
 
-func TestHeal(t *testing.T) {
-	mockExecutor := &executor.MockExecutor{
-		Output: "",
-		Err:    nil,
-	}
-	mockGit := git.NewMockWithShell(mockExecutor)
+func TestReal_Heal(t *testing.T) {
+	shell := executor.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell)}
 
-	Heal(mockGit)
+	raidy.Heal()
 
-	expectedCommands := []string{
+	expected := []string{
 		"git commit --amend -m feat(#41): current commit message",
 	}
-	for i, expectedCommand := range expectedCommands {
-		if !strings.Contains(mockExecutor.Commands[i], expectedCommand) {
-			t.Errorf("Expected command '%s', got '%s'", expectedCommand, mockExecutor.Commands[i])
-		}
+	for i, cmd := range expected {
+		assert.Contains(t, shell.Commands[i], cmd, "Expected command '%s', got '%s'", cmd, shell.Commands[i])
 	}
 }
 
-func TestCleanCache(t *testing.T) {
-	tempDir := t.TempDir()
-	aidyDir := filepath.Join(tempDir, ".aidy")
-	err := os.Mkdir(aidyDir, 0755)
+func TestReal_CleanCache(t *testing.T) {
+	tmp := t.TempDir()
+	cache := filepath.Join(tmp, ".aidy")
+	err := os.Mkdir(cache, 0755)
 	require.NoError(t, err, "Failed to create .aidy directory")
-
-	originalDir, err := os.Getwd()
+	original, err := os.Getwd()
 	require.NoError(t, err, "Failed to get current working directory")
 	defer func() {
-		_ = os.Chdir(originalDir)
+		_ = os.Chdir(original)
 	}()
-	err = os.Chdir(tempDir)
+	err = os.Chdir(tmp)
 	require.NoError(t, err, "Failed to change working directory")
+	raidy := &real{}
 
-	Clean()
+	raidy.Clean()
 
-	_, err = os.Stat(aidyDir)
+	_, err = os.Stat(cache)
 	assert.True(t, os.IsNotExist(err), ".aidy directory should be removed")
 }
 
-func TestStart(t *testing.T) {
+func TestReal_StartIssue(t *testing.T) {
 	brain := ai.NewMockAI()
-	shell := &executor.MockExecutor{
-		Output: "",
-		Err:    nil,
-	}
-	gh := &github.MockGithub{}
+	shell := executor.NewMock()
+	gh := github.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh}
 
-	err := StartIssue("42", brain, git.NewMockWithShell(shell), gh)
+	err := raidy.StartIssue("42")
 
 	assert.NoError(t, err, "Expected no error when starting issue")
 	expected := []string{"git checkout -b 42-mock-branch-name"}
@@ -78,73 +68,59 @@ func TestStart(t *testing.T) {
 	}
 }
 
-func TestStartIssueNoNumber(t *testing.T) {
+func TestReal_StartIssueNoNumber(t *testing.T) {
 	brain := ai.NewMockAI()
-	shell := &executor.MockExecutor{
-		Output: "",
-		Err:    nil,
-	}
-	gh := &github.MockGithub{}
+	shell := executor.NewMock()
+	gh := github.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh}
 
-	err := StartIssue("", brain, git.NewMockWithShell(shell), gh)
+	err := raidy.StartIssue("")
 
 	assert.Error(t, err, "expected error when no issue number is provided")
 	assert.Contains(t, err.Error(), "error: no issue number provided")
 }
 
-func TestStartIssueInvalidNumber(t *testing.T) {
+func TestReal_StartIssueInvalidNumber(t *testing.T) {
 	brain := ai.NewMockAI()
-	shell := &executor.MockExecutor{
-		Output: "",
-		Err:    nil,
-	}
-	gh := &github.MockGithub{}
+	shell := executor.NewMock()
+	gh := github.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh}
 
-	err := StartIssue("invalid", brain, git.NewMockWithShell(shell), gh)
+	err := raidy.StartIssue("invalid")
 
 	assert.Error(t, err, "Expected error when an invalid issue number is provided")
 	assert.Contains(t, err.Error(), "error: invalid issue number 'invalid'")
 }
 
-func TestStartIssueBranchNameError(t *testing.T) {
+func TestReal_StartIssueBranchNameError(t *testing.T) {
 	brain := ai.NewFailedMockAI()
-	shell := &executor.MockExecutor{
-		Output: "",
-		Err:    nil,
-	}
-	gh := &github.MockGithub{}
+	shell := executor.NewMock()
+	gh := github.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh}
 
-	err := StartIssue("42", brain, git.NewMockWithShell(shell), gh)
+	err := raidy.StartIssue("42")
 
 	assert.Error(t, err, "expected error when generating branch name fails")
 	assert.Contains(t, err.Error(), "error generating branch name")
 	assert.Contains(t, err.Error(), "failed to suggest branch")
 }
 
-func TestStartIssueCheckoutError(t *testing.T) {
-	brain := ai.NewMockAI()
-	shell := &executor.MockExecutor{
-		Output: "",
-		Err:    fmt.Errorf("error checking out branch"),
-	}
-	gh := &github.MockGithub{}
-	mockGit := git.NewMockWithShell(shell)
+func TestReal_StartIssueCheckoutError(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Err = fmt.Errorf("error checking out branch")
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock()}
 
-	err := StartIssue("42", brain, mockGit, gh)
+	err := raidy.StartIssue("42")
 
 	assert.Error(t, err, "expected error when checking out branch fails")
 	assert.Contains(t, err.Error(), "error checking out branch")
 }
 
-func TestSquash(t *testing.T) {
-	mockAI := ai.NewMockAI()
-	mockExecutor := &executor.MockExecutor{
-		Output: "",
-		Err:    nil,
-	}
-	mockGit := git.NewMockWithShell(mockExecutor)
+func TestReal_Squash(t *testing.T) {
+	shell := executor.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI()}
 
-	Squash(mockGit, mockAI)
+	raidy.Squash()
 
 	expected := []string{
 		"git reset --soft refs/heads/main",
@@ -153,21 +129,102 @@ func TestSquash(t *testing.T) {
 		"git commit --amend -m feat(#41): current commit message",
 	}
 	for i, cmd := range expected {
-		assert.Contains(t, mockExecutor.Commands[i], cmd, "Wrong command")
+		assert.Contains(t, shell.Commands[i], cmd, "Wrong command")
 	}
 }
 
-func TestPullRequest(t *testing.T) {
+func TestReal_PullRequest(t *testing.T) {
 	mockGit := git.NewMock()
 	mockAI := ai.NewMockAI()
-	mockGithub := &github.MockGithub{}
+	mockGithub := github.NewMock()
 	out := output.NewMock()
+	raidy := &real{git: mockGit, ai: mockAI, github: mockGithub, output: out, cache: cache.NewMockAidyCache()}
 
-	PullRequest(mockGit, mockAI, mockGithub, cache.NewMockAidyCache(), out)
+	raidy.PullRequest()
 
 	output := out.Last()
 	expected := "\ngh pr create --title \"Mock Title for 41\" --body \"Mock Body for 41\" --repo mock/remote"
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+}
+
+func TestReal_Commit(t *testing.T) {
+	brain := ai.NewMockAI()
+	shell := executor.NewMock()
+	mgit := git.NewMockWithShell(shell)
+	raidy := &real{git: mgit, ai: brain}
+
+	raidy.Commit()
+
+	expected := []string{
+		"git add --all",
+		"git commit -m feat(#41): no files changed",
+		"git commit --amend -m feat(#41): current commit message",
+	}
+	fmt.Println(shell.Commands)
+	for i, cmd := range expected {
+		assert.Contains(t, shell.Commands[i], cmd, "Expected command '%s', got '%s'", cmd, shell.Commands[i])
+	}
+}
+
+func TestReal_Issue(t *testing.T) {
+	userInput := "test input"
+	out := output.NewMock()
+	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), output: out, cache: cache.NewMockAidyCache()}
+
+	raidy.Issue(userInput)
+
+	output := out.Last()
+	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo mock/remote"
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+}
+
+func TestReal_Release_Success(t *testing.T) {
+	mgit := git.NewMock()
+	nobrain := ai.NewMockAI()
+	out := output.NewMock()
+	raidy := &real{git: mgit, ai: nobrain, output: out}
+
+	err := raidy.Release("minor", "origin")
+	assert.NoError(t, err, "expected no error during release")
+	expected := "git tag --cleanup=verbatim -a \"v2.1.0\" -m \""
+	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
+}
+
+func TestReal_ReleaseNoTags(t *testing.T) {
+	mockGit := git.NewMock()
+	mockAI := ai.NewMockAI()
+	out := output.NewMock()
+	raidy := &real{git: mockGit, ai: mockAI, output: out}
+
+	err := raidy.Release("", "origin")
+
+	assert.EqualError(t, err, "failed to update version: 'unknown version step: '''", "expected error when no tags are present")
+}
+
+func TestReal_ReleaseTagFetchError(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Err = fmt.Errorf("error fetching tags")
+	mgit := git.NewMockWithShell(shell)
+	nobrain := ai.NewMockAI()
+	out := output.NewMock()
+	raidy := &real{git: mgit, ai: nobrain, output: out}
+
+	err := raidy.Release("patch", "origin")
+
+	assert.Error(t, err, "expected error when fetching tags fails")
+	assert.Contains(t, err.Error(), "failed to get tags", "expected error message about fetching tags")
+}
+
+func TestReal_ReleaseNotesGenerationError(t *testing.T) {
+	mgit := git.NewMock()
+	nobrain := ai.NewFailedMockAI()
+	out := output.NewMock()
+	raidy := &real{git: mgit, ai: nobrain, output: out}
+
+	err := raidy.Release("major", "origin")
+
+	assert.Error(t, err, "expected error when generating release notes fails")
+	assert.Contains(t, err.Error(), "failed to generate release notes", "expected error message about release notes generation")
 }
 
 func TestHealQoutes(t *testing.T) {
@@ -196,62 +253,6 @@ func TestHealQuotesParametrized(t *testing.T) {
 	}
 	for _, test := range tests {
 		assert.Equal(t, test.expected, healQuotes(test.input))
-	}
-}
-
-func TestCommit(t *testing.T) {
-	brain := ai.NewMockAI()
-	shell := &executor.MockExecutor{
-		Output: "",
-		Err:    nil,
-	}
-	mgit := git.NewMockWithShell(shell)
-
-	Commit(mgit, brain)
-
-	expected := []string{
-		"git add --all",
-		"git commit -m feat(#41): no files changed",
-		"git commit --amend -m feat(#41): current commit message",
-	}
-	fmt.Println(shell.Commands)
-	for i, cmd := range expected {
-		assert.Contains(t, shell.Commands[i], cmd, "Expected command '%s', got '%s'", cmd, shell.Commands[i])
-	}
-}
-
-func TestHandleIssue(t *testing.T) {
-	mockAI := ai.NewMockAI()
-	gh := &github.MockGithub{}
-	userInput := "test input"
-	out := output.NewMock()
-
-	Issue(userInput, mockAI, gh, cache.NewMockAidyCache(), out)
-
-	output := out.Last()
-	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo mock/remote"
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
-}
-
-func TestHandleHelp(t *testing.T) {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	help()
-	if err := w.Close(); err != nil {
-		t.Fatalf("Error closing pipe writer: %v", err)
-	}
-	os.Stdout = old
-	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, r); err != nil {
-		t.Fatalf("Error copying data: %v", err)
-	}
-	output := buf.String()
-	expected := `Usage:
-  aidy pr   - Generate a pull request using AI-generated title and body.
-  aidy help - Show this help message.`
-	if strings.TrimSpace(output) != strings.TrimSpace(expected) {
-		t.Errorf("Unexpected output:\n%s", output)
 	}
 }
 
@@ -351,19 +352,6 @@ func TestLatestTag(t *testing.T) {
 	assert.Equal(t, "v1.1.0", tag, "Expected latest tag to be 'v1.1.0'")
 }
 
-func TestKeys(t *testing.T) {
-	input := map[string]string{
-		"feat(#42)": "Add clean command to clear cache",
-		"fix(#42)":  "Fix bug in clean command",
-	}
-
-	result := keys(input)
-
-	expected := []string{"feat(#42)", "fix(#42)"}
-	sort.Strings(result)
-	assert.Equal(t, expected, result)
-}
-
 func TestUpver(t *testing.T) {
 	tests := []struct {
 		actual   string
@@ -381,51 +369,4 @@ func TestUpver(t *testing.T) {
 		assert.Equal(t, test.expected, tag)
 	}
 
-}
-func TestRelease_Success(t *testing.T) {
-	mgit := git.NewMock()
-	nobrain := ai.NewMockAI()
-	out := output.NewMock()
-
-	err := Release("minor", "origin", mgit, nobrain, out)
-	assert.NoError(t, err, "expected no error during release")
-	expected := "git tag --cleanup=verbatim -a \"v2.1.0\" -m \""
-	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
-}
-
-func TestReleaseNoTags(t *testing.T) {
-	mockGit := git.NewMock()
-	mockAI := ai.NewMockAI()
-	out := output.NewMock()
-
-	err := Release("", "origin", mockGit, mockAI, out)
-
-	assert.EqualError(t, err, "failed to update version: 'unknown version step: '''", "expected error when no tags are present")
-}
-
-func TestReleaseTagFetchError(t *testing.T) {
-	mgit := git.NewMockWithShell(
-		&executor.MockExecutor{
-			Output: "",
-			Err:    fmt.Errorf("error fetching tags"),
-		},
-	)
-	nobrain := ai.NewMockAI()
-	out := output.NewMock()
-
-	err := Release("patch", "origin", mgit, nobrain, out)
-
-	assert.Error(t, err, "expected error when fetching tags fails")
-	assert.Contains(t, err.Error(), "failed to get tags", "expected error message about fetching tags")
-}
-
-func TestReleaseNotesGenerationError(t *testing.T) {
-	mgit := git.NewMock()
-	nobrain := ai.NewFailedMockAI()
-	out := output.NewMock()
-
-	err := Release("major", "origin", mgit, nobrain, out)
-
-	assert.Error(t, err, "expected error when generating release notes fails")
-	assert.Contains(t, err.Error(), "failed to generate release notes", "expected error message about release notes generation")
 }
