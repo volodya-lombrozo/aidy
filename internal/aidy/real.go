@@ -38,7 +38,7 @@ type real struct {
 // - ailess: whether to use AI or not
 func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	var aidy real
-	shell := executor.NewRealExecutor()
+	shell := executor.NewReal()
 	out := output.NewEditor(shell)
 	aidy.output = out
 	aidy.git = git.NewGit(shell)
@@ -59,7 +59,6 @@ func (r *real) Diff() {
 		fmt.Printf("Diff with the base branch:\n%s\n", diff)
 	}
 }
-
 func (r *real) Commit() {
 	branch, err := r.git.CurrentBranch()
 	if err != nil {

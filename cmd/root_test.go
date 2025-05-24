@@ -22,6 +22,12 @@ func TestRootCmd_PrintsHelp(t *testing.T) {
 	assert.Contains(t, out.String(), "Aidy assists you with generating commit messages, pull requests, issues, and releases")
 }
 
+func TestRootCmd_Executes_WithoutError(t *testing.T) {
+	err := Execute()
+
+	assert.NoError(t, err, "no error expected")
+}
+
 func mock(summary, aider, ailess bool) aidy.Aidy {
 	return aidy.NewMock()
 }

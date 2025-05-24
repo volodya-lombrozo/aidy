@@ -159,7 +159,7 @@ func TestRealGit_Reset(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
 
-	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewReal(), repoDir)
 
 	filePath := filepath.Join(repoDir, "resetfile.txt")
 	if err := os.WriteFile(filePath, []byte("Reset content"), 0644); err != nil {
@@ -199,7 +199,7 @@ func TestRealGit_Reset(t *testing.T) {
 func TestRealGitRoot(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewReal(), repoDir)
 
 	root, err := gitService.Root()
 
@@ -257,7 +257,7 @@ func TestRealGit_AppendToCommit(t *testing.T) {
 func TestRealGetBranchName(t *testing.T) {
 	dir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gs := NewGit(executor.NewRealExecutor(), dir)
+	gs := NewGit(executor.NewReal(), dir)
 
 	branch, err := gs.CurrentBranch()
 
@@ -268,7 +268,7 @@ func TestRealGetBranchName(t *testing.T) {
 func TestRealGetBaseBranchName(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gs := NewGit(executor.NewRealExecutor(), repoDir)
+	gs := NewGit(executor.NewReal(), repoDir)
 
 	base, err := gs.BaseBranch()
 
@@ -296,7 +296,7 @@ func TestRealGetDiff(t *testing.T) {
 	if err := os.WriteFile(filePath, []byte("Hello, Git!"), 0644); err != nil {
 		t.Fatalf("Error writing to file: %v", err)
 	}
-	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewReal(), repoDir)
 	diff, err := gitService.Diff()
 	if err != nil {
 		t.Fatalf("Error getting diff: %v", err)
@@ -326,7 +326,7 @@ func TestRealGetCurrentDiff(t *testing.T) {
 	if err := os.WriteFile(filePath, []byte("Hello, Git!"), 0644); err != nil {
 		t.Fatalf("Error writing to file: %v", err)
 	}
-	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewReal(), repoDir)
 	diff, err := gitService.Diff()
 	if err != nil {
 		t.Fatalf("Error getting diff: %v", err)
@@ -355,7 +355,7 @@ func TestRealGetCurrentCommitMessage(t *testing.T) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Error running command: %v", err)
 	}
-	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewReal(), repoDir)
 	message, err := gitService.CommitMessage()
 	if err != nil {
 		t.Fatalf("Error getting current commit message: %v", err)
@@ -368,7 +368,7 @@ func TestRealGetCurrentCommitMessage(t *testing.T) {
 func TestRealGitInstalled(t *testing.T) {
 	repoDir, cleanup := setupTestRepo(t)
 	defer cleanup()
-	gitService := NewGit(executor.NewRealExecutor(), repoDir)
+	gitService := NewGit(executor.NewReal(), repoDir)
 
 	installed, err := gitService.Installed()
 
