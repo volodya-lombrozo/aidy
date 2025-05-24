@@ -9,23 +9,28 @@ import (
 	"strings"
 )
 
-type RealExecutor struct{}
+type RealExecutor struct {
+	out *os.File
+	in  *os.File
+	err *os.File
+}
 
 const maxLogLength = 120
 
-func NewRealExecutor() Executor {
-	return &RealExecutor{}
+func NewReal() Executor {
+	return &RealExecutor{
+		out: os.Stdout,
+		in:  os.Stdin,
+		err: os.Stderr,
+	}
 }
 
 func (r *RealExecutor) RunInteractively(cmd string, args ...string) (string, error) {
 	logShortf("execute: \"%s\" with args(%d): \"%v\"", cmd, len(args), args)
-	for i, arg := range args {
-		logShortf("arg[%d]: \"%s\"", i, arg)
-	}
 	command := exec.Command(cmd, args...)
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
-	command.Stdin = os.Stdin
+	command.Stdout = r.out
+	command.Stderr = r.err
+	command.Stdin = r.in
 	err := command.Run()
 	if err != nil {
 		return "", err
@@ -60,7 +65,7 @@ func (r *RealExecutor) RunCommandInDir(dir string, name string, args ...string) 
 	return out.String(), nil
 }
 
-func logShortf(format string, args ...interface{}) {
+func logShortf(format string, args ...any) {
 	msg := format
 	if len(args) > 0 {
 		msg = fmt.Sprintf(format, args...)
