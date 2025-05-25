@@ -13,7 +13,7 @@ type CascadeConfig struct {
 	original Config
 }
 
-func NewCascadeConfig(gs git.Git) Config {
+func NewCascade(gs git.Git) Config {
 	original, ok := findAidyConf(gs)
 	if !ok {
 		original, ok = findAiderConf(gs)
@@ -24,24 +24,28 @@ func NewCascadeConfig(gs git.Git) Config {
 	return &CascadeConfig{original: original}
 }
 
-func (c *CascadeConfig) GetOpenAIAPIKey() (string, error) {
-	return c.original.GetOpenAIAPIKey()
+func (c *CascadeConfig) OpenAiKey() (string, error) {
+	return c.original.OpenAiKey()
 }
-func (c *CascadeConfig) GetGithubAPIKey() (string, error) {
-	return c.original.GetGithubAPIKey()
+func (c *CascadeConfig) GithubKey() (string, error) {
+	return c.original.GithubKey()
 }
-func (c *CascadeConfig) GetDeepseekAPIKey() (string, error) {
-	return c.original.GetDeepseekAPIKey()
+func (c *CascadeConfig) DeepseekKey() (string, error) {
+	return c.original.DeepseekKey()
 }
-func (c *CascadeConfig) GetModel() (string, error) {
-	return c.original.GetModel()
+func (c *CascadeConfig) Model() (string, error) {
+	return c.original.Model()
 }
 
 func findAidyConf(gs git.Git) (Config, bool) {
 	all := possiblePaths(gs, ".aidy.conf")
 	for _, p := range all {
 		if exists(p) {
-			return YamlConf(p), true
+			conf, err := YamlConf(p)
+			if err != nil {
+				panic(fmt.Sprintf("Error reading config file %s: %v", p, err))
+			}
+			return conf, true
 		}
 	}
 	return nil, false
@@ -51,7 +55,7 @@ func findAiderConf(gs git.Git) (Config, bool) {
 	all := possiblePaths(gs, ".aider.conf")
 	for _, p := range all {
 		if exists(p) {
-			return NewAiderConf(p), true
+			return NewAider(p), true
 		}
 	}
 	return nil, false

@@ -12,32 +12,32 @@ type YamlConfig struct {
 	Github       string                       `yaml:"github-api-key"`
 }
 
-func YamlConf(filepath string) *YamlConfig {
-	configData, err := os.ReadFile(filepath)
+func YamlConf(filepath string) (*YamlConfig, error) {
+	data, err := os.ReadFile(filepath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	var config YamlConfig
-	err = yaml.Unmarshal(configData, &config)
+	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return &config
+	return &config, nil
 }
 
-func (c *YamlConfig) GetOpenAIAPIKey() (string, error) {
+func (c *YamlConfig) OpenAiKey() (string, error) {
 	return c.APIKeys["openai"], nil
 }
 
-func (c *YamlConfig) GetGithubAPIKey() (string, error) {
+func (c *YamlConfig) GithubKey() (string, error) {
 	return c.APIKeys["github"], nil
 }
 
-func (c *YamlConfig) GetModel() (string, error) {
+func (c *YamlConfig) Model() (string, error) {
 	model := c.DefaultModel
 	return c.Models[model]["model-id"], nil
 }
 
-func (c *YamlConfig) GetDeepseekAPIKey() (string, error) {
+func (c *YamlConfig) DeepseekKey() (string, error) {
 	return c.APIKeys["deepseek"], nil
 }

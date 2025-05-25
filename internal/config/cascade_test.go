@@ -50,21 +50,21 @@ models:
 	}
 	mockGit := git.NewMock()
 
-	conf := NewCascadeConfig(mockGit)
+	conf := NewCascade(mockGit)
 
-	openAIKey, err := conf.GetOpenAIAPIKey()
+	openAIKey, err := conf.OpenAiKey()
 	assert.NoError(t, err)
 	assert.Equal(t, "test-openai-key", openAIKey)
 
-	githubKey, err := conf.GetGithubAPIKey()
+	githubKey, err := conf.GithubKey()
 	assert.NoError(t, err)
 	assert.Equal(t, "test-github-key", githubKey)
 
-	deepseekKey, err := conf.GetDeepseekAPIKey()
+	deepseekKey, err := conf.DeepseekKey()
 	assert.NoError(t, err)
 	assert.Equal(t, "test-deepseek-key", deepseekKey)
 
-	model, err := conf.GetModel()
+	model, err := conf.Model()
 	assert.NoError(t, err)
 	assert.Equal(t, "test-model-1", model)
 }
