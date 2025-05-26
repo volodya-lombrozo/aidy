@@ -485,9 +485,9 @@ func newconf(aider bool, git git.Git) config.Config {
 	}
 	var conf config.Config
 	if aider {
-		conf = config.NewAider(fmt.Sprintf("%s/.aider.conf.yml", home))
+		conf, _ = config.NewAider(fmt.Sprintf("%s/.aider.conf.yml", home))
 	} else {
-		conf = config.NewCascade(git)
+		conf, _ = config.NewCascade(git)
 	}
 	return conf
 }

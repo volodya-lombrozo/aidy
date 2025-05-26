@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -13,15 +12,19 @@ type CascadeConfig struct {
 	original Config
 }
 
-func NewCascade(gs git.Git) Config {
-	original, ok := findAidyConf(gs)
-	if !ok {
-		original, ok = findAiderConf(gs)
+func NewCascade(gs git.Git) (Config, error) {
+	return NewCascadeInDirs(os.Getwd, gs.Root, os.UserHomeDir)
+}
+
+func NewCascadeInDirs(folders ...func() (string, error)) (Config, error) {
+	original, err := findAidyConf(folders...)
+	if err != nil {
+		original, err = findAiderConf(folders...)
 	}
-	if !ok {
-		log.Fatalf("Can't find any configuration file")
+	if err != nil {
+		return nil, fmt.Errorf("can't find any configuration file")
 	}
-	return &CascadeConfig{original: original}
+	return &CascadeConfig{original: original}, nil
 }
 
 func (c *CascadeConfig) OpenAiKey() (string, error) {
@@ -37,43 +40,41 @@ func (c *CascadeConfig) Model() (string, error) {
 	return c.original.Model()
 }
 
-func findAidyConf(gs git.Git) (Config, bool) {
-	all := possiblePaths(gs, ".aidy.conf")
+func findAidyConf(folders ...func() (string, error)) (Config, error) {
+	all := possibleFiles(".aidy.conf", folders...)
 	for _, p := range all {
 		if exists(p) {
 			conf, err := YamlConf(p)
 			if err != nil {
-				panic(fmt.Sprintf("Error reading config file %s: %v", p, err))
+				return nil, fmt.Errorf("error reading config file %s: %v", p, err)
 			}
-			return conf, true
+			return conf, nil
 		}
 	}
-	return nil, false
+	return nil, fmt.Errorf("no .aidy.conf found in any of the expected locations")
 }
 
-func findAiderConf(gs git.Git) (Config, bool) {
-	all := possiblePaths(gs, ".aider.conf")
+func findAiderConf(folders ...func() (string, error)) (Config, error) {
+	all := possibleFiles(".aider.conf", folders...)
 	for _, p := range all {
 		if exists(p) {
-			return NewAider(p), true
+			conf, err := NewAider(p)
+			if err != nil {
+				return nil, fmt.Errorf("error reading config file %s: %v", p, err)
+			}
+			return conf, nil
 		}
 	}
-	return nil, false
+	return nil, fmt.Errorf("no .aider.conf found in any of the expected locations")
 }
 
-func possiblePaths(gs git.Git, filename string) []string {
+func possibleFiles(filename string, locations ...func() (string, error)) []string {
 	paths := []string{}
-	if cwd, err := os.Getwd(); err == nil {
-		paths = append(paths, filepath.Join(cwd, filename+".yaml"))
-		paths = append(paths, filepath.Join(cwd, filename+".yml"))
-	}
-	if gitRoot, err := gs.Root(); err == nil {
-		paths = append(paths, filepath.Join(gitRoot, filename+".yaml"))
-		paths = append(paths, filepath.Join(gitRoot, filename+".yml"))
-	}
-	if home, err := os.UserHomeDir(); err == nil {
-		paths = append(paths, filepath.Join(home, filename+".yaml"))
-		paths = append(paths, filepath.Join(home, filename+".yml"))
+	for _, location := range locations {
+		if loc, err := location(); err == nil {
+			paths = append(paths, filepath.Join(loc, filename+".yaml"))
+			paths = append(paths, filepath.Join(loc, filename+".yml"))
+		}
 	}
 	return paths
 }
@@ -84,7 +85,6 @@ func exists(path string) bool {
 		if os.IsNotExist(err) {
 			return false
 		}
-		fmt.Fprintf(os.Stderr, "Error checking path %s: %v\n", path, err)
 		return false
 	}
 	return true
