@@ -10,17 +10,17 @@ type AiderConfig struct {
 	OpenaiApiKeyYaml string `yaml:"openai-api-key"`
 }
 
-func NewAider(filepath string) *AiderConfig {
+func NewAider(filepath string) (*AiderConfig, error) {
 	file, err := os.ReadFile(filepath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	var config AiderConfig
 	err = yaml.Unmarshal(file, &config)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return &config
+	return &config, nil
 }
 
 func (c *AiderConfig) OpenAiKey() (string, error) {

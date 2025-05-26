@@ -6,26 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/volodya-lombrozo/aidy/internal/git"
 )
 
-func createTempConfigFile(t *testing.T, dir, filename, content string) string {
-	t.Helper()
-	path := filepath.Join(dir, filename)
-	err := os.WriteFile(path, []byte(content), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create temp config file: %v", err)
-	}
-	return path
-}
-
-func TestCascadeConfig(t *testing.T) {
-	originalDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Failed to get current directory: %v", err)
-	}
-	tempDir := t.TempDir()
-	aidyConfContent := `
+const aidyconf = `
 default-model: test-model
 api-keys:
   openai: test-openai-key
@@ -36,22 +21,28 @@ models:
     provider: mock
     model-id: test-model-1
 `
-	createTempConfigFile(t, tempDir, ".aidy.conf.yaml", aidyConfContent)
+
+const aider = `
+model: gpt-4o-test
+openai-api-key: test-openai-key
+`
+
+func TestCascade_AidyFirst(t *testing.T) {
+	original, err := os.Getwd()
+	require.NoError(t, err, "Failed to get current directory")
+	tmp := t.TempDir()
+	tmpConfFile(t, tmp, ".aidy.conf.yaml", aidyconf)
 	defer func() {
-		if err := os.Chdir(originalDir); err != nil {
-			t.Fatalf("Failed to change back to original directory: %v", err)
-		}
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Fatalf("Error removing temp directory: %v", err)
-		}
+		err := os.Chdir(original)
+		require.NoError(t, err, "Failed to change back to original directory")
+		err = os.RemoveAll(tmp)
+		require.NoError(t, err, "Failed to remove temp directory")
 	}()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatalf("Failed to change directory: %v", err)
-	}
-	mockGit := git.NewMock()
+	err = os.Chdir(tmp)
+	require.NoError(t, err, "Failed to change directory to temp dir")
+	conf, err := NewCascade(git.NewMock())
 
-	conf := NewCascade(mockGit)
-
+	require.NoError(t, err, "Failed to create cascade config")
 	openAIKey, err := conf.OpenAiKey()
 	assert.NoError(t, err)
 	assert.Equal(t, "test-openai-key", openAIKey)
@@ -67,4 +58,46 @@ models:
 	model, err := conf.Model()
 	assert.NoError(t, err)
 	assert.Equal(t, "test-model-1", model)
+}
+
+func TestCascade_AiderFirst(t *testing.T) {
+	original, err := os.Getwd()
+	require.NoError(t, err, "Failed to get current directory")
+	tmp := t.TempDir()
+	tmpConfFile(t, tmp, ".aider.conf.yaml", aider)
+	defer func() {
+		err := os.Chdir(original)
+		require.NoError(t, err, "Failed to change back to original directory")
+		err = os.RemoveAll(tmp)
+		require.NoError(t, err, "Failed to remove temp directory")
+	}()
+	err = os.Chdir(tmp)
+	require.NoError(t, err, "Failed to change directory to temp dir")
+	folder := func() (string, error) { return tmp, nil }
+	conf, err := NewCascadeInDirs(folder)
+	require.NoError(t, err, "Failed to create cascade config")
+
+	openai, err := conf.OpenAiKey()
+	assert.NoError(t, err)
+	assert.Equal(t, "test-openai-key", openai)
+
+	github, err := conf.GithubKey()
+	assert.NoError(t, err)
+	assert.Equal(t, "", github)
+
+	deepseek, err := conf.DeepseekKey()
+	assert.NoError(t, err)
+	assert.Equal(t, "unknown", deepseek)
+
+	model, err := conf.Model()
+	assert.NoError(t, err)
+	assert.Equal(t, "gpt-4o-test", model)
+}
+
+func tmpConfFile(t *testing.T, dir, filename, content string) string {
+	t.Helper()
+	path := filepath.Join(dir, filename)
+	err := os.WriteFile(path, []byte(content), 0644)
+	require.NoError(t, err, "Failed to write temp config file")
+	return path
 }
