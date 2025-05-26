@@ -44,7 +44,7 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	aidy.git = git.NewGit(shell)
 	aidy.CheckGitInstalled()
 	aidy.cache = newcache(aidy.git)
-	conf := newfonfig(aider, aidy.git)
+	conf := newconf(aider, aidy.git)
 	aidy.ai = brain(ailess, summary, conf)
 	aidy.github = newgithub(aidy.git, conf, aidy.cache)
 	aidy.InitSummary(summary)
@@ -179,28 +179,25 @@ func healPRTitle(text string, issue string) string {
 
 func (r *real) PrintConfig() {
 	fmt.Println("Current Configuration:")
-	apiKey, err := r.config.GetOpenAIAPIKey()
+	openai, err := r.config.OpenAiKey()
 	if err != nil {
 		fmt.Printf("Error retrieving OpenAI API key: %v\n", err)
 	} else {
-		fmt.Printf("OpenAI API Key: %s\n", apiKey)
+		fmt.Printf("OpenAI API Key: %s\n", openai)
 	}
-
-	deepseek, err := r.config.GetDeepseekAPIKey()
+	deepseek, err := r.config.DeepseekKey()
 	if err != nil {
 		fmt.Printf("Error retrieving deepseek API key: %v\n", err)
 	} else {
 		fmt.Printf("Deepseek API Key: %s\n", deepseek)
 	}
-
-	githubKey, err := r.config.GetGithubAPIKey()
+	githubKey, err := r.config.GithubKey()
 	if err != nil {
 		fmt.Printf("Error retrieving GitHub API key: %v\n", err)
 	} else {
 		fmt.Printf("GitHub API Key: %s\n", githubKey)
 	}
-
-	model, err := r.config.GetModel()
+	model, err := r.config.Model()
 	if err != nil {
 		fmt.Printf("Error retrieving model: %v\n", err)
 	} else {
@@ -474,23 +471,23 @@ func (r *real) InitSummary(required bool) {
 }
 
 func newgithub(git git.Git, conf config.Config, cache cache.AidyCache) github.Github {
-	token, err := conf.GetGithubAPIKey()
+	token, err := conf.GithubKey()
 	if err != nil {
 		log.Fatalf("error getting github token: %v", err)
 	}
 	return github.NewGithub("https://api.github.com", git, token, cache)
 }
 
-func newfonfig(aider bool, git git.Git) config.Config {
+func newconf(aider bool, git git.Git) config.Config {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("error getting home directory: %v", err)
 	}
 	var conf config.Config
 	if aider {
-		conf = config.NewAiderConf(fmt.Sprintf("%s/.aider.conf.yml", home))
+		conf = config.NewAider(fmt.Sprintf("%s/.aider.conf.yml", home))
 	} else {
-		conf = config.NewCascadeConfig(git)
+		conf = config.NewCascade(git)
 	}
 	return conf
 }
@@ -499,13 +496,13 @@ func brain(ailess bool, sumrequired bool, conf config.Config) ai.AI {
 	if ailess {
 		return ai.NewMockAI()
 	}
-	model, err := conf.GetModel()
+	model, err := conf.Model()
 	if err != nil {
 		log.Fatalf("Can't find GitHub token in configuration")
 	}
 	var brain ai.AI
 	if model == "deepseek-chat" {
-		apiKey, err := conf.GetDeepseekAPIKey()
+		apiKey, err := conf.DeepseekKey()
 		if err != nil {
 			log.Fatalf("Error getting Deepseek API key: %v", err)
 		}
@@ -516,7 +513,7 @@ func brain(ailess bool, sumrequired bool, conf config.Config) ai.AI {
 		}
 		brain = ai.NewDeepSeekAI(apiKey, sumrequired)
 	} else {
-		apiKey, err := conf.GetOpenAIAPIKey()
+		apiKey, err := conf.OpenAiKey()
 		if err != nil {
 			log.Fatalf("Error getting OpenAI API key: %v", err)
 		}

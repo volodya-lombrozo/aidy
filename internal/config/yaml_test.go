@@ -63,8 +63,9 @@ func TestNewConfig(t *testing.T) {
 	err = os.WriteFile(configFilePath, configContent, 0644)
 	require.NoError(t, err)
 
-	config := YamlConf(configFilePath)
+	config, err := YamlConf(configFilePath)
 
+	require.NoError(t, err, "no error expected")
 	assert.Equal(t, "4o", config.DefaultModel)
 	assert.Equal(t, "sk-...", config.APIKeys["openai"])
 	assert.Equal(t, "ds-...", config.APIKeys["deepseek"])
@@ -89,17 +90,37 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, "experimental-mode", modelDeepseek["custom-option"])
 }
 
-func TestGetModel(t *testing.T) {
+func TestYamlConfFileReadError(t *testing.T) {
+	_, err := YamlConf("/non/existent/path/config.yml")
+	assert.Error(t, err, "Expected an error when the file cannot be read")
+}
+
+func TestYamlConfUnmarshalError(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "configtest")
+	require.NoError(t, err)
+	defer clean(t, tmp)
+	path := tmp + "/invalid_config.yml"
+	content := []byte("invalid_yaml: : :")
+	err = os.WriteFile(path, content, 0644)
+	require.NoError(t, err, "Failed to write invalid config file")
+
+	_, err = YamlConf(path)
+
+	assert.Error(t, err, "Expected an error when the file cannot be unmarshaled")
+}
+
+func TestYamlConfModelOnly(t *testing.T) {
 	tmp, err := os.MkdirTemp("", "configtest")
 	require.NoError(t, err)
 	defer clean(t, tmp)
 	path := tmp + "/config.yml"
 	err = os.WriteFile(path, []byte(MODEL_ONLY), 0644)
 	require.NoError(t, err)
+	config, err := YamlConf(path)
+	require.NoError(t, err, "no error expected")
 
-	config := YamlConf(path)
+	model, err := config.Model()
 
-	model, err := config.GetModel()
 	assert.NoError(t, err, "Error should be nil")
 	assert.Equal(t, "gpt-4o", model, "Model ID should match")
 }
@@ -111,12 +132,13 @@ func TestGetOpenAIAPIKey(t *testing.T) {
 	path := tmp + "/config.yml"
 	err = os.WriteFile(path, []byte(KEYS), 0644)
 	require.NoError(t, err, "Failed to write config file")
+	config, err := YamlConf(path)
+	require.NoError(t, err, "Failed to load config")
 
-	config := YamlConf(path)
+	key, err := config.OpenAiKey()
 
-	apiKey, err := config.GetOpenAIAPIKey()
 	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, "sk-test", apiKey, "API key should match")
+	assert.Equal(t, "sk-test", key, "API key should match")
 }
 
 func TestGetGithubAPIKey(t *testing.T) {
@@ -126,12 +148,13 @@ func TestGetGithubAPIKey(t *testing.T) {
 	path := tmp + "/config.yml"
 	err = os.WriteFile(path, []byte(KEYS), 0644)
 	require.NoError(t, err, "Filed to write config file")
+	config, err := YamlConf(path)
+	require.NoError(t, err, "Failed to load config")
 
-	config := YamlConf(path)
+	key, err := config.GithubKey()
 
-	apiKey, err := config.GetGithubAPIKey()
 	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, "gh-test", apiKey, "API key should match")
+	assert.Equal(t, "gh-test", key, "API key should match")
 }
 
 func clean(t *testing.T, tmp string) {
