@@ -9,6 +9,7 @@ import (
 type mock struct {
 	shell executor.Executor
 	dir   string
+	err   error
 }
 
 func NewMock() Git {
@@ -16,11 +17,15 @@ func NewMock() Git {
 }
 
 func NewMockWithDir(dir string) Git {
-	return &mock{dir: dir, shell: executor.NewMock()}
+	return &mock{dir: dir, shell: executor.NewMock(), err: nil}
 }
 
 func NewMockWithShell(shell executor.Executor) Git {
-	return &mock{dir: "/dev/null", shell: shell}
+	return &mock{dir: "/dev/null", shell: shell, err: nil}
+}
+
+func NewMockWithError(err error) Git {
+	return &mock{dir: "/dev/null", shell: executor.NewMock(), err: err}
 }
 
 func (m *mock) Run(args ...string) (string, error) {
@@ -103,7 +108,7 @@ func (r *mock) Installed() (bool, error) {
 }
 
 func (r *mock) Root() (string, error) {
-	return r.dir, nil
+	return r.dir, r.err
 }
 
 func (r *mock) Checkout(branch string) error {
