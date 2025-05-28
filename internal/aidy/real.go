@@ -41,7 +41,11 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	shell := executor.NewReal()
 	out := output.NewEditor(shell)
 	aidy.output = out
-	aidy.git = git.NewGit(shell)
+	var err error
+	aidy.git, err = git.NewGit(shell)
+	if err != nil {
+		log.Fatalf("Failed to initialize git: %v", err)
+	}
 	aidy.CheckGitInstalled()
 	aidy.cache = newcache(aidy.git)
 	conf := newconf(aider, aidy.git)

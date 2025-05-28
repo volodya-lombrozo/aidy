@@ -212,3 +212,12 @@ func TestMock_Tags(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"v1.0", "v2.0"}, output)
 }
+
+func TestMock_WithError(t *testing.T) {
+	git := NewMockWithError(fmt.Errorf("mock error"))
+
+	_, err := git.Run("status")
+
+	require.Error(t, err)
+	assert.Equal(t, "mock error", err.Error())
+}
