@@ -29,6 +29,9 @@ func NewMockWithError(err error) Git {
 }
 
 func (m *mock) Run(args ...string) (string, error) {
+	if m.err != nil {
+		return "", m.err
+	}
 	out, err := m.shell.RunCommand("git", args...)
 	if err != nil {
 		return out, err

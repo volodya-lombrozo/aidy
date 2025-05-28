@@ -14,18 +14,22 @@ type real struct {
 	shell executor.Executor
 }
 
-func NewGit(shell executor.Executor, dir ...string) Git {
+func NewGit(shell executor.Executor, dir ...string) (Git, error) {
+	return NewGitFallback(shell, os.Getwd, dir...)
+}
+
+func NewGitFallback(shell executor.Executor, fallback func() (string, error), dir ...string) (Git, error) {
 	var directory string
 	if len(dir) > 0 && dir[0] != "" {
 		directory = dir[0]
 	} else {
 		var err error
-		directory, err = os.Getwd()
+		directory, err = fallback()
 		if err != nil {
-			panic(fmt.Errorf("failed to get current working directory: %w", err))
+			return nil, fmt.Errorf("failed to get current working directory: %w", err)
 		}
 	}
-	return &real{dir: directory, shell: shell}
+	return &real{dir: directory, shell: shell}, nil
 }
 
 func (r *real) Run(arg ...string) (string, error) {
