@@ -22,7 +22,7 @@ index 97c5ff0..2eea6a0 100644
 `
 
 func TestMockGenerateCommitMessage(t *testing.T) {
-	mockAI := &MockAI{}
+	mockAI := NewMockAI()
 	issue := "100"
 	expected := fmt.Sprintf("feat(#%s): %s", issue, "changed files: ai/mockai.go")
 
@@ -33,7 +33,7 @@ func TestMockGenerateCommitMessage(t *testing.T) {
 }
 
 func TestMockGenerateLabels(t *testing.T) {
-	mockAI := &MockAI{}
+	mockAI := NewMockAI()
 	labels := []string{"bug", "feature"}
 
 	actual, err := mockAI.IssueLabels("issue", labels)
@@ -43,7 +43,7 @@ func TestMockGenerateLabels(t *testing.T) {
 }
 
 func TestMockGenerateTitle(t *testing.T) {
-	mockAI := &MockAI{}
+	mockAI := NewMockAI()
 	branchName := "feature-branch"
 	expected := "'Mock Title for " + branchName + "'"
 
@@ -54,7 +54,7 @@ func TestMockGenerateTitle(t *testing.T) {
 }
 
 func TestMockGenerateIssueTitle(t *testing.T) {
-	mockAI := &MockAI{}
+	mockAI := NewMockAI()
 	userInput := "issue input"
 	expected := "'Mock Issue Title for " + userInput + "'"
 
@@ -65,7 +65,7 @@ func TestMockGenerateIssueTitle(t *testing.T) {
 }
 
 func TestMockGenerateIssueBody(t *testing.T) {
-	mockAI := &MockAI{}
+	mockAI := NewMockAI()
 	userInput := "issue input"
 	expected := "Mock Issue Body for " + userInput
 
@@ -76,7 +76,7 @@ func TestMockGenerateIssueBody(t *testing.T) {
 }
 
 func TestMockGenerateBody(t *testing.T) {
-	mockAI := &MockAI{}
+	mockAI := NewMockAI()
 	branchName := "feature-branch"
 	expected := "Mock Body for " + branchName
 
@@ -84,4 +84,66 @@ func TestMockGenerateBody(t *testing.T) {
 
 	require.NoError(t, err, "Expected no error")
 	assert.Equal(t, expected, body, "Expected body to match")
+}
+
+func TestMockAI_IssueLabels(t *testing.T) {
+	mockAI := NewMockAI()
+	labels := []string{"bug", "feature"}
+
+	actual, err := mockAI.IssueLabels("issue", labels)
+
+	require.NoError(t, err, "Expected no error")
+	assert.Equal(t, labels, actual, "Expected issue labels to match")
+}
+
+func TestMockAI_Summary(t *testing.T) {
+	mockAI := NewMockAI()
+	readme := "README content"
+	expected := "summary: " + readme
+
+	summary, err := mockAI.Summary(readme)
+
+	require.NoError(t, err, "Expected no error")
+	assert.Equal(t, expected, summary, "Expected summary to match")
+}
+
+func TestMockAI_SuggestBranch(t *testing.T) {
+	mockAI := NewMockAI()
+	expected := "mock-branch-name"
+
+	branch, err := mockAI.SuggestBranch("description")
+
+	require.NoError(t, err, "Expected no error")
+	assert.Equal(t, expected, branch, "Expected branch name to match")
+}
+
+func TestMockAI_ReleaseNotes(t *testing.T) {
+	mockAI := NewMockAI()
+	changes := "Some changes"
+	expected := fmt.Sprintf("Mock Release Notes\n\n%s", changes)
+
+	notes, err := mockAI.ReleaseNotes(changes)
+
+	require.NoError(t, err, "Expected no error")
+	assert.Equal(t, expected, notes, "Expected release notes to match")
+}
+
+func TestFailedMockAI_ReleaseNotes(t *testing.T) {
+	mockAI := NewFailedMockAI()
+	changes := "Some changes"
+
+	_, err := mockAI.ReleaseNotes(changes)
+
+	require.Error(t, err, "Expected an error when generating release notes with failed mock")
+	assert.Contains(t, err.Error(), "failed to generate release notes", "Expected error message to indicate failure")
+}
+
+func TestFailedMockAI_SuggestBranch(t *testing.T) {
+	mockAI := NewFailedMockAI()
+	description := "description"
+
+	_, err := mockAI.SuggestBranch(description)
+
+	require.Error(t, err, "Expected an error when suggesting branch with failed mock")
+	assert.Contains(t, err.Error(), "failed to suggest branch", "Expected error message to indicate failure")
 }

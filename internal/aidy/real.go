@@ -515,7 +515,7 @@ func brain(ailess bool, sumrequired bool, conf config.Config) ai.AI {
 		} else {
 			log.Println("Deepseek key is found")
 		}
-		brain = ai.NewDeepSeekAI(apiKey, sumrequired)
+		brain = ai.NewDeepSeek(apiKey, sumrequired)
 	} else {
 		apiKey, err := conf.OpenAiKey()
 		if err != nil {
