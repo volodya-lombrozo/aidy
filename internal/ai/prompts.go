@@ -1,7 +1,7 @@
 package ai
 
 const (
-	GenerateTitlePrompt = `You are an expert software engineer who creates concise and informative pull request titles for GitHub.
+	PrTitle = `You are an expert software engineer who creates concise and informative pull request titles for GitHub.
 
 Your task is to generate a one-line PR title based on the provided diff and issue description.
 
@@ -26,7 +26,7 @@ Carefully review both the diff and the issue description. Then, generate a PR ti
 - Do not include explanations, comments, or line breaks. Return only the title line.
 `
 
-	GenerateBodyPrompt = `You are an expert software engineer who writes clear and professional pull request descriptions on GitHub.
+	PrBody = `You are an expert software engineer who writes clear and professional pull request descriptions on GitHub.
 
 Your task is to generate a well-structured pull request body based on the provided diff and issue description.
 
@@ -58,7 +58,7 @@ Formatting rules:
 - Reply only with the pull request body — no additional text or explanations.
 `
 
-	GenerateCommitPrompt = `You are an expert software engineer who writes concise, one-line Git commit messages based on code diffs.
+	CommitMsg = `You are an expert software engineer who writes concise, one-line Git commit messages based on code diffs.
 
 Your task is to generate a single-line commit message for the following changes. 
 
@@ -82,7 +82,7 @@ Ensure the message:
 
 Reply with the commit message only — no explanations, comments, or line breaks.`
 
-	GenerateIssueTitlePrompt = `You are an expert software engineer who writes clear and concise titles for GitHub issues.
+	IssueTitle = `You are an expert software engineer who writes clear and concise titles for GitHub issues.
 
 Generate a one-line issue title based on the following user input:
 
@@ -99,7 +99,7 @@ The title should:
 Reply only with the issue title — no explanations, comments, or line breaks.
 `
 
-	GenerateIssueBodyPrompt = `You are an expert software engineer who writes clear and informative descriptions for GitHub issues.
+	IssueBody = `You are an expert software engineer who writes clear and informative descriptions for GitHub issues.
 
 Generate an issue body based on the following user input:
 
@@ -118,7 +118,7 @@ The description should:
 Reply only with the issue body — no explanations, comments, or extra formatting.
 `
 
-	GenerateLabelsPrompt = `You are an expert software engineer who understands how to assign appropriate labels to GitHub issues.
+	Labels = `You are an expert software engineer who understands how to assign appropriate labels to GitHub issues.
 
 Your task is to select the most relevant labels for the following issue:
 
@@ -134,7 +134,7 @@ Available labels:
 
 Reply only with the list of selected labels — no explanations, comments, or additional formatting.`
 
-	SummaryPrompt = `Read the following README.md of a software project and generate a short, single-paragraph summary suitable for AI agents.
+	Summary = `Read the following README.md of a software project and generate a short, single-paragraph summary suitable for AI agents.
 Focus on key features, purpose, technologies used, and any setup or usage highlights. 
 The summary must be concise, comprehensive, and free of any additional commentary or explanation — just the raw summary text.
 
@@ -143,7 +143,7 @@ The summary must be concise, comprehensive, and free of any additional commentar
 </readme>
 
 Reply only with the issue body — no explanations, comments, or extra formatting.`
-	SuggestBranchPrompt = `You are an expert software engineer who suggests git branch names based on issue descriptions.
+	BranchName = `You are an expert software engineer who suggests git branch names based on issue descriptions.
 Generate a branch name based on the following issue description:
 
 <description>
@@ -160,7 +160,7 @@ The branch name should:
 
 Reply only with the branch name — no explanations, comments, or extra formatting.
 `
-	ReleaseNotesPrompt = `You are an expert software engineer responsible for preparing professional release notes for a new software version.
+	ReleaseNotes = `You are an expert software engineer responsible for preparing professional release notes for a new software version.
 
 Generate clear, concise release notes based on the list of commit messages provided below.
 

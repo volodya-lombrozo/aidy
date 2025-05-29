@@ -8,16 +8,23 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-type MyOpenAI struct {
-	client      *openai.Client
+type openClient interface {
+	CreateChatCompletion(context.Context, openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error)
+}
+
+type OpenAI struct {
+	client      openClient
 	model       string
 	temperature float32
 	summary     bool
 }
 
-func NewOpenAI(apiKey, model string, temperature float32, summary bool) *MyOpenAI {
-	client := openai.NewClient(apiKey)
-	return &MyOpenAI{
+func NewOpenAI(token, model string, temperature float32, summary bool) *OpenAI {
+	return NewOpenAIWithClient(openai.NewClient(token), model, temperature, summary)
+}
+
+func NewOpenAIWithClient(client openClient, model string, temperature float32, summary bool) *OpenAI {
+	return &OpenAI{
 		client:      client,
 		model:       model,
 		temperature: temperature,
@@ -25,39 +32,39 @@ func NewOpenAI(apiKey, model string, temperature float32, summary bool) *MyOpenA
 	}
 }
 
-func (o *MyOpenAI) ReleaseNotes(changes string) (string, error) {
-	prompt := fmt.Sprintf(ReleaseNotesPrompt, changes)
+func (o *OpenAI) ReleaseNotes(changes string) (string, error) {
+	prompt := fmt.Sprintf(ReleaseNotes, changes)
 	return o.send(prompt, "")
 }
 
-func (o *MyOpenAI) PrTitle(number, diff, issue, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateTitlePrompt, diff, issue, number, number)
+func (o *OpenAI) PrTitle(number, diff, issue, summary string) (string, error) {
+	prompt := fmt.Sprintf(PrTitle, diff, issue, number, number)
 	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) PrBody(number, diff, issue, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateBodyPrompt, diff, issue, number)
+func (o *OpenAI) PrBody(number, diff, issue, summary string) (string, error) {
+	prompt := fmt.Sprintf(PrBody, diff, issue, number)
 	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) IssueTitle(input, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueTitlePrompt, input)
+func (o *OpenAI) IssueTitle(input, summary string) (string, error) {
+	prompt := fmt.Sprintf(IssueTitle, input)
 	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) IssueBody(input string, summary string) (string, error) {
-	prompt := fmt.Sprintf(GenerateIssueBodyPrompt, input)
+func (o *OpenAI) IssueBody(input string, summary string) (string, error) {
+	prompt := fmt.Sprintf(IssueBody, input)
 	return o.send(prompt, summary)
 }
 
-func (o *MyOpenAI) CommitMessage(number, diff string) (string, error) {
-	prompt := fmt.Sprintf(GenerateCommitPrompt, diff, number, number)
+func (o *OpenAI) CommitMessage(number, diff string) (string, error) {
+	prompt := fmt.Sprintf(CommitMsg, diff, number, number)
 	return o.send(prompt, "")
 }
 
-func (o *MyOpenAI) IssueLabels(issue string, available []string) ([]string, error) {
+func (o *OpenAI) IssueLabels(issue string, available []string) ([]string, error) {
 	alllabels := strings.Join(available, ", ")
-	prompt := fmt.Sprintf(GenerateLabelsPrompt, issue, alllabels)
+	prompt := fmt.Sprintf(Labels, issue, alllabels)
 	out, err := o.send(prompt, "")
 	if err != nil {
 		return nil, err
@@ -71,13 +78,13 @@ func (o *MyOpenAI) IssueLabels(issue string, available []string) ([]string, erro
 	return res, nil
 }
 
-func (o *MyOpenAI) Summary(readme string) (string, error) {
-	prompt := fmt.Sprintf(SummaryPrompt, readme)
+func (o *OpenAI) Summary(readme string) (string, error) {
+	prompt := fmt.Sprintf(Summary, readme)
 	return o.send(prompt, "")
 }
 
-func (o *MyOpenAI) SuggestBranch(descr string) (string, error) {
-	prompt := fmt.Sprintf(SuggestBranchPrompt, descr)
+func (o *OpenAI) SuggestBranch(descr string) (string, error) {
+	prompt := fmt.Sprintf(BranchName, descr)
 	return o.send(prompt, "")
 }
 
@@ -85,7 +92,7 @@ func (o *MyOpenAI) SuggestBranch(descr string) (string, error) {
 // Parameters:
 // - prompt: The prompt to send.
 // - summary: The project summary to append to the prompt (if applicable).
-func (o *MyOpenAI) send(prompt, summary string) (string, error) {
+func (o *OpenAI) send(prompt, summary string) (string, error) {
 	content := prompt
 	if o.summary {
 		content = AppendSummary(content, summary)
@@ -102,6 +109,7 @@ func (o *MyOpenAI) send(prompt, summary string) (string, error) {
 		Temperature: o.temperature,
 	}
 	resp, err := o.client.CreateChatCompletion(context.Background(), req)
+
 	if err != nil {
 		return "", err
 	}
