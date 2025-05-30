@@ -5,6 +5,7 @@ type MockConfig struct {
 	MockOpenai   string
 	MockGithub   string
 	MockModel    string
+	Error        error
 }
 
 func NewMock() *MockConfig {
@@ -17,17 +18,17 @@ func NewMock() *MockConfig {
 }
 
 func (m *MockConfig) DeepseekKey() (string, error) {
-	return m.MockDeepseek, nil
+	return m.MockDeepseek, m.Error
 }
 
 func (m *MockConfig) GithubKey() (string, error) {
-	return m.MockGithub, nil
+	return m.MockGithub, m.Error
 }
 
 func (m *MockConfig) Model() (string, error) {
-	return m.MockModel, nil
+	return m.MockModel, m.Error
 }
 
 func (m *MockConfig) OpenAiKey() (string, error) {
-	return m.MockOpenai, nil
+	return m.MockOpenai, m.Error
 }

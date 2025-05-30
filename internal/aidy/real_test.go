@@ -12,11 +12,95 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/volodya-lombrozo/aidy/internal/ai"
 	"github.com/volodya-lombrozo/aidy/internal/cache"
+	"github.com/volodya-lombrozo/aidy/internal/config"
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 	"github.com/volodya-lombrozo/aidy/internal/git"
 	"github.com/volodya-lombrozo/aidy/internal/github"
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
+
+func TestReal_PrintsDiff_Successfully(t *testing.T) {
+	printer := output.NewMock()
+	git := git.NewMock()
+	raidy := &real{git: git, config: config.NewMock(), printer: printer}
+
+	err := raidy.Diff()
+
+	captured := printer.Captured()
+	require.NoError(t, err, "Expected no error when printing diff")
+	expected := "Diff with the base branch:\nmock-diff\n"
+	assert.Equal(t, expected, captured, "Expected diff to be printed")
+}
+
+func TestReal_PrintsDiff_Error(t *testing.T) {
+	printer := output.NewMock()
+	git := git.NewMockWithError(fmt.Errorf("mock error"))
+	raidy := &real{git: git, config: config.NewMock(), printer: printer}
+
+	err := raidy.Diff()
+
+	require.Error(t, err, "Expected error when printing diff")
+	assert.Equal(t, "failed to get diff: 'mock error'", err.Error(), "Expected error message to match")
+}
+
+func TestReal_PrintConfig_Successful(t *testing.T) {
+	printer := output.NewMock()
+	raidy := &real{config: config.NewMock(), printer: printer}
+
+	err := raidy.PrintConfig()
+
+	require.NoError(t, err, "Expected no error when printing configuration")
+	res := printer.Captured()
+	expected := strings.Join([]string{
+		"Aidy Configuration:",
+		"",
+		"OpenAI API Key: mock-openai-key",
+		"",
+		"Deepseek API Key: mock-deepseek-key",
+		"",
+		"GitHub API Key: mock-github-key",
+		"",
+		"Model: gpt-4o",
+		"",
+	}, "\n")
+	assert.Equal(t, expected, res, "Expected configuration to match")
+}
+
+func TestReal_PrintConfig_NoConfig(t *testing.T) {
+	printer := output.NewMock()
+	conf := config.NewMock()
+	conf.Error = fmt.Errorf("no configuration found")
+	raidy := &real{config: conf, printer: printer}
+
+	err := raidy.PrintConfig()
+
+	require.Error(t, err, "Expected no error when printing configuration with no config")
+	res := printer.Captured()
+	expected := strings.Join([]string{
+		"Aidy Configuration:",
+		"",
+		"Error retrieving OpenAI API key: no configuration found",
+		"",
+		"Error retrieving Deepseek API key: no configuration found",
+		"",
+		"Error retrieving GitHub API key: no configuration found",
+		"",
+		"Error retrieving model: no configuration found",
+		"",
+	}, "\n")
+	assert.Equal(t, expected, res, "Expected error message when no config is found")
+}
+
+func TestReal_Append(t *testing.T) {
+	shell := executor.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell)}
+
+	raidy.Append()
+
+	expected := "git commit --amend --no-edit "
+	require.Equal(t, 1, len(shell.Commands), "Expected number of commands to match")
+	assert.Equal(t, expected, shell.Commands[0], "Expected command to match")
+}
 
 func TestReal_Heal(t *testing.T) {
 	shell := executor.NewMock()
@@ -138,7 +222,7 @@ func TestReal_PullRequest(t *testing.T) {
 	mockAI := ai.NewMockAI()
 	mockGithub := github.NewMock()
 	out := output.NewMock()
-	raidy := &real{git: mockGit, ai: mockAI, github: mockGithub, output: out, cache: cache.NewMockAidyCache()}
+	raidy := &real{git: mockGit, ai: mockAI, github: mockGithub, editor: out, cache: cache.NewMockAidyCache()}
 
 	raidy.PullRequest()
 
@@ -169,7 +253,7 @@ func TestReal_Commit(t *testing.T) {
 func TestReal_Issue(t *testing.T) {
 	userInput := "test input"
 	out := output.NewMock()
-	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), output: out, cache: cache.NewMockAidyCache()}
+	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache()}
 
 	raidy.Issue(userInput)
 
@@ -182,7 +266,7 @@ func TestReal_Release_Success(t *testing.T) {
 	mgit := git.NewMock()
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, output: out}
+	raidy := &real{git: mgit, ai: nobrain, editor: out}
 
 	err := raidy.Release("minor", "origin")
 	assert.NoError(t, err, "expected no error during release")
@@ -190,11 +274,26 @@ func TestReal_Release_Success(t *testing.T) {
 	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
 }
 
-func TestReal_ReleaseNoTags(t *testing.T) {
+func TestReal_Release_NoTags(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "absent"
+	output := output.NewMock()
+	mockGit := git.NewMockWithShell(shell)
+
+	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output}
+
+	err := raidy.Release("patch", "origin")
+
+	require.NoError(t, err, "expected no error when releasing with no tags")
+	expected := "git tag --cleanup=verbatim -a \"v0.0.1\" -m \""
+	assert.Contains(t, output.Last(), expected, "expected release command to be generated with no tags")
+}
+
+func TestReal_ReleaseUnknownInterval(t *testing.T) {
 	mockGit := git.NewMock()
 	mockAI := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mockGit, ai: mockAI, output: out}
+	raidy := &real{git: mockGit, ai: mockAI, editor: out}
 
 	err := raidy.Release("", "origin")
 
@@ -207,7 +306,7 @@ func TestReal_ReleaseTagFetchError(t *testing.T) {
 	mgit := git.NewMockWithShell(shell)
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, output: out}
+	raidy := &real{git: mgit, ai: nobrain, editor: out}
 
 	err := raidy.Release("patch", "origin")
 
@@ -219,7 +318,7 @@ func TestReal_ReleaseNotesGenerationError(t *testing.T) {
 	mgit := git.NewMock()
 	nobrain := ai.NewFailedMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, output: out}
+	raidy := &real{git: mgit, ai: nobrain, editor: out}
 
 	err := raidy.Release("major", "origin")
 

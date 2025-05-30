@@ -2,7 +2,7 @@ package aidy
 
 type Aidy interface {
 	Release(interval string, repo string) error
-	PrintConfig()
+	PrintConfig() error
 	Commit()
 	Squash()
 	PullRequest()
@@ -10,6 +10,6 @@ type Aidy interface {
 	Heal()
 	Append()
 	Clean()
-	Diff()
+	Diff() error
 	StartIssue(number string) error
 }
