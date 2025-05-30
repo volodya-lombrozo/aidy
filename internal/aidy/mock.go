@@ -15,8 +15,9 @@ func (m *Mock) Release(interval string, repo string) error {
 	return nil
 }
 
-func (m *Mock) PrintConfig() {
+func (m *Mock) PrintConfig() error {
 	m.logs = append(m.logs, "PrintConfig called")
+	return nil
 }
 
 func (m *Mock) Commit() {
@@ -47,8 +48,9 @@ func (m *Mock) Clean() {
 	m.logs = append(m.logs, "Clean called")
 }
 
-func (m *Mock) Diff() {
+func (m *Mock) Diff() error {
 	m.logs = append(m.logs, "Diff called")
+	return nil
 }
 
 func (m *Mock) StartIssue(number string) error {

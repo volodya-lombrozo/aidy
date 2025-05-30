@@ -9,8 +9,8 @@ func newConfigCmd(ctx *Context) *cobra.Command {
 		Use:     "config",
 		Aliases: []string{"conf"},
 		Short:   "Print the current configuration",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx.Assistant.PrintConfig()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return ctx.Assistant.PrintConfig()
 		},
 	}
 	return command

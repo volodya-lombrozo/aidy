@@ -22,12 +22,13 @@ import (
 )
 
 type real struct {
-	git    git.Git
-	github github.Github
-	ai     ai.AI
-	output output.Output
-	config config.Config
-	cache  cache.AidyCache
+	git     git.Git
+	github  github.Github
+	ai      ai.AI
+	editor  output.Output
+	config  config.Config
+	cache   cache.AidyCache
+	printer output.Output
 }
 
 // Create a real aidy instance
@@ -39,30 +40,32 @@ type real struct {
 func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	var aidy real
 	shell := executor.NewReal()
-	out := output.NewEditor(shell)
-	aidy.output = out
+	aidy.editor = output.NewEditor(shell)
+	aidy.printer = output.NewPrinter()
 	var err error
 	aidy.git, err = git.NewGit(shell)
 	if err != nil {
 		log.Fatalf("Failed to initialize git: %v", err)
 	}
-	aidy.CheckGitInstalled()
+	aidy.checkGitInstalled()
 	aidy.cache = newcache(aidy.git)
 	conf := newconf(aider, aidy.git)
 	aidy.ai = brain(ailess, summary, conf)
 	aidy.github = newgithub(aidy.git, conf, aidy.cache)
-	aidy.InitSummary(summary)
+	aidy.initSummary(summary)
 	return &aidy
 }
 
-func (r *real) Diff() {
+func (r *real) Diff() error {
 	diff, err := r.git.Diff()
 	if err != nil {
-		log.Fatalf("Failed to get diff: '%v'", err)
+		return fmt.Errorf("failed to get diff: '%v'", err)
 	} else {
-		fmt.Printf("Diff with the base branch:\n%s\n", diff)
+		r.print(fmt.Sprintf("Diff with the base branch:\n%s\n", diff))
+		return nil
 	}
 }
+
 func (r *real) Commit() {
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
@@ -117,7 +120,7 @@ func (r *real) Issue(task string) {
 		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQuotes(title), healQuotes(body))))
 	}
 	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
-	err = r.output.Print(cmd)
+	err = r.editor.Print(cmd)
 	if err != nil {
 		log.Fatalf("Error during making an issue: %v", err)
 	}
@@ -181,31 +184,39 @@ func healPRTitle(text string, issue string) string {
 	return replaced
 }
 
-func (r *real) PrintConfig() {
-	fmt.Println("Current Configuration:")
+func (r *real) PrintConfig() error {
+	r.print("Aidy Configuration:\n")
 	openai, err := r.config.OpenAiKey()
 	if err != nil {
-		fmt.Printf("Error retrieving OpenAI API key: %v\n", err)
+		r.print(fmt.Sprintf("Error retrieving OpenAI API key: %v\n", err))
 	} else {
-		fmt.Printf("OpenAI API Key: %s\n", openai)
+		r.print(fmt.Sprintf("OpenAI API Key: %s\n", openai))
 	}
 	deepseek, err := r.config.DeepseekKey()
 	if err != nil {
-		fmt.Printf("Error retrieving deepseek API key: %v\n", err)
+		r.print(fmt.Sprintf("Error retrieving Deepseek API key: %v\n", err))
 	} else {
-		fmt.Printf("Deepseek API Key: %s\n", deepseek)
+		r.print(fmt.Sprintf("Deepseek API Key: %s\n", deepseek))
 	}
-	githubKey, err := r.config.GithubKey()
+	gh, err := r.config.GithubKey()
 	if err != nil {
-		fmt.Printf("Error retrieving GitHub API key: %v\n", err)
+		r.print(fmt.Sprintf("Error retrieving GitHub API key: %v\n", err))
 	} else {
-		fmt.Printf("GitHub API Key: %s\n", githubKey)
+		r.print(fmt.Sprintf("GitHub API Key: %s\n", gh))
 	}
 	model, err := r.config.Model()
 	if err != nil {
-		fmt.Printf("Error retrieving model: %v\n", err)
+		r.print(fmt.Sprintf("Error retrieving model: %v\n", err))
 	} else {
-		fmt.Printf("Model: %s\n", model)
+		r.print(fmt.Sprintf("Model: %s\n", model))
+	}
+	return err
+}
+
+func (r *real) print(msg string) {
+	err := r.printer.Print(msg)
+	if err != nil {
+		log.Fatalf("Error printing message: %v", err)
 	}
 }
 
@@ -239,7 +250,7 @@ func (r *real) PullRequest() {
 	prtitle := healPRTitle(healQuotes(title), nissue)
 	prbody := healPRBody(healQuotes(body), nissue)
 	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo))
-	err = r.output.Print(cmd)
+	err = r.editor.Print(cmd)
 	if err != nil {
 		log.Fatalf("Error during making a pull-request: %v", err)
 	}
@@ -352,7 +363,7 @@ func (r *real) Release(interval string, repo string) error {
 		}
 	}
 	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, notes)
-	return r.output.Print(command)
+	return r.editor.Print(command)
 }
 
 func keys(m map[string]string) []string {
@@ -437,7 +448,7 @@ func (r *real) Heal() {
 	}
 }
 
-func (r *real) CheckGitInstalled() {
+func (r *real) checkGitInstalled() {
 	installed, err := r.git.Installed()
 	if err != nil {
 		log.Fatalf("Can't understand whether git is installed or not, because of '%v'", err)
@@ -447,7 +458,7 @@ func (r *real) CheckGitInstalled() {
 	}
 }
 
-func (r *real) InitSummary(required bool) {
+func (r *real) initSummary(required bool) {
 	if required {
 		log.Println("Undertstanding the project summary")
 		content, err := os.ReadFile("README.md")

@@ -173,6 +173,13 @@ func (m *Mock) Print(command string) error {
 	return nil
 }
 
+func (m *Mock) Captured() string {
+	if len(m.captured) == 0 {
+		return ""
+	}
+	return strings.Join(m.captured, "\n")
+}
+
 func (m *Mock) Last() string {
 	size := len(m.captured)
 	if size < 1 {

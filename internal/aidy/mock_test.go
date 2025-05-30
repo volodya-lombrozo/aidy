@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMockAidy_Release(t *testing.T) {
@@ -15,7 +16,8 @@ func TestMockAidy_Release(t *testing.T) {
 
 func TestMockAidy_PrintConfig(t *testing.T) {
 	aidy := NewMock()
-	aidy.PrintConfig()
+	err := aidy.PrintConfig()
+	require.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "PrintConfig called")
 }
 
@@ -63,7 +65,8 @@ func TestMockAidy_Clean(t *testing.T) {
 
 func TestMockAidy_Diff(t *testing.T) {
 	aidy := NewMock()
-	aidy.Diff()
+	err := aidy.Diff()
+	require.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "Diff called")
 }
 

@@ -2,6 +2,8 @@ package git
 
 import (
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 )
@@ -51,9 +53,17 @@ func (m *mock) Log(since string) ([]string, error) {
 }
 
 func (m *mock) Tags(repo string) ([]string, error) {
-	if _, err := m.Run("fetch", repo, "--tags"); err != nil {
+	res, err := m.Run("fetch", repo, "--tags")
+	if err != nil {
+		log.Printf("Error fetching tags from repository %s: %v", repo, err)
 		return nil, err
 	}
+	if strings.Contains(res, "absent") {
+		log.Printf("No tags found in repository %s", repo)
+		return []string{}, nil
+	}
+
+	log.Printf("Fetched tags from repository %s: %s", repo, res)
 	return []string{"v1.0", "v2.0"}, nil
 }
 
@@ -83,6 +93,9 @@ func (m *mock) Reset(ref string) error {
 }
 
 func (m *mock) Append() error {
+	if _, err := m.shell.RunCommand("git commit --amend --no-edit"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -91,7 +104,7 @@ func (m *mock) CurrentBranch() (string, error) {
 }
 
 func (m *mock) Diff() (string, error) {
-	return "mock-diff", nil
+	return "mock-diff", m.err
 }
 
 func (m *mock) CurrentDiff() (string, error) {
