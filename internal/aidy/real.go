@@ -66,29 +66,29 @@ func (r *real) Diff() error {
 	}
 }
 
-func (r *real) Commit() {
+func (r *real) Commit() error {
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
-		log.Fatalf("Error getting branch name: %v", err)
+		return fmt.Errorf("error getting branch name: %v", err)
 	}
 	_, err = r.git.Run("add", "--all")
 	if err != nil {
-		log.Fatalf("Error adding changes: %v", err)
+		return fmt.Errorf("error adding changes: %v", err)
 	}
 	diff, diffErr := r.git.CurrentDiff()
 	if diffErr != nil {
-		log.Fatalf("Error getting diff: %v", err)
+		return fmt.Errorf("error getting current diff: %v", diffErr)
 	}
 	nissue := inumber(branch)
 	msg, cerr := r.ai.CommitMessage(nissue, diff)
 	if cerr != nil {
-		log.Fatalf("Error generating commit message: %v", cerr)
+		return fmt.Errorf("error generating commit message: %v", cerr)
 	}
 	_, err = r.git.Run("commit", "-m", msg)
 	if err != nil {
-		log.Fatalf("Error committing changes: %v", err)
+		return fmt.Errorf("error committing changes: %v", err)
 	}
-	r.Heal()
+	return r.Heal()
 }
 
 func (r *real) Issue(task string) {
@@ -423,29 +423,30 @@ func (r *real) Squash() {
 	if err != nil {
 		log.Fatalf("Error determining base branch: %v", err)
 	}
-	resetErr := r.git.Reset("refs/heads/" + base)
-	if resetErr != nil {
+	err = r.git.Reset("refs/heads/" + base)
+	if err != nil {
 		log.Fatalf("Error executing git reset: %v", err)
 	}
-	r.Commit()
+	err = r.Commit()
+	if err != nil {
+		log.Fatalf("Error committing changes: %v", err)
+	}
 }
 
-func (r *real) Heal() {
+func (r *real) Heal() error {
 	name, err := r.git.CurrentBranch()
 	if err != nil {
-		log.Fatalf("Error getting branch name: %v", err)
+		return fmt.Errorf("error getting branch name: %v", err)
 	}
-	issueNumber := inumber(name)
-	commitMessage, gitErr := r.git.CommitMessage()
+	inumber := inumber(name)
+	message, gitErr := r.git.CommitMessage()
 	if gitErr != nil {
-		log.Fatalf("Error getting current commit message: %v", err)
+		return fmt.Errorf("error getting current commit message: %v", gitErr)
 	}
 	re := regexp.MustCompile(`#\d+`)
-	newCommitMessage := re.ReplaceAllString(commitMessage, fmt.Sprintf("#%s", issueNumber))
-	err = r.git.Amend(newCommitMessage)
-	if err != nil {
-		log.Fatalf("Error amending commit message: %v", err)
-	}
+	updated := re.ReplaceAllString(message, fmt.Sprintf("#%s", inumber))
+	err = r.git.Amend(updated)
+	return err
 }
 
 func (r *real) checkGitInstalled() {

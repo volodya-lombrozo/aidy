@@ -106,14 +106,42 @@ func TestReal_Heal(t *testing.T) {
 	shell := executor.NewMock()
 	raidy := &real{git: git.NewMockWithShell(shell)}
 
-	raidy.Heal()
+	err := raidy.Heal()
 
+	require.NoError(t, err, "Expected no error when healing")
 	expected := []string{
 		"git commit --amend -m feat(#41): current commit message",
 	}
 	for i, cmd := range expected {
 		assert.Contains(t, shell.Commands[i], cmd, "Expected command '%s', got '%s'", cmd, shell.Commands[i])
 	}
+}
+
+func TestReal_Heal_CantGetBranch(t *testing.T) {
+	raidy := &real{git: git.NewMockWithError(fmt.Errorf("CurrentBranch method fails"))}
+
+	err := raidy.Heal()
+
+	require.Error(t, err, "Expected error when unable to get current branch")
+	assert.Equal(t, "error getting branch name: CurrentBranch method fails", err.Error(), "Expected error message to match")
+}
+
+func TestReal_Heal_CantGetCommitMessage(t *testing.T) {
+	raidy := &real{git: git.NewMockWithError(fmt.Errorf("CommitMessage method fails"))}
+
+	err := raidy.Heal()
+
+	require.Error(t, err, "Expected error when unable to get commit message")
+	assert.Equal(t, "error getting current commit message: CommitMessage method fails", err.Error(), "Expected error message to match")
+}
+
+func TestReal_Heal_CantAmend(t *testing.T) {
+	raidy := &real{git: git.NewMockWithError(fmt.Errorf("Amend method fails"))}
+
+	err := raidy.Heal()
+
+	require.Error(t, err, "Expected error when unable to amend commit")
+	assert.Equal(t, "Amend method fails", err.Error(), "Expected error message to match")
 }
 
 func TestReal_CleanCache(t *testing.T) {
@@ -237,17 +265,49 @@ func TestReal_Commit(t *testing.T) {
 	mgit := git.NewMockWithShell(shell)
 	raidy := &real{git: mgit, ai: brain}
 
-	raidy.Commit()
+	err := raidy.Commit()
 
+	require.NoError(t, err, "expected no error when committing changes")
 	expected := []string{
 		"git add --all",
 		"git commit -m feat(#41): no files changed",
 		"git commit --amend -m feat(#41): current commit message",
 	}
-	fmt.Println(shell.Commands)
 	for i, cmd := range expected {
 		assert.Contains(t, shell.Commands[i], cmd, "Expected command '%s', got '%s'", cmd, shell.Commands[i])
 	}
+}
+
+func TestReal_Commit_CantGetCurrentBranch(t *testing.T) {
+	mgit := git.NewMockWithError(fmt.Errorf("CurrentBranch method fails"))
+
+	raidy := &real{git: mgit, ai: ai.NewMockAI()}
+
+	err := raidy.Commit()
+	require.Error(t, err, "expected error when unable to get current branch")
+	assert.Equal(t, "error getting branch name: CurrentBranch method fails", err.Error(), "Expected error message to match")
+}
+
+func TestReal_Commit_CantGetCurrentDiff(t *testing.T) {
+	mgit := git.NewMockWithError(fmt.Errorf("CurrentDiff method fails"))
+	raidy := &real{git: mgit, ai: ai.NewMockAI()}
+
+	err := raidy.Commit()
+
+	require.Error(t, err, "expected error when unable to get current diff")
+	assert.Equal(t, "error adding changes: CurrentDiff method fails", err.Error(), "Expected error message to match")
+}
+
+func TestReal_Commit_CantRunGit(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Err = fmt.Errorf("git command failed")
+	mgit := git.NewMockWithShell(shell)
+	raidy := &real{git: mgit, ai: ai.NewMockAI()}
+
+	err := raidy.Commit()
+
+	require.Error(t, err, "expected error when git command fails")
+	assert.Equal(t, "error adding changes: git command failed", err.Error(), "Expected error message to match")
 }
 
 func TestReal_Issue(t *testing.T) {

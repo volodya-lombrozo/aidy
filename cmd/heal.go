@@ -9,8 +9,8 @@ func newHealCmd(ctx *Context) *cobra.Command {
 		Use:     "heal",
 		Aliases: []string{"hl"},
 		Short:   "Fix the current commit message if the AI made mistakes",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx.Assistant.Heal()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return ctx.Assistant.Heal()
 		},
 	}
 	return command

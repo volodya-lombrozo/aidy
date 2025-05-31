@@ -3,11 +3,11 @@ package aidy
 type Aidy interface {
 	Release(interval string, repo string) error
 	PrintConfig() error
-	Commit()
+	Commit() error
 	Squash()
 	PullRequest()
 	Issue(task string)
-	Heal()
+	Heal() error
 	Append()
 	Clean()
 	Diff() error

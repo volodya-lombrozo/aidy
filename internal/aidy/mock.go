@@ -20,8 +20,9 @@ func (m *Mock) PrintConfig() error {
 	return nil
 }
 
-func (m *Mock) Commit() {
+func (m *Mock) Commit() error {
 	m.logs = append(m.logs, "Commit called")
+	return nil
 }
 
 func (m *Mock) Squash() {
@@ -36,8 +37,9 @@ func (m *Mock) Issue(task string) {
 	m.logs = append(m.logs, fmt.Sprintf("Issue called with task: %s", task))
 }
 
-func (m *Mock) Heal() {
+func (m *Mock) Heal() error {
 	m.logs = append(m.logs, "Heal called")
+	return nil
 }
 
 func (m *Mock) Append() {

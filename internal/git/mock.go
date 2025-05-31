@@ -71,7 +71,7 @@ func (m *mock) Amend(message string) error {
 	if _, err := m.shell.RunCommand("git commit --amend -m " + message); err != nil {
 		return err
 	}
-	return nil
+	return m.smartError("Amend")
 }
 
 func (m *mock) AddAll() error {
@@ -100,7 +100,7 @@ func (m *mock) Append() error {
 }
 
 func (m *mock) CurrentBranch() (string, error) {
-	return "41_working_branch", nil
+	return "41_working_branch", m.smartError("CurrentBranch")
 }
 
 func (m *mock) Diff() (string, error) {
@@ -108,11 +108,11 @@ func (m *mock) Diff() (string, error) {
 }
 
 func (m *mock) CurrentDiff() (string, error) {
-	return "current-mock-diff", nil
+	return "current-mock-diff", m.smartError("CurrentDiff")
 }
 
 func (m *mock) CommitMessage() (string, error) {
-	return "feat(#42): current commit message", nil
+	return "feat(#42): current commit message", m.smartError("CommitMessage")
 }
 
 func (r *mock) Remotes() ([]string, error) {
@@ -132,4 +132,15 @@ func (r *mock) Checkout(branch string) error {
 		return err
 	}
 	return nil
+}
+
+func (r *mock) smartError(method string) error {
+	if r.err == nil {
+		return nil
+	}
+	if strings.Contains(r.err.Error(), method) {
+		return r.err
+	} else {
+		return nil
+	}
 }
