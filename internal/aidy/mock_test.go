@@ -23,7 +23,8 @@ func TestMockAidy_PrintConfig(t *testing.T) {
 
 func TestMockAidy_Commit(t *testing.T) {
 	aidy := NewMock()
-	aidy.Commit()
+	err := aidy.Commit()
+	require.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "Commit called")
 }
 
@@ -47,7 +48,8 @@ func TestMockAidy_Issue(t *testing.T) {
 
 func TestMockAidy_Heal(t *testing.T) {
 	aidy := NewMock()
-	aidy.Heal()
+	err := aidy.Heal()
+	assert.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "Heal called")
 }
 

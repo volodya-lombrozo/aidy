@@ -131,9 +131,9 @@ func (r *real) CommitMessage() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	commitMessage := out
-	commitMessage = strings.TrimSpace(commitMessage)
-	return commitMessage, nil
+	message := out
+	message = strings.TrimSpace(message)
+	return message, nil
 }
 
 // This method returns a unique list of remote urls
