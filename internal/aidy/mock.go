@@ -29,12 +29,14 @@ func (m *Mock) Squash() {
 	m.logs = append(m.logs, "Squash called")
 }
 
-func (m *Mock) PullRequest() {
+func (m *Mock) PullRequest() error {
 	m.logs = append(m.logs, "PullRequest called")
+	return nil
 }
 
-func (m *Mock) Issue(task string) {
+func (m *Mock) Issue(task string) error {
 	m.logs = append(m.logs, fmt.Sprintf("Issue called with task: %s", task))
+	return nil
 }
 
 func (m *Mock) Heal() error {

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/volodya-lombrozo/aidy/internal/cache"
 	"github.com/volodya-lombrozo/aidy/internal/git"
 )
@@ -16,24 +17,6 @@ const JsonIssue = `{
   "body": "Body"
 }`
 
-func TestMockGithub_IssueDescription(t *testing.T) {
-	mockGithub := &MockGithub{}
-	issueNumber := "123"
-	expectedDescription := "Mock description for issue #" + issueNumber
-
-	description := mockGithub.Description(issueNumber)
-	assert.Equal(t, expectedDescription, description, "Description should match expected value")
-}
-
-func TestMockGithub_Labels(t *testing.T) {
-	mockGithub := &MockGithub{}
-	expected := []string{"bug", "documentation", "question"}
-	labels := mockGithub.Labels()
-	for i, label := range labels {
-		assert.Equal(t, expected[i], label)
-	}
-}
-
 func TestRealGithub_Description(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -42,19 +25,21 @@ func TestRealGithub_Description(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	realGithub := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
+	gh := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
 
-	description := realGithub.Description("123")
+	description, err := gh.Description("123")
 
+	require.NoError(t, err, "Description should not return an error")
 	assert.Equal(t, fmt.Sprintf("Title: '%s'\nBody: '%s'", "Title", "Body"), description, "Description should match expected value")
 }
 
 func TestRealGithub_Description_NotNumber(t *testing.T) {
-	realGithub := NewGithub("http://google.com", git.NewMock(), "", cache.NewMockAidyCache())
+	gh := NewGithub("http://google.com", git.NewMock(), "", cache.NewMockAidyCache())
 	issueNumber := "not-a-number"
 
-	description := realGithub.Description(issueNumber)
+	description, err := gh.Description(issueNumber)
 
+	require.NoError(t, err, "Description should not return an error for non-numeric issue number")
 	assert.Equal(t, "Invalid issue number: 'not-a-number'", description)
 }
 
@@ -80,7 +65,6 @@ func TestRealGithub_Labels(t *testing.T) {
     "description": "This will not be worked on"
   }
 ]`
-	// Create a test server to mock GitHub API
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte(json)); err != nil {
@@ -88,10 +72,11 @@ func TestRealGithub_Labels(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	realGithub := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
+	gh := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
 
-	labels := realGithub.Labels()
+	labels, err := gh.Labels()
 
+	require.NoError(t, err, "Labels should not return an error")
 	expected := []string{"duplicate", "wontfix"}
 	for i, label := range labels {
 		assert.Equal(t, expected[i], label)
@@ -101,17 +86,9 @@ func TestRealGithub_Labels(t *testing.T) {
 func TestRealGithub_Remotes(t *testing.T) {
 	gh := NewGithub("", git.NewMock(), "", cache.NewMockAidyCache())
 
-	actual := gh.Remotes()
+	actual, err := gh.Remotes()
 
+	require.NoError(t, err, "Remotes should not return an error")
 	expected := []string{"volodya-lombrozo/aidy", "volodya-lombrozo/forked-aidy"}
 	assert.Equal(t, expected, actual)
-}
-
-func TestMockGithub_Remotes(t *testing.T) {
-	expected := []string{"volodya-lombrozo/aidy", "volodya-lombrozo/jtcop"}
-	gh := &MockGithub{}
-
-	acutal := gh.Remotes()
-
-	assert.Equal(t, expected, acutal)
 }
