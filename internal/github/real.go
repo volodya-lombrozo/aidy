@@ -46,22 +46,26 @@ func NewGithub(baseURL string, gs git.Git, authToken string, ch cache.AidyCache)
 	}
 }
 
-func (r *github) Description(number string) string {
+func (r *github) Description(number string) (string, error) {
 	if _, err := strconv.Atoi(number); err != nil {
-		return fmt.Sprintf("Invalid issue number: '%s'", number)
+		return fmt.Sprintf("Invalid issue number: '%s'", number), nil
 	}
 	var task issue
 	target := r.ch.Remote()
 	if target != "" {
-		task = r.description(number, target)
+		var err error
+		task, err = r.description(number, target)
+		if err != nil {
+			return "", err
+		}
 	} else {
-		log.Fatalf("Cannot find a target repository to search for issue '%s'", number)
+		return "", fmt.Errorf("cannot find a target repository to search for issue '%s'", number)
 	}
-	fmt.Printf("Title: %s\nBody: %s\n", task.Title, task.Body)
-	return fmt.Sprintf("Title: '%s'\nBody: '%s'", task.Title, task.Body)
+	log.Printf("Title: %s\nBody: %s\n", task.Title, task.Body)
+	return fmt.Sprintf("Title: '%s'\nBody: '%s'", task.Title, task.Body), nil
 }
 
-func (r *github) Labels() []string {
+func (r *github) Labels() ([]string, error) {
 	var labels []label
 	target := r.ch.Remote()
 	if target != "" {
@@ -70,12 +74,12 @@ func (r *github) Labels() []string {
 		log.Printf("Trying to get repository labels using the following URL: %s\n", url)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			log.Fatalf("Cannot create a new GET request to retrieve labels, because of '%v'", err)
+			return nil, fmt.Errorf("cannot create a new GET request to retrieve labels: %w", err)
 		}
 		req.Header.Set("Authorization", "Bearer "+r.token)
 		resp, err := r.client.Do(req)
 		if err != nil {
-			log.Fatalf("Error fetching issue description: %v", err)
+			return nil, fmt.Errorf("error fetching issue description: %w", err)
 		}
 		defer func() {
 			if err := resp.Body.Close(); err != nil {
@@ -83,30 +87,30 @@ func (r *github) Labels() []string {
 			}
 		}()
 		if resp.StatusCode != http.StatusOK {
-			log.Fatalf("Skipping %s: Status %s\n", url, resp.Status)
+			return nil, fmt.Errorf("cannot retrieve labels using the following url: '%s'. response: '%s'", url, resp.Status)
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatalf("Error reading response body: %v", err)
+			return nil, fmt.Errorf("error reading response body: %w", err)
 		}
 		err = json.Unmarshal(body, &labels)
 		if err != nil {
-			log.Fatalf("Error unmarshaling issue JSON: %v", err)
+			return nil, fmt.Errorf("error unmarshaling issue json: %w", err)
 		}
 	} else {
-		log.Fatalf("Cannot determine where to get labels. Please set the target repository.")
+		return nil, fmt.Errorf("cannot determine where to get labels, please set the target repository")
 	}
 	var res []string
 	for _, label := range labels {
 		res = append(res, label.Name)
 	}
-	return res
+	return res, nil
 }
 
-func (r *github) Remotes() []string {
+func (r *github) Remotes() ([]string, error) {
 	lines, err := r.gs.Remotes()
 	if err != nil {
-		log.Fatalf("Cannot retrive git remotes: %v", err)
+		return nil, fmt.Errorf("cannot retrieve git remotes: %w", err)
 	}
 	re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/[^.]+)(?:\.git)?`)
 	unique := make(map[string]struct{})
@@ -121,41 +125,39 @@ func (r *github) Remotes() []string {
 		repos = append(repos, repo)
 	}
 	sort.Strings(repos)
-	return repos
+	return repos, nil
 }
 
 // Here we retireve an issue or a PR description by thier number.
 // GitHub uses the same URL structure for both issues and pull requests in the context of their API
 // because every pull request is an issue under the hood.
 // In other words, GET "/issues/:number" works for both issues and PRs.
-func (r *github) description(number string, target string) issue {
+func (r *github) description(number string, target string) (issue, error) {
 	url := fmt.Sprintf("%s/repos/%s/issues/%s", r.url, target, number)
 	log.Printf("Trying to get an issue description using the following URL: %s\n", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatalf("Error creating request: %v", err)
+		return issue{}, fmt.Errorf("cannot create a new GET request to retrieve issue description: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+r.token)
 	resp, err := r.client.Do(req)
 	if err != nil {
-		log.Fatalf("Error fetching issue description: %v", err)
+		return issue{}, fmt.Errorf("error fetching issue description: %w", err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("Error closing response body: %v", err)
-		}
-	}()
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Cannot retrieve issue using the following URL: '%s'. Response: '%s'", url, resp.Status)
+		return issue{}, fmt.Errorf("cannot retrieve issue using the following url: '%s'. response: '%s'", url, resp.Status)
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Error reading response body: %v", err)
+		return issue{}, fmt.Errorf("error reading response body: %w", err)
 	}
 	var task issue
 	err = json.Unmarshal(body, &task)
 	if err != nil {
-		log.Fatalf("Error unmarshaling issue JSON: %v", err)
+		return issue{}, fmt.Errorf("error unmarshaling issue json: %w", err)
 	}
-	return task
+	if err := resp.Body.Close(); err != nil {
+		return issue{}, fmt.Errorf("error closing response body: %w", err)
+	}
+	return task, nil
 }

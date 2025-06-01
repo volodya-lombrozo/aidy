@@ -10,8 +10,8 @@ func newIssueCmd(ctx *Context) *cobra.Command {
 		Aliases: []string{"i"},
 		Args:    cobra.ExactArgs(1),
 		Short:   "Generate a GitHub issue using an AI-generated title, body, and labels",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx.Assistant.Issue(args[0])
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return ctx.Assistant.Issue(args[0])
 		},
 	}
 }

@@ -91,20 +91,23 @@ func (r *real) Commit() error {
 	return r.Heal()
 }
 
-func (r *real) Issue(task string) {
+func (r *real) Issue(task string) error {
 	summary, _ := r.cache.Summary()
 	title, err := r.ai.IssueTitle(task, summary)
 	if err != nil {
-		log.Fatalf("Error generating title: %v", err)
+		return fmt.Errorf("error generating title: %v", err)
 	}
 	body, err := r.ai.IssueBody(task, summary)
 	if err != nil {
-		log.Fatalf("Error generating body: %v", err)
+		return fmt.Errorf("error generating body: %v", err)
 	}
-	labels := r.github.Labels()
+	labels, err := r.github.Labels()
+	if err != nil {
+		return fmt.Errorf("error retrieving labels: %v", err)
+	}
 	suitable, err := r.ai.IssueLabels(body, labels)
 	if err != nil {
-		log.Fatalf("Error generating labels: %v", err)
+		return fmt.Errorf("error generating suitable labels: %v", err)
 	}
 	remote := r.cache.Remote()
 	var repo string
@@ -120,10 +123,7 @@ func (r *real) Issue(task string) {
 		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQuotes(title), healQuotes(body))))
 	}
 	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
-	err = r.editor.Print(cmd)
-	if err != nil {
-		log.Fatalf("Error during making an issue: %v", err)
-	}
+	return r.editor.Print(cmd)
 }
 
 func escapeBackticks(input string) string {
@@ -220,25 +220,28 @@ func (r *real) print(msg string) {
 	}
 }
 
-func (r *real) PullRequest() {
+func (r *real) PullRequest() error {
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
-		log.Fatalf("Error getting branch name: %v", err)
+		return fmt.Errorf("error getting branch name: %v", err)
 	}
 	diff, err := r.git.Diff()
 	if err != nil {
-		log.Fatalf("Error getting git diff: %v", err)
+		return fmt.Errorf("error getting git diff: %v", err)
 	}
 	summary, _ := r.cache.Summary()
 	nissue := inumber(branch)
-	issue := r.github.Description(nissue)
+	issue, err := r.github.Description(nissue)
+	if err != nil {
+		return fmt.Errorf("error retrieving pull request description: %v", err)
+	}
 	title, err := r.ai.PrTitle(nissue, diff, issue, summary)
 	if err != nil {
-		log.Fatalf("Error generating title: %v", err)
+		return fmt.Errorf("error generating pull request title: %v", err)
 	}
 	body, err := r.ai.PrBody(nissue, diff, issue, summary)
 	if err != nil {
-		log.Fatalf("Error generating body: %v", err)
+		return fmt.Errorf("error generating pull request body: %v", err)
 	}
 	remote := r.cache.Remote()
 	var repo string
@@ -250,10 +253,7 @@ func (r *real) PullRequest() {
 	prtitle := healPRTitle(healQuotes(title), nissue)
 	prbody := healPRBody(healQuotes(body), nissue)
 	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo))
-	err = r.editor.Print(cmd)
-	if err != nil {
-		log.Fatalf("Error during making a pull-request: %v", err)
-	}
+	return r.editor.Print(cmd)
 }
 
 func inumber(branch string) string {
@@ -303,7 +303,10 @@ func (r *real) StartIssue(number string) error {
 	if found == "" {
 		return fmt.Errorf("error: invalid issue number '%s'", number)
 	}
-	descr := r.github.Description(found)
+	descr, err := r.github.Description(found)
+	if err != nil {
+		return fmt.Errorf("error retrieving issue description: %v", err)
+	}
 	raw, err := r.ai.SuggestBranch(descr)
 	if err != nil {
 		return fmt.Errorf("error generating branch name: %v", err)

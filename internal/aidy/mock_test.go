@@ -36,13 +36,15 @@ func TestMockAidy_Squash(t *testing.T) {
 
 func TestMockAidy_PullRequest(t *testing.T) {
 	aidy := NewMock()
-	aidy.PullRequest()
+	err := aidy.PullRequest()
+	require.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "PullRequest called")
 }
 
 func TestMockAidy_Issue(t *testing.T) {
 	aidy := NewMock()
-	aidy.Issue("test-task")
+	err := aidy.Issue("test-task")
+	assert.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "Issue called with task: test-task")
 }
 
@@ -68,7 +70,7 @@ func TestMockAidy_Clean(t *testing.T) {
 func TestMockAidy_Diff(t *testing.T) {
 	aidy := NewMock()
 	err := aidy.Diff()
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "Diff called")
 }
 

@@ -252,8 +252,9 @@ func TestReal_PullRequest(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: mockGit, ai: mockAI, github: mockGithub, editor: out, cache: cache.NewMockAidyCache()}
 
-	raidy.PullRequest()
+	err := raidy.PullRequest()
 
+	require.NoError(t, err, "Expected no error when creating pull request")
 	output := out.Last()
 	expected := "\ngh pr create --title \"Mock Title for 41\" --body \"Mock Body for 41\" --repo mock/remote"
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
@@ -315,8 +316,9 @@ func TestReal_Issue(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache()}
 
-	raidy.Issue(userInput)
+	err := raidy.Issue(userInput)
 
+	require.NoError(t, err, "expected no error when creating issue")
 	output := out.Last()
 	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo mock/remote"
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
