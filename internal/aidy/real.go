@@ -52,6 +52,7 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	conf := newconf(aider, aidy.git)
 	aidy.ai = brain(ailess, summary, conf)
 	aidy.github = newgithub(aidy.git, conf, aidy.cache)
+	aidy.config = conf
 	aidy.initSummary(summary)
 	return &aidy
 }
