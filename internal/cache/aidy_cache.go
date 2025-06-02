@@ -59,22 +59,30 @@ func (a *aidyCache) WithSummary(summary string, hash string) {
 }
 
 type mockAidyCache struct {
+	inner map[string]string
 }
 
 func NewMockAidyCache() AidyCache {
-	return &mockAidyCache{}
+	memory := make(map[string]string)
+	memory["target"] = "mock/remote"
+	memory["summary"] = "mock summary"
+	memory["summary-hash"] = "mock hash"
+	return &mockAidyCache{inner: memory}
 }
 
 func (a *mockAidyCache) Remote() string {
-	return "mock/remote"
+	return a.inner["target"]
 }
 
 func (a *mockAidyCache) WithRemote(remote string) {
+	a.inner["target"] = remote
 }
 
 func (a *mockAidyCache) Summary() (string, string) {
-	return "mock summary", "mock hash"
+	return a.inner["summary"], a.inner["summary-hash"]
 }
 
 func (a *mockAidyCache) WithSummary(summary, hash string) {
+	a.inner["summary"] = summary
+	a.inner["summary-hash"] = hash
 }

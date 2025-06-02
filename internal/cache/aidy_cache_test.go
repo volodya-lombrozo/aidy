@@ -66,9 +66,9 @@ func TestMockAidyCache_Remote(t *testing.T) {
 
 func TestMockAidyCache_WithRemote(t *testing.T) {
 	mc := NewMockAidyCache()
-	mc.WithRemote("new/remote") // Should not change anything
+	mc.WithRemote("new/remote")
 	remote := mc.Remote()
-	assert.Equal(t, "mock/remote", remote, "expected remote to be 'mock/remote'")
+	assert.Equal(t, "new/remote", remote, "expected remote to be 'mock/remote'")
 }
 
 func TestMockAidyCache_Summary(t *testing.T) {
@@ -82,8 +82,8 @@ func TestMockAidyCache_WithSummary(t *testing.T) {
 	mc := NewMockAidyCache()
 	mc.WithSummary("new summary", "new hash") // Should not change anything
 	summary, hash := mc.Summary()
-	assert.Equal(t, "mock summary", summary, "expected summary to be 'mock summary'")
-	assert.Equal(t, "mock hash", hash, "expected hash to be 'mock hash'")
+	assert.Equal(t, "new summary", summary, "expected summary to be 'new summary'")
+	assert.Equal(t, "new hash", hash, "expected hash to be 'new hash'")
 }
 
 func TestAidyCache_Remote(t *testing.T) {

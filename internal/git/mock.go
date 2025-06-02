@@ -116,7 +116,7 @@ func (m *mock) CommitMessage() (string, error) {
 }
 
 func (r *mock) Remotes() ([]string, error) {
-	return []string{"https://github.com/volodya-lombrozo/aidy.git", "https://github.com/volodya-lombrozo/forked-aidy.git"}, nil
+	return []string{"https://github.com/volodya-lombrozo/aidy.git", "https://github.com/volodya-lombrozo/forked-aidy.git"}, r.err
 }
 
 func (r *mock) Installed() (bool, error) {

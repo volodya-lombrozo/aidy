@@ -36,12 +36,12 @@ type label struct {
 	Description string `json:"description"`
 }
 
-func NewGithub(baseURL string, gs git.Git, authToken string, ch cache.AidyCache) *github {
+func NewGithub(url string, gs git.Git, token string, ch cache.AidyCache) *github {
 	return &github{
 		client: &http.Client{},
-		url:    baseURL,
+		url:    url,
 		gs:     gs,
-		token:  authToken,
+		token:  token,
 		ch:     ch,
 	}
 }
@@ -79,7 +79,7 @@ func (r *github) Labels() ([]string, error) {
 		req.Header.Set("Authorization", "Bearer "+r.token)
 		resp, err := r.client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("error fetching issue description: %w", err)
+			return nil, fmt.Errorf("error fetching issue labels: %w", err)
 		}
 		defer func() {
 			if err := resp.Body.Close(); err != nil {
