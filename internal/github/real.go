@@ -48,7 +48,7 @@ func NewGithub(url string, gs git.Git, token string, ch cache.AidyCache) *github
 
 func (r *github) Description(number string) (string, error) {
 	if _, err := strconv.Atoi(number); err != nil {
-		return fmt.Sprintf("Invalid issue number: '%s'", number), nil
+		return fmt.Sprintf("invalid issue number: '%s'", number), nil
 	}
 	var task issue
 	target := r.ch.Remote()

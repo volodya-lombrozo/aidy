@@ -40,7 +40,7 @@ func TestRealGithub_Description_NotNumber(t *testing.T) {
 	description, err := gh.Description(issueNumber)
 
 	require.NoError(t, err, "Description should not return an error for non-numeric issue number")
-	assert.Equal(t, "Invalid issue number: 'not-a-number'", description)
+	assert.Equal(t, "invalid issue number: 'not-a-number'", description)
 }
 
 func TestRealGithub_Labels(t *testing.T) {
