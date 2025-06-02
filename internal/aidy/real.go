@@ -54,7 +54,56 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	aidy.github = newgithub(aidy.git, conf, aidy.cache)
 	aidy.config = conf
 	aidy.initSummary(summary)
+	aidy.checkTargetRepo(shell)
 	return &aidy
+}
+
+func (r real) checkTargetRepo(shell executor.Executor) {
+	target := r.cache.Remote()
+	if target != "" {
+		err := r.printer.Print(fmt.Sprintf("target repository is set to: %s\n", target))
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		fmt.Println("Can't find target")
+		out, seterr := shell.RunCommand("git", "remote", "-v")
+		if seterr != nil {
+			panic(seterr)
+		}
+		lines := strings.Split(out, "\n")
+		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/[^.]+)(?:\.git)?`)
+		unique := make(map[string]struct{})
+		for _, line := range lines {
+			matches := re.FindStringSubmatch(line)
+			if len(matches) == 2 {
+				unique[string(matches[1])] = struct{}{}
+			}
+		}
+		var repos []string
+		for repo := range unique {
+			repos = append(repos, repo)
+		}
+		sort.Strings(repos)
+		if len(repos) == 1 {
+			r.cache.WithRemote(repos[0])
+		} else if len(repos) < 1 {
+			panic("i can't find remore repositories :(")
+		} else {
+			fmt.Println("where are you going to send prs and issues: ")
+			for i, repo := range repos {
+				fmt.Printf("(%d): %s\n", i+1, repo)
+			}
+			var choice int
+			fmt.Print("enter the number of the repository to use: ")
+			_, err := fmt.Scan(&choice)
+			if err != nil || choice < 1 || choice > len(repos) {
+				panic("invalid choice")
+			}
+			repo := repos[choice-1]
+			r.cache.WithRemote(repo)
+		}
+	}
 }
 
 func (r *real) Diff() error {
