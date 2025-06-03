@@ -161,7 +161,7 @@ func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-func TestRealGithub_Labels_Non200Response(t *testing.T) {
+func TestRealGithub_Labels_500Response(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
@@ -175,6 +175,19 @@ func TestRealGithub_Labels_Non200Response(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot retrieve labels using the following url")
 	assert.Contains(t, err.Error(), "response: '500 Internal Server Error'")
 	assert.Nil(t, labels, "Labels should be nil on error")
+}
+func TestRealGithub_Labels_Non404Response(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+	gh := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
+	gh.ch.WithRemote("valid-repo")
+
+	labels, err := gh.Labels()
+
+	require.NoError(t, err, "Labels should not return an error for 404 response")
+	assert.Empty(t, labels, "Labels should be empty on 404 response")
 }
 
 func TestRealGithub_Labels_UnmarshalError(t *testing.T) {
