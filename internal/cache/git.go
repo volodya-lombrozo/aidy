@@ -41,7 +41,7 @@ func (c *gitCache) Set(key, value string) error {
 }
 
 func ensureIgnored(gs git.Git) error {
-	const entry = ".aidy"
+	const entry = ".aidy/"
 	root, _ := gs.Root()
 	gitignore := filepath.Join(root, ".gitignore")
 	file, err := os.Open(gitignore)
