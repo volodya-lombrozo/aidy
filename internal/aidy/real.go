@@ -45,7 +45,7 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	var err error
 	aidy.git, err = git.NewGit(shell)
 	if err != nil {
-		log.Fatalf("Failed to initialize git: %v", err)
+		log.Fatalf("failed to initialize git: %v", err)
 	}
 	aidy.checkGitInstalled()
 	aidy.cache = newcache(aidy.git)
@@ -54,25 +54,25 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	aidy.github = newgithub(aidy.git, conf, aidy.cache)
 	aidy.config = conf
 	aidy.initSummary(summary)
-	aidy.checkTargetRepo(shell)
+	if err = aidy.SetTarget(); err != nil {
+		log.Fatalf("failed to set target repository: %v", err)
+	}
 	return &aidy
 }
 
-func (r real) checkTargetRepo(shell executor.Executor) {
+func (r real) SetTarget() error {
 	target := r.cache.Remote()
 	if target != "" {
-		err := r.printer.Print(fmt.Sprintf("target repository is set to: %s\n", target))
-		if err != nil {
-			panic(err)
-		}
+		r.print(fmt.Sprintf("target repository is set to: %s\n", target))
 	} else {
-		fmt.Println("Can't find target")
-		out, seterr := shell.RunCommand("git", "remote", "-v")
-		if seterr != nil {
-			panic(seterr)
+		r.print("can't find target")
+		out, err := r.git.Run("remote", "-v")
+		if err != nil {
+			return fmt.Errorf("error running git remote command: %v", err)
 		}
 		lines := strings.Split(out, "\n")
-		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/[^.]+)(?:\.git)?`)
+		log.Printf("remote lines: %d\n", len(lines))
+		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/.+?)(?:\.git)?$`)
 		unique := make(map[string]struct{})
 		for _, line := range lines {
 			matches := re.FindStringSubmatch(line)
@@ -88,22 +88,23 @@ func (r real) checkTargetRepo(shell executor.Executor) {
 		if len(repos) == 1 {
 			r.cache.WithRemote(repos[0])
 		} else if len(repos) < 1 {
-			panic("i can't find remore repositories :(")
+			return fmt.Errorf("no remote repositories found, please set one")
 		} else {
-			fmt.Println("where are you going to send prs and issues: ")
+			r.print("where are you going to send prs and issues: ")
 			for i, repo := range repos {
-				fmt.Printf("(%d): %s\n", i+1, repo)
+				r.print(fmt.Sprintf("(%d): %s\n", i+1, repo))
 			}
 			var choice int
-			fmt.Print("enter the number of the repository to use: ")
+			r.print("enter the number of the repository to use: ")
 			_, err := fmt.Scan(&choice)
 			if err != nil || choice < 1 || choice > len(repos) {
-				panic("invalid choice")
+				return fmt.Errorf("invalid choice: %v", err)
 			}
 			repo := repos[choice-1]
 			r.cache.WithRemote(repo)
 		}
 	}
+	return nil
 }
 
 func (r *real) Diff() error {
