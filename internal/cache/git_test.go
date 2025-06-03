@@ -68,7 +68,7 @@ func TestGitMockCache_CreatesGitignoreWithEntry(t *testing.T) {
 	assert.NoError(t, err)
 	content, err := os.ReadFile(".gitignore")
 	assert.NoError(t, err)
-	assert.Contains(t, string(content), ".aidy")
+	assert.Contains(t, string(content), ".aidy/")
 }
 
 func TestGitMockCache_AppendsIfMissing(t *testing.T) {
@@ -87,7 +87,7 @@ func TestGitMockCache_AppendsIfMissing(t *testing.T) {
 	content, err := os.ReadFile(".gitignore")
 	assert.NoError(t, err)
 	assert.Contains(t, string(content), "something-else")
-	assert.Contains(t, string(content), ".aidy")
+	assert.Contains(t, string(content), ".aidy/")
 }
 
 func TestGitMockCache_DoesNothingIfAlreadyPresent(t *testing.T) {
@@ -97,7 +97,7 @@ func TestGitMockCache_DoesNothingIfAlreadyPresent(t *testing.T) {
 	require.NoError(t, direrr, "Failed to get current directory")
 	defer func() { _ = os.Chdir(original) }()
 	_ = os.Chdir(tmp)
-	_ = os.WriteFile(".gitignore", []byte(".aidy\n"), 0644)
+	_ = os.WriteFile(".gitignore", []byte(".aidy/\n"), 0644)
 
 	ch := NewGitMockCache(tmp)
 	err := ch.Set("set", "mock value")
@@ -105,5 +105,5 @@ func TestGitMockCache_DoesNothingIfAlreadyPresent(t *testing.T) {
 	assert.NoError(t, err)
 	content, err := os.ReadFile(".gitignore")
 	assert.NoError(t, err)
-	assert.Equal(t, ".aidy\n", string(content))
+	assert.Equal(t, ".aidy/\n", string(content))
 }
