@@ -87,6 +87,9 @@ func (r *github) Labels() ([]string, error) {
 			}
 		}()
 		if resp.StatusCode != http.StatusOK {
+			if resp.StatusCode == http.StatusNotFound {
+				return []string{}, nil
+			}
 			return nil, fmt.Errorf("cannot retrieve labels using the following url: '%s'. response: '%s'", url, resp.Status)
 		}
 		body, err := io.ReadAll(resp.Body)
