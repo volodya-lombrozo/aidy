@@ -19,6 +19,50 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
 
+func TestReal_SetTarget_IfOnlyOne(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
+
+	err := aidy.SetTarget()
+
+	require.NoError(t, err, "Expected no error when setting target with only one remote")
+	actual := cache.Remote()
+	assert.Equal(t, "mock/remote", actual, "Expected remote to be set to 'mock/remote'")
+}
+
+func TestReal_SetTarget_GitError(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	cache.WithRemote("")
+	aidy := &real{
+		git:     git.NewMockWithError(fmt.Errorf("mock error")),
+		config:  config.NewMock(),
+		cache:   cache,
+		printer: output.NewMock(),
+	}
+
+	err := aidy.SetTarget()
+
+	assert.Error(t, err, "Expected error when setting target with git error")
+}
+
+func TestReal_SetTarget_PreservesDots(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/cqfn/kaicode.github.io.git"
+	cache.WithRemote("")
+	aidy := &real{
+		git:     git.NewMockWithShell(shell),
+		config:  config.NewMock(),
+		cache:   cache,
+		printer: output.NewMock(),
+	}
+
+	err := aidy.SetTarget()
+
+	require.NoError(t, err, "Expected no error when setting target with dots in remote")
+	assert.Equal(t, "cqfn/kaicode.github.io", cache.Remote(), "expected dots in remote to be preserved")
+}
+
 func TestReal_PrintsDiff_Successfully(t *testing.T) {
 	printer := output.NewMock()
 	git := git.NewMock()
