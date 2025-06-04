@@ -236,32 +236,39 @@ func healPRTitle(text string, issue string) string {
 }
 
 func (r *real) PrintConfig() error {
-	r.print("Aidy Configuration:\n")
+	r.print("aidy configuration:")
 	openai, err := r.config.OpenAiKey()
 	if err != nil {
-		r.print(fmt.Sprintf("Error retrieving OpenAI API key: %v\n", err))
+		r.print(fmt.Sprintf("error retrieving openai api key: %v", err))
 	} else {
-		r.print(fmt.Sprintf("OpenAI API Key: %s\n", openai))
+		r.print(fmt.Sprintf("openai api key: %s", mask(openai)))
 	}
 	deepseek, err := r.config.DeepseekKey()
 	if err != nil {
-		r.print(fmt.Sprintf("Error retrieving Deepseek API key: %v\n", err))
+		r.print(fmt.Sprintf("error retrieving deepseek api key: %v", err))
 	} else {
-		r.print(fmt.Sprintf("Deepseek API Key: %s\n", deepseek))
+		r.print(fmt.Sprintf("deepseek api key: %s", mask(deepseek)))
 	}
 	gh, err := r.config.GithubKey()
 	if err != nil {
-		r.print(fmt.Sprintf("Error retrieving GitHub API key: %v\n", err))
+		r.print(fmt.Sprintf("error retrieving github api key: %v", err))
 	} else {
-		r.print(fmt.Sprintf("GitHub API Key: %s\n", gh))
+		r.print(fmt.Sprintf("github api key: %s", mask(gh)))
 	}
 	model, err := r.config.Model()
 	if err != nil {
-		r.print(fmt.Sprintf("Error retrieving model: %v\n", err))
+		r.print(fmt.Sprintf("error retrieving model: %v\n", err))
 	} else {
-		r.print(fmt.Sprintf("Model: %s\n", model))
+		r.print(fmt.Sprintf("model: %s\n", model))
 	}
 	return err
+}
+
+func mask(key string) string {
+	if len(key) <= 4 {
+		return strings.Repeat("*", len(key))
+	}
+	return strings.Repeat("*", len(key)-4) + key[len(key)-4:]
 }
 
 func (r *real) print(msg string) {

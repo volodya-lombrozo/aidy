@@ -13,7 +13,6 @@ func TestMockGithub_IssueDescription(t *testing.T) {
 	number := "123"
 	expected := fmt.Sprintf("mock description for issue '#%s'", number)
 
-
 	description, err := mock.Description(number)
 
 	require.NoError(t, err, "mock object should not return errors")
