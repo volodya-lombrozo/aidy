@@ -284,7 +284,8 @@ func (r *real) PullRequest() error {
 	nissue := inumber(branch)
 	issue, err := r.github.Description(nissue)
 	if err != nil {
-		return fmt.Errorf("error retrieving pull request description: %v", err)
+		issue = "not-found"
+		log.Printf("warning: issue description not found for issue #%s, using default value", nissue)
 	}
 	title, err := r.ai.PrTitle(nissue, diff, issue, summary)
 	if err != nil {

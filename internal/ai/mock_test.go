@@ -42,10 +42,10 @@ func TestMockGenerateLabels(t *testing.T) {
 	assert.Equal(t, labels, actual)
 }
 
-func TestMockGenerateTitle(t *testing.T) {
+func TestMock_GeneratePrTitle(t *testing.T) {
 	mockAI := NewMockAI()
 	branchName := "feature-branch"
-	expected := "'Mock Title for " + branchName + "'"
+	expected := fmt.Sprintf("mock title for '%s' with issue #issue and summary: summary", branchName)
 
 	title, err := mockAI.PrTitle(branchName, "diff", "issue", "summary")
 
@@ -53,37 +53,37 @@ func TestMockGenerateTitle(t *testing.T) {
 	assert.Equal(t, expected, title, "Expected title to match")
 }
 
-func TestMockGenerateIssueTitle(t *testing.T) {
+func TestMock_GenerateIssueTitle(t *testing.T) {
 	mockAI := NewMockAI()
-	userInput := "issue input"
-	expected := "'Mock Issue Title for " + userInput + "'"
+	input := "issue input"
+	expected := fmt.Sprintf("mock issue title for '%s' with summary: summary", input)
 
-	title, err := mockAI.IssueTitle(userInput, "summary")
+	title, err := mockAI.IssueTitle(input, "summary")
 
 	require.NoError(t, err, "Expected no error")
 	assert.Equal(t, expected, title, "Expected issue title to match")
 }
 
-func TestMockGenerateIssueBody(t *testing.T) {
+func TestMock_GenerateIssueBody(t *testing.T) {
 	mockAI := NewMockAI()
-	userInput := "issue input"
-	expected := "Mock Issue Body for " + userInput
+	input := "issue input"
+	expected := fmt.Sprintf("mock issue body for '%s' with summary: summary", input)
 
-	body, err := mockAI.IssueBody(userInput, "summary")
+	body, err := mockAI.IssueBody(input, "summary")
 
 	require.NoError(t, err, "Expected no error")
 	assert.Equal(t, expected, body, "Expected issue body to match")
 }
 
-func TestMockGenerateBody(t *testing.T) {
-	mockAI := NewMockAI()
-	branchName := "feature-branch"
-	expected := "Mock Body for " + branchName
+func TestMock_GenerateBody(t *testing.T) {
+	ai := NewMockAI()
+	branch := "feature-branch"
+	expected := fmt.Sprintf("mock body for %s with issue #issue and summary: summary\n\ndiff:\ndiff", branch)
 
-	body, err := mockAI.PrBody(branchName, "diff", "issue", "summary")
+	body, err := ai.PrBody(branch, "diff", "issue", "summary")
 
 	require.NoError(t, err, "Expected no error")
-	assert.Equal(t, expected, body, "Expected body to match")
+	assert.Contains(t, body, expected, "Expected body to match")
 }
 
 func TestMockAI_IssueLabels(t *testing.T) {

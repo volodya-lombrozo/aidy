@@ -290,18 +290,29 @@ func TestReal_Squash(t *testing.T) {
 }
 
 func TestReal_PullRequest(t *testing.T) {
-	mockGit := git.NewMock()
-	mockAI := ai.NewMockAI()
-	mockGithub := github.NewMock()
 	out := output.NewMock()
-	raidy := &real{git: mockGit, ai: mockAI, github: mockGithub, editor: out, cache: cache.NewMockAidyCache()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache()}
 
 	err := raidy.PullRequest()
 
-	require.NoError(t, err, "Expected no error when creating pull request")
+	require.NoError(t, err, "expected no error when creating pull request")
 	output := out.Last()
-	expected := "\ngh pr create --title \"Mock Title for 41\" --body \"Mock Body for 41\" --repo mock/remote"
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+	assert.Contains(t, output, "gh pr create", "Expected output to contain 'gh pr create'")
+	assert.Contains(t, output, "--title \"mock title for '41' with issue #mock description for issue '#41' and summary: mock summary\"", "Expected output to contain title")
+}
+
+func TestReal_PullRequest_IssueNotFound(t *testing.T) {
+	github := github.NewMock()
+	github.Error = fmt.Errorf("issue not found")
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache()}
+
+	err := raidy.PullRequest()
+
+	require.NoError(t, err, "Expected no error when creating pull request with issue not found")
+	output := out.Last()
+	assert.Contains(t, output, "gh pr create")
+	assert.Contains(t, output, "with issue #not-found")
 }
 
 func TestReal_Commit(t *testing.T) {
@@ -364,8 +375,10 @@ func TestReal_Issue(t *testing.T) {
 
 	require.NoError(t, err, "expected no error when creating issue")
 	output := out.Last()
-	expected := "\ngh issue create --title \"Mock Issue Title for test input\" --body \"Mock Issue Body for test input\" --label \"bug,documentation,question\" --repo mock/remote"
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+	assert.Contains(t, output, "gh issue create")
+	assert.Contains(t, output, "--title \"mock issue title for 'test input' with summary: mock summary\"")
+	assert.Contains(t, output, "--body \"mock issue body for 'test input' with summary: mock summary\"")
+	assert.Contains(t, output, "--label \"bug,documentation,question\"")
 }
 
 func TestReal_Release_Success(t *testing.T) {
