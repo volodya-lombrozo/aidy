@@ -176,6 +176,7 @@ func TestRealGithub_Labels_500Response(t *testing.T) {
 	assert.Contains(t, err.Error(), "response: '500 Internal Server Error'")
 	assert.Nil(t, labels, "Labels should be nil on error")
 }
+
 func TestRealGithub_Labels_Non404Response(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

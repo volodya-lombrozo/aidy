@@ -25,19 +25,19 @@ func (m *MockAI) ReleaseNotes(changes string) (string, error) {
 }
 
 func (m *MockAI) PrTitle(branchName string, diff string, issue string, summary string) (string, error) {
-	return "'Mock Title for " + branchName + "'", nil
+	return fmt.Sprintf("mock title for '%s' with issue #%s and summary: %s", branchName, issue, summary), nil
 }
 
-func (m *MockAI) PrBody(branchName string, diff string, issue string, summary string) (string, error) {
-	return "Mock Body for " + branchName, nil
+func (m *MockAI) PrBody(branch string, diff string, issue string, summary string) (string, error) {
+	return fmt.Sprintf("mock body for %s with issue #%s and summary: %s\n\ndiff:\n%s", branch, issue, summary, diff), nil
 }
 
-func (m *MockAI) IssueTitle(userInput string, summary string) (string, error) {
-	return "'Mock Issue Title for " + userInput + "'", nil
+func (m *MockAI) IssueTitle(input string, summary string) (string, error) {
+	return fmt.Sprintf("mock issue title for '%s' with summary: %s", input, summary), nil
 }
 
-func (m *MockAI) IssueBody(userInput string, summary string) (string, error) {
-	return "Mock Issue Body for " + userInput, nil
+func (m *MockAI) IssueBody(input string, summary string) (string, error) {
+	return fmt.Sprintf("mock issue body for '%s' with summary: %s", input, summary), nil
 }
 
 func (m *MockAI) CommitMessage(issue string, diff string) (string, error) {

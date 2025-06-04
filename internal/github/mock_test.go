@@ -1,6 +1,7 @@
 package github
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +11,8 @@ import (
 func TestMockGithub_IssueDescription(t *testing.T) {
 	mock := NewMock()
 	number := "123"
-	expected := "Mock description for issue #" + number
+	expected := fmt.Sprintf("mock description for issue '#%s'", number)
+
 
 	description, err := mock.Description(number)
 
