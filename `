@@ -119,24 +119,13 @@ func (m *mock) Remotes() ([]string, error) {
 	if m.shell == nil {
 		return []string{"https://github.com/volodya-lombrozo/aidy.git", "https://github.com/volodya-lombrozo/forked-aidy.git"}, m.err
 	} else {
-		full, serr := m.shell.RunCommand("git remote -v")
-		if serr == nil {
-			serr = m.err
-		}
-		return strings.Split(full, "\n"), serr
+		full, err  := m.shell.RunCommand("git remote -v")
+		return strings.Split(full, "\n"), err
 	}
-}
+} 
 
 func (r *mock) Installed() (bool, error) {
-	if r.shell == nil {
-		return true, r.err
-	} else {
-		out, err := r.shell.RunCommand("git --version")
-		if err == nil {
-			err = r.err
-		}
-		return strings.Contains(out, "git version"), err
-	}
+	return true, nil
 }
 
 func (r *mock) Root() (string, error) {

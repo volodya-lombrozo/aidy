@@ -17,7 +17,7 @@ import (
 type github struct {
 	client *http.Client
 	url    string
-	gs     git.Git
+	git    git.Git
 	token  string
 	ch     cache.AidyCache
 }
@@ -40,7 +40,7 @@ func NewGithub(url string, gs git.Git, token string, ch cache.AidyCache) *github
 	return &github{
 		client: &http.Client{},
 		url:    url,
-		gs:     gs,
+		git:    gs,
 		token:  token,
 		ch:     ch,
 	}
@@ -111,7 +111,7 @@ func (r *github) Labels() ([]string, error) {
 }
 
 func (r *github) Remotes() ([]string, error) {
-	lines, err := r.gs.Remotes()
+	lines, err := r.git.Remotes()
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve git remotes: %w", err)
 	}

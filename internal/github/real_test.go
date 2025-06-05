@@ -84,7 +84,7 @@ func TestRealGithub_Labels(t *testing.T) {
 }
 
 func TestRealGithub_Remotes(t *testing.T) {
-	gh := NewGithub("", git.NewMock(), "", cache.NewMockAidyCache())
+	gh := NewGithub("", git.NewMockWithShell(nil), "", cache.NewMockAidyCache())
 
 	actual, err := gh.Remotes()
 
