@@ -58,7 +58,9 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	aidy.ai = brain(ailess, summary, conf)
 	aidy.github = newgithub(aidy.git, conf, aidy.cache)
 	aidy.config = conf
-	aidy.initSummary(summary)
+	if err = aidy.InitSummary(summary, "README.md"); err != nil {
+		log.Printf("warning: failed to initialize project summary: %v", err)
+	}
 	if err = aidy.SetTarget(); err != nil {
 		log.Fatalf("failed to set target repository: %v", err)
 	}
@@ -528,13 +530,12 @@ func (r *real) CheckGitInstalled() error {
 	return nil
 }
 
-func (r *real) initSummary(required bool) {
+func (r *real) InitSummary(required bool, file string) error {
 	if required {
 		log.Println("Undertstanding the project summary")
-		content, err := os.ReadFile("README.md")
+		content, err := os.ReadFile(file)
 		if err != nil {
-			log.Printf("Can't retrieve content of README.md, because of '%v'", err)
-			return
+			return fmt.Errorf("can't read README.md file, because of '%v'", err)
 		}
 		readme := string(content)
 		hash := fnv.New64a()
@@ -544,15 +545,15 @@ func (r *real) initSummary(required bool) {
 		if shash != chash {
 			summary, err := r.ai.Summary(readme)
 			if err != nil {
-				log.Printf("Can't generate summary for README.md, because of '%v'", err)
-				return
+				return fmt.Errorf("error generating summary for README.md: %v", err)
 			}
 			r.cache.WithSummary(summary, shash)
-			log.Printf("Project '%s' summary was successfully saved\n", shash)
+			r.print(fmt.Sprintf("project summary was successfully saved with hash '%s'\n", shash))
 		} else {
-			log.Printf("No need to update the project summary '%s'\n", shash)
+			r.print(fmt.Sprintf("project summary is already saved with hash '%s'\n", shash))
 		}
 	}
+	return nil
 }
 
 func newgithub(git git.Git, conf config.Config, cache cache.AidyCache) github.Github {
