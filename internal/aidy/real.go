@@ -29,6 +29,7 @@ type real struct {
 	config  config.Config
 	cache   cache.AidyCache
 	printer output.Output
+	in      *os.File
 }
 
 // Create a real aidy instance
@@ -39,6 +40,7 @@ type real struct {
 // - ailess: whether to use AI or not
 func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	var aidy real
+	aidy.in = os.Stdin
 	shell := executor.NewReal()
 	aidy.editor = output.NewEditor(shell)
 	aidy.printer = output.NewPrinter()
@@ -47,7 +49,10 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	if err != nil {
 		log.Fatalf("failed to initialize git: %v", err)
 	}
-	aidy.checkGitInstalled()
+	err = aidy.CheckGitInstalled()
+	if err != nil {
+		log.Fatalf("failed to check git installation: %v", err)
+	}
 	aidy.cache = newcache(aidy.git)
 	conf := newconf(aider, aidy.git)
 	aidy.ai = brain(ailess, summary, conf)
@@ -71,7 +76,7 @@ func (r real) SetTarget() error {
 			return fmt.Errorf("error running git remote command: %v", err)
 		}
 		lines := strings.Split(out, "\n")
-		log.Printf("remote lines: %d\n", len(lines))
+		r.print(fmt.Sprintf("found %s remote repositories:\n", out))
 		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/.+?)(?:\.git)?$`)
 		unique := make(map[string]struct{})
 		for _, line := range lines {
@@ -86,6 +91,7 @@ func (r real) SetTarget() error {
 		}
 		sort.Strings(repos)
 		if len(repos) == 1 {
+			r.print(fmt.Sprintf("found one remote repository: %s\n", repos[0]))
 			r.cache.WithRemote(repos[0])
 		} else if len(repos) < 1 {
 			return fmt.Errorf("no remote repositories found, please set one")
@@ -96,7 +102,7 @@ func (r real) SetTarget() error {
 			}
 			var choice int
 			r.print("enter the number of the repository to use: ")
-			_, err := fmt.Scan(&choice)
+			_, err := fmt.Fscan(r.in, &choice)
 			if err != nil || choice < 1 || choice > len(repos) {
 				return fmt.Errorf("invalid choice: %v", err)
 			}
@@ -511,14 +517,15 @@ func (r *real) Heal() error {
 	return err
 }
 
-func (r *real) checkGitInstalled() {
+func (r *real) CheckGitInstalled() error {
 	installed, err := r.git.Installed()
 	if err != nil {
-		log.Fatalf("Can't understand whether git is installed or not, because of '%v'", err)
+		return fmt.Errorf("can't determine whether git is installed or not, because of '%v'", err)
 	}
 	if !installed {
-		log.Fatal("git is not installed on the system")
+		return fmt.Errorf("git is not installed on the system")
 	}
+	return nil
 }
 
 func (r *real) initSummary(required bool) {

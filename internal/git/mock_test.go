@@ -175,8 +175,8 @@ func TestMock_CurrentDiff(t *testing.T) {
 	assert.Equal(t, "current-mock-diff", output)
 }
 
-func TestMock_Remotes(t *testing.T) {
-	git := NewMock()
+func TestMock_Remotes_WithoutShell(t *testing.T) {
+	git := NewMockWithShell(nil)
 
 	output, err := git.Remotes()
 
@@ -187,8 +187,21 @@ func TestMock_Remotes(t *testing.T) {
 	assert.Equal(t, second, output[1])
 }
 
+func TestMock_Remotes_WithShell(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/vl/aidy.git"
+	git := NewMockWithShell(shell)
+
+	output, err := git.Remotes()
+
+	require.NoError(t, err)
+	assert.Equal(t, "https://github.com/vl/aidy.git", output[0])
+}
+
 func TestMock_Installed(t *testing.T) {
-	git := NewMock()
+	shell := executor.NewMock()
+	shell.Output = "git version 2.34.1"
+	git := NewMockWithShell(shell)
 
 	installed, err := git.Installed()
 

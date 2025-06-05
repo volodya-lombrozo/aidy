@@ -19,6 +19,36 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
 
+func TestReal_CheckGitInstalled_Successfully(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "git version 2.34.1"
+	aidy := &real{git: git.NewMockWithShell(shell), config: config.NewMock(), cache: cache.NewMockAidyCache(), printer: output.NewMock()}
+
+	err := aidy.CheckGitInstalled()
+
+	require.NoError(t, err, "Expected no error when git is installed")
+}
+
+func TestReal_CheckGitInstalled_NotInstalled(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "git is not installed on the system"
+	aidy := &real{git: git.NewMockWithShell(shell), config: config.NewMock(), cache: cache.NewMockAidyCache(), printer: output.NewMock()}
+
+	err := aidy.CheckGitInstalled()
+
+	assert.Error(t, err)
+	assert.Equal(t, "git is not installed on the system", err.Error(), "Expected error message to match")
+}
+
+func TestReal_CheckGitInstalled_Error(t *testing.T) {
+	aidy := &real{git: git.NewMockWithError(fmt.Errorf("git not found")), config: config.NewMock(), cache: cache.NewMockAidyCache(), printer: output.NewMock()}
+
+	err := aidy.CheckGitInstalled()
+
+	require.Error(t, err, "Expected error when git is not installed")
+	assert.Equal(t, "can't determine whether git is installed or not, because of 'git not found'", err.Error(), "Expected error message to match")
+}
+
 func TestReal_SetTarget_IfOnlyOne(t *testing.T) {
 	cache := cache.NewMockAidyCache()
 	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
@@ -28,6 +58,57 @@ func TestReal_SetTarget_IfOnlyOne(t *testing.T) {
 	require.NoError(t, err, "Expected no error when setting target with only one remote")
 	actual := cache.Remote()
 	assert.Equal(t, "mock/remote", actual, "Expected remote to be set to 'mock/remote'")
+}
+
+func TestReal_SetTarget_NoRepos(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	cache.WithRemote("")
+	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
+
+	err := aidy.SetTarget()
+
+	require.Error(t, err, "Expected error when no remotes are available")
+	assert.Equal(t, "no remote repositories found, please set one", err.Error(), "Expected error message to match")
+}
+
+func TestReal_SetTarget_MultipleRemotes(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	cache.WithRemote("")
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/cqfn/kaicode.github.io.git\nhttps://github.com/volodya-lombrozo/aidy.git\n"
+	git := git.NewMockWithShell(shell)
+	r, w, err := os.Pipe()
+	require.NoError(t, err, "Failed to create pipe for input")
+	_, err = w.WriteString("1")
+	require.NoError(t, err, "Failed to write to pipe")
+	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	err = w.Close()
+	require.NoError(t, err, "Failed to close pipe for input")
+
+	err = aidy.SetTarget()
+
+	require.NoError(t, err, "Expected no error when setting target with multiple remotes")
+	assert.Equal(t, "cqfn/kaicode.github.io", cache.Remote(), "Expected remote to be set to 'cqfn/kaicode.github.io'")
+}
+
+func TestReal_SetTarget_MultipleRemotes_WrongChoice(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	cache.WithRemote("")
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/cqfn/kaicode.github.io.git\nhttps://github.com/volodya-lombrozo/aidy.git\n"
+	git := git.NewMockWithShell(shell)
+	r, w, err := os.Pipe()
+	require.NoError(t, err, "Failed to create pipe for input")
+	_, err = w.WriteString("3")
+	require.NoError(t, err, "Failed to write to pipe")
+	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	err = w.Close()
+	require.NoError(t, err, "Failed to close pipe for input")
+
+	err = aidy.SetTarget()
+
+	assert.Error(t, err, "Expected error when choosing a remote that does not exist")
+	assert.Equal(t, "invalid choice: <nil>", err.Error(), "Expected error message to match")
 }
 
 func TestReal_SetTarget_GitError(t *testing.T) {
