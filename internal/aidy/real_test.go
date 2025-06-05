@@ -19,6 +19,55 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
 
+func TestReal_InitSummary_CreateSummary(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	aidy := &real{ai: ai.NewMockAI(), git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "README.md")
+	err := os.WriteFile(path, []byte("mock summary"), 0644)
+	require.NoError(t, err, "Failed to create mock README.md file")
+
+	err = aidy.InitSummary(true, path)
+
+	require.NoError(t, err, "Expected no error when creating summary")
+	summary, hash := cache.Summary()
+	require.NoError(t, err, "Expected no error when retrieving summary from cache")
+	assert.Equal(t, "summary: mock summary", summary, "Expected summary to be 'mock summary'")
+	assert.Equal(t, "cad99a27bf4de48f", hash, "Expected hash to be 'mock-hash'")
+}
+
+func TestReal_InitSummary_AiError(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	brain := ai.NewFailedMockAI()
+	aidy := &real{ai: brain, git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "README.md")
+	err := os.WriteFile(path, []byte("mock summary"), 0644)
+	require.NoError(t, err, "Failed to create mock README.md file")
+
+	err = aidy.InitSummary(true, path)
+
+	assert.Error(t, err, "expected error when AI fails to generate summary")
+	assert.Equal(t, "error generating summary for README.md: failed to generate summary", err.Error(), "Expected error message to match")
+}
+
+func TestReal_InitSummary_CantFindReadme(t *testing.T) {
+	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache.NewMockAidyCache(), printer: output.NewMock()}
+
+	err := aidy.InitSummary(true, "README.md")
+
+	assert.Error(t, err, "expected error when readme.md is not found")
+	assert.Contains(t, err.Error(), "can't read README.md file, because of", "Expected error message to match")
+}
+
+func TestReal_InitSummary_NotRequired(t *testing.T) {
+	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache.NewMockAidyCache(), printer: output.NewMock()}
+
+	err := aidy.InitSummary(false, "README.md")
+
+	require.NoError(t, err, "Expected no error when summary is not required")
+}
+
 func TestReal_CheckGitInstalled_Successfully(t *testing.T) {
 	shell := executor.NewMock()
 	shell.Output = "git version 2.34.1"

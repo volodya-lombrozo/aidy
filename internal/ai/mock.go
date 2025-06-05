@@ -49,6 +49,9 @@ func (m *MockAI) IssueLabels(issue string, available []string) ([]string, error)
 }
 
 func (m *MockAI) Summary(readme string) (string, error) {
+	if m.fail {
+		return "", fmt.Errorf("failed to generate summary")
+	}
 	return "summary: " + readme, nil
 }
 
@@ -59,23 +62,26 @@ func (m *MockAI) SuggestBranch(descr string) (string, error) {
 	return "mock-branch-name", nil
 }
 
-// Parse unified diff into a short summary string
-// Input example:
-//
-// diff --git a/ai/mockai.go b/ai/mockai.go
-// index 97c5ff0..2eea6a0 100644
-// --- a/ai/mockai.go
-// +++ b/ai/mockai.go
-// @@ -3 +3,4 @@ package ai
-// -import "fmt"
-// +import (
-// +       "fmt"
-// +       "strings"
-// +)
-//
-// This function just looks for files that were changed
-// it also ignores /dev/null file and prints only unique files
-// Also it should remove a/ and b/ prefixes
+/*
+Parse unified diff into a short summary string
+
+	Input example:
+
+	diff --git a/ai/mockai.go b/ai/mockai.go
+	index 97c5ff0..2eea6a0 100644
+	--- a/ai/mockai.go
+	+++ b/ai/mockai.go
+	@@ -3 +3,4 @@ package ai
+	-import "fmt"
+	+import (
+	+       "fmt"
+	+       "strings"
+	+)
+
+	This function just looks for files that were changed
+	it also ignores /dev/null file and prints only unique files
+	Also it should remove a/ and b/ prefixes
+*/
 func summary(diff string) string {
 	lines := strings.Split(strings.TrimSpace(diff), "\n")
 	unique := make(map[string]struct{})
