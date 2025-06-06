@@ -6,6 +6,8 @@ type MockConfig struct {
 	MockGithub   string
 	MockModel    string
 	Error        error
+	MockToken    string
+	MockProvider string
 }
 
 func NewMock() *MockConfig {
@@ -14,6 +16,8 @@ func NewMock() *MockConfig {
 		MockGithub:   "mock-github-key",
 		MockDeepseek: "mock-deepseek-key",
 		MockModel:    "gpt-4o",
+		MockToken:    "mock-token",
+		MockProvider: "openai",
 	}
 }
 
@@ -31,4 +35,12 @@ func (m *MockConfig) Model() (string, error) {
 
 func (m *MockConfig) OpenAiKey() (string, error) {
 	return m.MockOpenai, m.Error
+}
+
+func (m *MockConfig) Provider() (string, error) {
+	return m.MockProvider, m.Error
+}
+
+func (m *MockConfig) Token() (string, error) {
+	return m.MockToken, m.Error
 }
