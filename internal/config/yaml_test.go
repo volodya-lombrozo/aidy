@@ -186,6 +186,20 @@ func TestYaml_Model(t *testing.T) {
 	assert.Equal(t, "gpt-4o", provider, "Provider should match")
 }
 
+func TestYaml_Token(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.yml")
+	err := os.WriteFile(path, []byte(FULL), 0644)
+	require.NoError(t, err, "Failed to write config file")
+	config, err := YamlConf(path)
+	require.NoError(t, err, "Failed to load config")
+
+	token, err := config.Token()
+
+	assert.NoError(t, err, "Error should be nil")
+	assert.Equal(t, "sk-...", token, "Token should match")
+}
+
 func clean(t *testing.T, tmp string) {
 	if err := os.RemoveAll(tmp); err != nil {
 		t.Fatalf("Error removing temp directory: %v", err)

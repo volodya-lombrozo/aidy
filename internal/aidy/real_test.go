@@ -19,6 +19,57 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
 
+func TestReal_NewGitHub_RemovesSuccessfully(t *testing.T) {
+	config := config.NewMock()
+	config.Error = fmt.Errorf("mock error")
+	git := git.NewMock()
+	cache := cache.NewMockAidyCache()
+
+	_, err := NewGitHub(git, config, cache)
+
+	require.Error(t, err, "Expected no error when creating new GitHub instance")
+	assert.Contains(t, err.Error(), "mock error", "Expected error message to match")
+}
+
+func TestReal_NewGitHub_CreatesSuccessfully(t *testing.T) {
+	config := config.NewMock()
+	git := git.NewMock()
+	cache := cache.NewMockAidyCache()
+
+	github, err := NewGitHub(git, config, cache)
+
+	require.NoError(t, err, "Expected no error when creating new GitHub instance")
+	assert.NotNil(t, github, "Expected GitHub instance to be initialized")
+}
+
+func TestReal_NewCache_NoFile(t *testing.T) {
+	tmp := t.TempDir()
+	filepath := filepath.Join(tmp, ".unexisting.json")
+	git := git.NewMock()
+
+	cache, err := NewCache(git, filepath)
+
+	require.Error(t, err, "Expected error when cache file does not exist")
+	assert.Contains(t, err.Error(), "can't open cache", "Expected error message to match")
+	assert.Nil(t, cache, "Expected cache to be nil when file does not exist")
+}
+
+func TestReal_NewCache_CreatesSuccessfully(t *testing.T) {
+	tmp := t.TempDir()
+	dir := filepath.Join(tmp, ".aidy")
+	err := os.MkdirAll(dir, 0755)
+	require.NoError(t, err, "Failed to create mock cache directory")
+	path := filepath.Join(dir, "cache.json")
+	err = os.WriteFile(path, []byte("{}"), 0666)
+	require.NoError(t, err, "Failed to create mock cache file")
+	git := git.NewMockWithDir(tmp)
+
+	cache, err := NewCache(git, ".aidy/cache.json")
+
+	require.NoError(t, err, "Expected no error when creating new cache")
+	assert.NotNil(t, cache, "Expected cache to be initialized")
+}
+
 func TestReal_InitialisesAI_Mock(t *testing.T) {
 	brain, err := Brain(true, false, config.NewMock())
 
