@@ -5,4 +5,6 @@ type Config interface {
 	GithubKey() (string, error)
 	DeepseekKey() (string, error)
 	Model() (string, error)
+	Provider() (string, error)
+	Token() (string, error)
 }

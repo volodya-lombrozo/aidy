@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -155,6 +156,34 @@ func TestGetGithubAPIKey(t *testing.T) {
 
 	assert.NoError(t, err, "Error should be nil")
 	assert.Equal(t, "gh-test", key, "API key should match")
+}
+
+func TestYaml_Provider(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.yml")
+	err := os.WriteFile(path, []byte(FULL), 0644)
+	require.NoError(t, err, "Failed to write config file")
+
+	config, err := YamlConf(path)
+
+	require.NoError(t, err, "Failed to load config")
+	provider, err := config.Provider()
+	assert.NoError(t, err, "Error should be nil")
+	assert.Equal(t, "openai", provider, "Provider should match")
+}
+
+func TestYaml_Model(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.yml")
+	err := os.WriteFile(path, []byte(FULL), 0644)
+	require.NoError(t, err, "Failed to write config file")
+
+	config, err := YamlConf(path)
+
+	require.NoError(t, err, "Failed to load config")
+	provider, err := config.Model()
+	assert.NoError(t, err, "Error should be nil")
+	assert.Equal(t, "gpt-4o", provider, "Provider should match")
 }
 
 func clean(t *testing.T, tmp string) {

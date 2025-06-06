@@ -38,3 +38,11 @@ func (c *AiderConfig) Model() (string, error) {
 func (c *AiderConfig) DeepseekKey() (string, error) {
 	return "unknown", nil
 }
+
+func (c *AiderConfig) Provider() (string, error) {
+	return "openai", nil
+}
+
+func (c *AiderConfig) Token() (string, error) {
+	return c.OpenAiKey()
+}

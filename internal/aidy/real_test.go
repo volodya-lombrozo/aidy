@@ -19,6 +19,53 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
 
+func TestReal_InitialisesAI_Mock(t *testing.T) {
+	brain, err := Brain(true, false, config.NewMock())
+
+	require.NoError(t, err, "Expected no error when initializing AI")
+	assert.NotNil(t, brain, "Expected brain to be initialized")
+}
+
+func TestReal_InitialisesAI_OpenAI(t *testing.T) {
+	conf := config.NewMock()
+	conf.MockProvider = "openai"
+	brain, err := Brain(false, false, conf)
+
+	require.NoError(t, err, "Expected no error when initializing AI without cache")
+	assert.NotNil(t, brain, "Expected brain to be initialized")
+}
+
+func TestReal_InitialisesAI_DeepSeek(t *testing.T) {
+	conf := config.NewMock()
+	conf.MockProvider = "deepseek"
+
+	brain, err := Brain(false, false, conf)
+
+	require.NoError(t, err, "Expected no error when initializing AI without cache")
+	assert.NotNil(t, brain, "Expected brain to be initialized")
+}
+
+func TestReal_InitialisesAI_UnknownProvider(t *testing.T) {
+	conf := config.NewMock()
+	conf.MockProvider = "unknown"
+
+	brain, err := Brain(false, false, conf)
+
+	require.Error(t, err, "Expected error when initializing AI with unknown provider")
+	assert.Nil(t, brain, "Expected brain to be nil when provider is unknown")
+}
+
+func TestReal_InitSummary_ErrorGettingProvider(t *testing.T) {
+	conf := config.NewMock()
+	conf.Error = fmt.Errorf("error getting provider")
+
+	brain, err := Brain(false, false, conf)
+
+	require.Error(t, err, "Expected error when getting provider fails")
+	assert.Nil(t, brain, "Expected brain to be nil when getting provider fails")
+	assert.Contains(t, err.Error(), "error getting provider", "Expected error message to contain 'error getting provider'")
+}
+
 func TestReal_InitSummary_CreateSummary(t *testing.T) {
 	cache := cache.NewMockAidyCache()
 	aidy := &real{ai: ai.NewMockAI(), git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}

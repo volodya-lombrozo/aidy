@@ -30,14 +30,25 @@ func NewCascadeInDirs(folders ...func() (string, error)) (Config, error) {
 func (c *CascadeConfig) OpenAiKey() (string, error) {
 	return c.original.OpenAiKey()
 }
+
 func (c *CascadeConfig) GithubKey() (string, error) {
 	return c.original.GithubKey()
 }
+
 func (c *CascadeConfig) DeepseekKey() (string, error) {
 	return c.original.DeepseekKey()
 }
+
 func (c *CascadeConfig) Model() (string, error) {
 	return c.original.Model()
+}
+
+func (c *CascadeConfig) Provider() (string, error) {
+	return c.original.Provider()
+}
+
+func (c *CascadeConfig) Token() (string, error) {
+	return c.original.Token()
 }
 
 func findAidyConf(folders ...func() (string, error)) (Config, error) {

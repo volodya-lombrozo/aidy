@@ -55,7 +55,9 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	}
 	aidy.cache = newcache(aidy.git)
 	conf := newconf(aider, aidy.git)
-	aidy.ai = brain(ailess, summary, conf)
+	if aidy.ai, err = Brain(ailess, summary, conf); err != nil {
+		log.Fatalf("failed to initialize AI: %v", err)
+	}
 	aidy.github = newgithub(aidy.git, conf, aidy.cache)
 	aidy.config = conf
 	if err = aidy.InitSummary(summary, "README.md"); err != nil {
@@ -578,37 +580,35 @@ func newconf(aider bool, git git.Git) config.Config {
 	return conf
 }
 
-func brain(ailess bool, sumrequired bool, conf config.Config) ai.AI {
+func Brain(ailess bool, summary bool, conf config.Config) (ai.AI, error) {
 	if ailess {
-		return ai.NewMockAI()
+		return ai.NewMockAI(), nil
+	}
+	provider, err := conf.Provider()
+	if err != nil {
+		return nil, fmt.Errorf("error getting AI provider from configuration: %v", err)
+	}
+	token, err := conf.Token()
+	if err != nil {
+		return nil, fmt.Errorf("error getting AI token: %v", err)
+	}
+	if token == "" {
+		return nil, fmt.Errorf("AI token not found in configuration")
 	}
 	model, err := conf.Model()
 	if err != nil {
-		log.Fatalf("Can't find GitHub token in configuration")
+		return nil, fmt.Errorf("error getting AI model from configuration: %v", err)
 	}
 	var brain ai.AI
-	if model == "deepseek-chat" {
-		apiKey, err := conf.DeepseekKey()
-		if err != nil {
-			log.Fatalf("Error getting Deepseek API key: %v", err)
-		}
-		if apiKey == "" {
-			log.Fatalf("Deepseek API key not found in config file")
-		} else {
-			log.Println("Deepseek key is found")
-		}
-		brain = ai.NewDeepSeek(apiKey, sumrequired)
-	} else {
-		apiKey, err := conf.OpenAiKey()
-		if err != nil {
-			log.Fatalf("Error getting OpenAI API key: %v", err)
-		}
-		if apiKey == "" {
-			log.Fatalf("OpenAI API key not found in config file")
-		}
-		brain = ai.NewOpenAI(apiKey, model, 0.2, sumrequired)
+	switch provider {
+	case "deepseek":
+		brain = ai.NewDeepSeek(token, summary)
+	case "openai":
+		brain = ai.NewOpenAI(token, model, 0.2, summary)
+	default:
+		return nil, fmt.Errorf("unknown AI provider '%s' specified in configuration", provider)
 	}
-	return brain
+	return brain, nil
 }
 
 func newcache(repo git.Git) cache.AidyCache {

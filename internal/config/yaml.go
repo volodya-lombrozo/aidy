@@ -41,3 +41,15 @@ func (c *YamlConfig) Model() (string, error) {
 func (c *YamlConfig) DeepseekKey() (string, error) {
 	return c.APIKeys["deepseek"], nil
 }
+
+func (c *YamlConfig) Provider() (string, error) {
+	return c.Models[c.DefaultModel]["provider"], nil
+}
+
+func (c *YamlConfig) Token() (string, error) {
+	provider, err := c.Provider()
+	if err != nil {
+		return "", err
+	}
+	return c.APIKeys[provider], nil
+}
