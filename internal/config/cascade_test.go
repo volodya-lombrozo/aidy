@@ -18,7 +18,7 @@ api-keys:
   deepseek: test-deepseek-key
 models:
   test-model:
-    provider: mock
+    provider: deepseek
     model-id: test-model-1
 `
 
@@ -58,6 +58,14 @@ func TestCascade_AidyFirst(t *testing.T) {
 	model, err := conf.Model()
 	assert.NoError(t, err)
 	assert.Equal(t, "test-model-1", model)
+
+	token, err := conf.Token()
+	assert.NoError(t, err)
+	assert.Equal(t, "test-deepseek-key", token, "Token should match")
+
+	provider, err := conf.Provider()
+	assert.NoError(t, err)
+	assert.Equal(t, "deepseek", provider, "Provider should match")
 }
 
 func TestCascade_AiderFirst(t *testing.T) {
@@ -92,6 +100,14 @@ func TestCascade_AiderFirst(t *testing.T) {
 	model, err := conf.Model()
 	assert.NoError(t, err)
 	assert.Equal(t, "gpt-4o-test", model)
+
+	token, err := conf.Token()
+	assert.NoError(t, err)
+	assert.Equal(t, "test-openai-key", token, "Token should match")
+
+	token, err = conf.Provider()
+	assert.NoError(t, err)
+	assert.Equal(t, "openai", token, "Provider should match")
 }
 
 func tmpConfFile(t *testing.T, dir, filename, content string) string {

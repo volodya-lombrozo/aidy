@@ -62,7 +62,6 @@ func (m *mock) Tags(repo string) ([]string, error) {
 		log.Printf("No tags found in repository %s", repo)
 		return []string{}, nil
 	}
-
 	log.Printf("Fetched tags from repository %s: %s", repo, res)
 	return []string{"v1.0", "v2.0"}, nil
 }
