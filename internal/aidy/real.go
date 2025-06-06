@@ -45,21 +45,24 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	aidy.editor = output.NewEditor(shell)
 	aidy.printer = output.NewPrinter()
 	var err error
-	aidy.git, err = git.NewGit(shell)
-	if err != nil {
+	if aidy.git, err = git.NewGit(shell); err != nil {
 		log.Fatalf("failed to initialize git: %v", err)
 	}
-	err = aidy.CheckGitInstalled()
-	if err != nil {
+	if err = aidy.CheckGitInstalled(); err != nil {
 		log.Fatalf("failed to check git installation: %v", err)
 	}
-	aidy.cache = newcache(aidy.git)
-	conf := newconf(aider, aidy.git)
-	if aidy.ai, err = Brain(ailess, summary, conf); err != nil {
+	if aidy.cache, err = NewCache(aidy.git, ".aidy/cache.js"); err != nil {
+		log.Fatalf("failed to initialize cache: %v", err)
+	}
+	if aidy.config, err = NewConf(aider, aidy.git); err != nil {
+		log.Fatalf("failed to initialize configuration: %v", err)
+	}
+	if aidy.ai, err = Brain(ailess, summary, aidy.config); err != nil {
 		log.Fatalf("failed to initialize AI: %v", err)
 	}
-	aidy.github = newgithub(aidy.git, conf, aidy.cache)
-	aidy.config = conf
+	if aidy.github, err = NewGitHub(aidy.git, aidy.config, aidy.cache); err != nil {
+		log.Fatalf("failed to initialize GitHub client: %v", err)
+	}
 	if err = aidy.InitSummary(summary, "README.md"); err != nil {
 		log.Printf("warning: failed to initialize project summary: %v", err)
 	}
@@ -558,18 +561,18 @@ func (r *real) InitSummary(required bool, file string) error {
 	return nil
 }
 
-func newgithub(git git.Git, conf config.Config, cache cache.AidyCache) github.Github {
+func NewGitHub(git git.Git, conf config.Config, cache cache.AidyCache) (github.Github, error) {
 	token, err := conf.GithubKey()
 	if err != nil {
-		log.Fatalf("error getting github token: %v", err)
+		return nil, fmt.Errorf("error getting github token from configuration: %v", err)
 	}
-	return github.NewGithub("https://api.github.com", git, token, cache)
+	return github.NewGithub("https://api.github.com", git, token, cache), nil
 }
 
-func newconf(aider bool, git git.Git) config.Config {
+func NewConf(aider bool, git git.Git) (config.Config, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatalf("error getting home directory: %v", err)
+		return nil, fmt.Errorf("error getting home directory: %v", err)
 	}
 	var conf config.Config
 	if aider {
@@ -577,7 +580,7 @@ func newconf(aider bool, git git.Git) config.Config {
 	} else {
 		conf, _ = config.NewCascade(git)
 	}
-	return conf
+	return conf, nil
 }
 
 func Brain(ailess bool, summary bool, conf config.Config) (ai.AI, error) {
@@ -611,10 +614,10 @@ func Brain(ailess bool, summary bool, conf config.Config) (ai.AI, error) {
 	return brain, nil
 }
 
-func newcache(repo git.Git) cache.AidyCache {
-	gitcache, err := cache.NewGitCache(".aidy/cache.js", repo)
+func NewCache(repo git.Git, path string) (cache.AidyCache, error) {
+	ch, err := cache.NewGitCache(path, repo)
 	if err != nil {
-		log.Fatalf("Can't open cache %v", err)
+		return nil, fmt.Errorf("can't open cache: %v", err)
 	}
-	return cache.NewAidyCache(gitcache)
+	return cache.NewAidyCache(ch), nil
 }
