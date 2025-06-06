@@ -9,6 +9,26 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 )
 
+func TestMock_Tags_Absent(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "absent"
+	git := NewMockWithShell(shell)
+
+	res, err := git.Tags("does-not-matter")
+
+	require.NoError(t, err)
+	assert.Empty(t, res, "Expected no tags when output is 'absent'")
+}
+
+func TestMock_Tags_Error(t *testing.T) {
+	git := NewMockWithError(fmt.Errorf("mock error"))
+
+	_, err := git.Tags("does-not-matter")
+
+	assert.Error(t, err)
+	assert.Equal(t, "mock error", err.Error())
+}
+
 func TestMock_Log_Success(t *testing.T) {
 	git := NewMock()
 
