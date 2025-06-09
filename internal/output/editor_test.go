@@ -110,3 +110,106 @@ func TestEditor_Print_EditOption(t *testing.T) {
 	assert.Len(t, shell.Commands, 2, "expected 2 commands to be run")
 	assert.Equal(t, command, shell.Commands[1], "expected edited command to match")
 }
+
+func TestEditor_PrettyCommand(t *testing.T) {
+	tests := []struct{ input, want string }{
+		{"git commit --amend --no-edit", "git commit\n  --amend\n  --no-edit"},
+		{"docker run --rm -it ubuntu bash", "docker run\n  --rm -it ubuntu bash"},
+		{"--version", "\n  --version"},
+		{"echo hello world", "echo hello world"},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := prettyCommand(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestEditor_FindEditor(t *testing.T) {
+	original := os.Getenv("EDITOR")
+	defer func() {
+		if err := os.Setenv("EDITOR", original); err != nil {
+			t.Errorf("failed to reset EDITOR environment variable: %v", err)
+		}
+	}()
+	tests := []struct {
+		envEditor string
+		os        string
+		expected  string
+	}{
+		{"", "windows", "notepad"},
+		{"", "darwin", "vi"},
+		{"", "linux", "vi"},
+		{"nano", "linux", "nano"},
+		{"code", "darwin", "code"},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("EDITOR=%s OS=%s", test.envEditor, test.os), func(t *testing.T) {
+			if err := os.Setenv("EDITOR", test.envEditor); err != nil {
+				require.NoError(t, err, "failed to set EDITOR environment variable")
+			}
+			editor := findEditor(test.os)
+			assert.Equal(t, test.expected, editor)
+		})
+	}
+}
+
+func TestEditor_CleanQoutes(t *testing.T) {
+	tests := []struct {
+		input    []string
+		expected []string
+	}{
+		{[]string{`"hello"`, `"world"`}, []string{"hello", "world"}},
+		{[]string{`"foo"`, `"bar"`, `"baz"`}, []string{"foo", "bar", "baz"}},
+		{[]string{`"quoted"`, `unquoted`, `"another"`}, []string{"quoted", "unquoted", "another"}},
+		{[]string{`""`, `"empty"`}, []string{"", "empty"}},
+		{[]string{`"noquotes"`}, []string{"noquotes"}},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%v", test.input), func(t *testing.T) {
+			result := cleanQoutes(test.input)
+			require.Equal(t, test.expected, result, "For input %v, expected %v, got %v", test.input, test.expected, result)
+		})
+	}
+}
+
+func TestEditor_SplitCommand(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []string
+	}{
+		// Test case 1: Simple command
+		{"echo hello", []string{"echo", "hello"}},
+		{`echo "hello world"`, []string{"echo", "\"hello world\""}},
+		{`echo \"hello\"`, []string{"echo", `"hello"`}},
+		{`echo "hello 'world'"`, []string{"echo", "\"hello 'world'\""}},
+		{`echo hello\ world`, []string{"echo", "hello world"}},
+		{"echo    hello", []string{"echo", "hello"}},
+		{`echo "hello`, nil}, // This should panic
+		{`echo hello\\world`, []string{"echo", "hello\\world"}},
+		{`echo ""`, []string{"echo", "\"\""}},
+		{`echo $PATH`, []string{"echo", "$PATH"}},
+		{"git commit\n  --amend\n  --no-edit", []string{"git", "commit", "--amend", "--no-edit"}},
+		{"git commit\n  --message \"hello\nworld\"", []string{"git", "commit", "--message", "\"hello\nworld\""}},
+		{"gh issue create --title \"tests for \\`edit\\` and \\`run\\`\" --body \"new \\`edit\\` and \\`run\\` handling.\" --label \"enh,good first issue\" --repo v/a",
+			[]string{"gh", "issue", "create", "--title", "\"tests for `edit` and `run`\"", "--body", "\"new `edit` and `run` handling.\"", "--label", "\"enh,good first issue\"", "--repo", "v/a"}},
+	}
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					require.Nil(t, test.expected, "Unexpected panic for input %q", test.input)
+				}
+			}()
+			result := splitCommand(test.input)
+			if test.expected == nil {
+				t.Errorf("Expected panic for input %q", test.input)
+			} else {
+				require.Equal(t, test.expected, result, "For input %q, expected %v, got %v", test.input, test.expected, result)
+			}
+		})
+	}
+}
