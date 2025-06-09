@@ -218,6 +218,26 @@ func TestReal_SetTarget_NoRepos(t *testing.T) {
 	assert.Equal(t, "no remote repositories found, please set one", err.Error(), "Expected error message to match")
 }
 
+func TestReal_SetTarget_RealGitOutput(t *testing.T) {
+	cache := cache.NewMockAidyCache()
+	cache.WithRemote("")
+	shell := executor.NewMock()
+	shell.Output = "upstream        git@github.com:yegor256/jaxec.git (fetch)"
+	git := git.NewMockWithShell(shell)
+	r, w, err := os.Pipe()
+	require.NoError(t, err, "Failed to create pipe for input")
+	_, err = w.WriteString("1")
+	require.NoError(t, err, "Failed to write to pipe")
+	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	err = w.Close()
+	require.NoError(t, err, "Failed to close pipe for input")
+
+	err = aidy.SetTarget()
+
+	require.NoError(t, err, "Expected no error when setting target with multiple remotes")
+	assert.Equal(t, "yegor256/jaxec", cache.Remote(), "Expected remote to be set to 'cqfn/kaicode.github.io'")
+}
+
 func TestReal_SetTarget_MultipleRemotes(t *testing.T) {
 	cache := cache.NewMockAidyCache()
 	cache.WithRemote("")

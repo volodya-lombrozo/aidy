@@ -87,7 +87,14 @@ func (r real) SetTarget() error {
 		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/.+?)(?:\.git)?$`)
 		unique := make(map[string]struct{})
 		for _, line := range lines {
-			matches := re.FindStringSubmatch(line)
+			fields := strings.Fields(line)
+			var address string
+			if len(fields) < 2 {
+				address = line
+			} else {
+				address = fields[1]
+			}
+			matches := re.FindStringSubmatch(address)
 			if len(matches) == 2 {
 				unique[string(matches[1])] = struct{}{}
 			}
