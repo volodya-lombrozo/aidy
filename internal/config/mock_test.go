@@ -7,17 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMock_OpenAiKey(t *testing.T) {
-	expected := "test-api-key"
-	conf := NewMock()
-	conf.MockOpenai = expected
-
-	key, err := conf.OpenAiKey()
-
-	require.NoError(t, err, "Expected no error when getting OpenAI API key")
-	assert.Equal(t, expected, key, "Expected OpenAI API key to match the mock value")
-}
-
 func TestMock_GithubKey(t *testing.T) {
 	expected := "github-api-key"
 	conf := NewMock()
@@ -27,17 +16,6 @@ func TestMock_GithubKey(t *testing.T) {
 
 	require.NoError(t, err, "Expected no error when getting GitHub API key")
 	assert.Equal(t, expected, key, "Expected GitHub API key to match the mock value")
-}
-
-func TestMock_DeepseekKey(t *testing.T) {
-	expected := "deepseek-api-key"
-	conf := NewMock()
-	conf.MockDeepseek = expected
-
-	key, err := conf.DeepseekKey()
-
-	require.NoError(t, err, "Expected no error when getting Deepseek API key")
-	assert.Equal(t, expected, key, "Expected Deepseek API key to match the mock value")
 }
 
 func TestMock_Model(t *testing.T) {

@@ -257,29 +257,29 @@ func healPRTitle(text string, issue string) string {
 
 func (r *real) PrintConfig() error {
 	r.print("aidy configuration:")
-	openai, err := r.config.OpenAiKey()
+	provider, err := r.config.Provider()
 	if err != nil {
-		r.print(fmt.Sprintf("error retrieving openai api key: %v", err))
+		r.print(fmt.Sprintf("error retrieving AI provider: %v", err))
 	} else {
-		r.print(fmt.Sprintf("openai api key: %s", mask(openai)))
-	}
-	deepseek, err := r.config.DeepseekKey()
-	if err != nil {
-		r.print(fmt.Sprintf("error retrieving deepseek api key: %v", err))
-	} else {
-		r.print(fmt.Sprintf("deepseek api key: %s", mask(deepseek)))
-	}
-	gh, err := r.config.GithubKey()
-	if err != nil {
-		r.print(fmt.Sprintf("error retrieving github api key: %v", err))
-	} else {
-		r.print(fmt.Sprintf("github api key: %s", mask(gh)))
+		r.print(fmt.Sprintf("AI provider: %s", provider))
 	}
 	model, err := r.config.Model()
 	if err != nil {
-		r.print(fmt.Sprintf("error retrieving model: %v\n", err))
+		r.print(fmt.Sprintf("error retrieving model: %v", err))
 	} else {
-		r.print(fmt.Sprintf("model: %s\n", model))
+		r.print(fmt.Sprintf("model: %s", model))
+	}
+	token, err := r.config.Token()
+	if err != nil {
+		r.print(fmt.Sprintf("error retrieving AI token: %v", err))
+	} else {
+		r.print(fmt.Sprintf("AI API token: %s", mask(token)))
+	}
+	gh, err := r.config.GithubKey()
+	if err != nil {
+		r.print(fmt.Sprintf("error retrieving GitHub API key: %v", err))
+	} else {
+		r.print(fmt.Sprintf("GitHub API key: %s", mask(gh)))
 	}
 	return err
 }

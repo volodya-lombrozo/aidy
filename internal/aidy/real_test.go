@@ -345,11 +345,10 @@ func TestReal_PrintConfig_Successful(t *testing.T) {
 	res := printer.Captured()
 	expected := strings.Join([]string{
 		"aidy configuration:",
-		"openai api key: ***********-key",
-		"deepseek api key: *************-key",
-		"github api key: ***********-key",
+		"AI provider: openai",
 		"model: gpt-4o",
-		"",
+		"AI API token: ******oken",
+		"GitHub API key: ***********-key",
 	}, "\n")
 	assert.Equal(t, expected, res, "Expected configuration to match")
 }
@@ -357,7 +356,7 @@ func TestReal_PrintConfig_Successful(t *testing.T) {
 func TestReal_PrintConfig_ShortKeys(t *testing.T) {
 	printer := output.NewMock()
 	conf := config.NewMock()
-	conf.MockDeepseek = "short"
+	conf.MockToken = "short"
 	raidy := &real{config: conf, printer: printer}
 
 	err := raidy.PrintConfig()
@@ -365,13 +364,13 @@ func TestReal_PrintConfig_ShortKeys(t *testing.T) {
 	require.NoError(t, err, "Expected no error when printing configuration")
 	res := printer.Captured()
 	assert.Contains(t, res, "aidy configuration:")
-	assert.Contains(t, res, "deepseek api key: *hort")
+	assert.Contains(t, res, "AI API token: *hort")
 }
 
 func TestReal_PrintConfig_TooShort(t *testing.T) {
 	printer := output.NewMock()
 	conf := config.NewMock()
-	conf.MockOpenai = "123"
+	conf.MockToken = "123"
 	raidy := &real{config: conf, printer: printer}
 
 	err := raidy.PrintConfig()
@@ -379,7 +378,7 @@ func TestReal_PrintConfig_TooShort(t *testing.T) {
 	require.NoError(t, err, "Expected no error when printing configuration with short key")
 	res := printer.Captured()
 	assert.Contains(t, res, "aidy configuration:")
-	assert.Contains(t, res, "openai api key: ***")
+	assert.Contains(t, res, "API token: ***")
 }
 
 func TestReal_PrintConfig_NoConfig(t *testing.T) {
@@ -394,11 +393,10 @@ func TestReal_PrintConfig_NoConfig(t *testing.T) {
 	res := printer.Captured()
 	expected := strings.Join([]string{
 		"aidy configuration:",
-		"error retrieving openai api key: no configuration found",
-		"error retrieving deepseek api key: no configuration found",
-		"error retrieving github api key: no configuration found",
+		"error retrieving AI provider: no configuration found",
 		"error retrieving model: no configuration found",
-		"",
+		"error retrieving AI token: no configuration found",
+		"error retrieving GitHub API key: no configuration found",
 	}, "\n")
 	assert.Equal(t, expected, res, "Expected error message when no config is found")
 }
