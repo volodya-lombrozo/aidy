@@ -23,10 +23,6 @@ func NewAider(filepath string) (*AiderConfig, error) {
 	return &config, nil
 }
 
-func (c *AiderConfig) OpenAiKey() (string, error) {
-	return c.OpenaiApiKeyYaml, nil
-}
-
 func (c *AiderConfig) GithubKey() (string, error) {
 	return "", nil
 }
@@ -35,14 +31,10 @@ func (c *AiderConfig) Model() (string, error) {
 	return c.ModelYaml, nil
 }
 
-func (c *AiderConfig) DeepseekKey() (string, error) {
-	return "unknown", nil
-}
-
 func (c *AiderConfig) Provider() (string, error) {
 	return "openai", nil
 }
 
 func (c *AiderConfig) Token() (string, error) {
-	return c.OpenAiKey()
+	return c.OpenaiApiKeyYaml, nil
 }

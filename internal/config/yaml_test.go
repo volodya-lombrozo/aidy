@@ -126,22 +126,6 @@ func TestYamlConfModelOnly(t *testing.T) {
 	assert.Equal(t, "gpt-4o", model, "Model ID should match")
 }
 
-func TestGetOpenAIAPIKey(t *testing.T) {
-	tmp, err := os.MkdirTemp("", "configtest")
-	require.NoError(t, err, "Failed to create temp dir")
-	defer clean(t, tmp)
-	path := tmp + "/config.yml"
-	err = os.WriteFile(path, []byte(KEYS), 0644)
-	require.NoError(t, err, "Failed to write config file")
-	config, err := YamlConf(path)
-	require.NoError(t, err, "Failed to load config")
-
-	key, err := config.OpenAiKey()
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, "sk-test", key, "API key should match")
-}
-
 func TestGetGithubAPIKey(t *testing.T) {
 	tmp, err := os.MkdirTemp("", "configtest")
 	require.NoError(t, err, "Failed to create temo dir")

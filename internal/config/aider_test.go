@@ -13,21 +13,6 @@ model: 4o
 openai-api-key: secret-key
 `
 
-func TestAider_OpenAiKey(t *testing.T) {
-	tmp := t.TempDir()
-	path := tmp + "/config.yml"
-	content := []byte(example)
-	err := os.WriteFile(path, content, 0644)
-	require.NoError(t, err, "Failed to write config file")
-	config, err := NewAider(path)
-	require.NoError(t, err, "Failed to load config")
-
-	apiKey, err := config.OpenAiKey()
-
-	require.NoError(t, err, "Error should be nil")
-	assert.Equal(t, "secret-key", apiKey, "API key should match")
-}
-
 func TestAider_Model(t *testing.T) {
 	tmp := t.TempDir()
 	path := tmp + "/config.yml"
@@ -40,20 +25,6 @@ func TestAider_Model(t *testing.T) {
 
 	assert.NoError(t, err, "Error should be nil")
 	assert.Equal(t, "4o", apiKey, "Model should match")
-}
-
-func TestAider_DeepseekKey(t *testing.T) {
-	tmp := t.TempDir()
-	path := tmp + "/config.yml"
-	err := os.WriteFile(path, []byte(example), 0644)
-	require.NoError(t, err, "Failed to write config file")
-	config, err := NewAider(path)
-	require.NoError(t, err, "Failed to load config")
-
-	apiKey, err := config.DeepseekKey()
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, "unknown", apiKey, "Deepseek key should match")
 }
 
 func TestAider_GithubKey(t *testing.T) {

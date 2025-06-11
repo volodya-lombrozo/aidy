@@ -41,19 +41,11 @@ func TestCascade_AidyFirst(t *testing.T) {
 	err = os.Chdir(tmp)
 	require.NoError(t, err, "Failed to change directory to temp dir")
 	conf, err := NewCascade(git.NewMock())
-
 	require.NoError(t, err, "Failed to create cascade config")
-	openAIKey, err := conf.OpenAiKey()
-	assert.NoError(t, err)
-	assert.Equal(t, "test-openai-key", openAIKey)
 
 	githubKey, err := conf.GithubKey()
 	assert.NoError(t, err)
 	assert.Equal(t, "test-github-key", githubKey)
-
-	deepseekKey, err := conf.DeepseekKey()
-	assert.NoError(t, err)
-	assert.Equal(t, "test-deepseek-key", deepseekKey)
 
 	model, err := conf.Model()
 	assert.NoError(t, err)
@@ -85,17 +77,9 @@ func TestCascade_AiderFirst(t *testing.T) {
 	conf, err := NewCascadeInDirs(folder)
 	require.NoError(t, err, "Failed to create cascade config")
 
-	openai, err := conf.OpenAiKey()
-	assert.NoError(t, err)
-	assert.Equal(t, "test-openai-key", openai)
-
 	github, err := conf.GithubKey()
 	assert.NoError(t, err)
 	assert.Equal(t, "", github)
-
-	deepseek, err := conf.DeepseekKey()
-	assert.NoError(t, err)
-	assert.Equal(t, "unknown", deepseek)
 
 	model, err := conf.Model()
 	assert.NoError(t, err)

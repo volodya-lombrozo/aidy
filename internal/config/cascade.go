@@ -27,16 +27,8 @@ func NewCascadeInDirs(folders ...func() (string, error)) (Config, error) {
 	return &CascadeConfig{original: original}, nil
 }
 
-func (c *CascadeConfig) OpenAiKey() (string, error) {
-	return c.original.OpenAiKey()
-}
-
 func (c *CascadeConfig) GithubKey() (string, error) {
 	return c.original.GithubKey()
-}
-
-func (c *CascadeConfig) DeepseekKey() (string, error) {
-	return c.original.DeepseekKey()
 }
 
 func (c *CascadeConfig) Model() (string, error) {
