@@ -2,32 +2,33 @@ package git
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/volodya-lombrozo/aidy/internal/executor"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
 type mock struct {
 	shell executor.Executor
+	log   log.Logger
 	dir   string
 	err   error
 }
 
 func NewMock() Git {
-	return &mock{dir: "/dev/null", shell: executor.NewMock()}
+	return &mock{dir: "/dev/null", shell: executor.NewMock(), log: log.NewMock()}
 }
 
 func NewMockWithDir(dir string) Git {
-	return &mock{dir: dir, shell: executor.NewMock(), err: nil}
+	return &mock{dir: dir, shell: executor.NewMock(), err: nil, log: log.NewMock()}
 }
 
 func NewMockWithShell(shell executor.Executor) Git {
-	return &mock{dir: "/dev/null", shell: shell, err: nil}
+	return &mock{dir: "/dev/null", shell: shell, err: nil, log: log.NewMock()}
 }
 
 func NewMockWithError(err error) Git {
-	return &mock{dir: "/dev/null", shell: executor.NewMock(), err: err}
+	return &mock{dir: "/dev/null", shell: executor.NewMock(), err: err, log: log.NewMock()}
 }
 
 func (m *mock) Run(args ...string) (string, error) {
@@ -55,14 +56,14 @@ func (m *mock) Log(since string) ([]string, error) {
 func (m *mock) Tags(repo string) ([]string, error) {
 	res, err := m.Run("fetch", repo, "--tags")
 	if err != nil {
-		log.Printf("Error fetching tags from repository %s: %v", repo, err)
+		m.log.Info("Error fetching tags from repository %s: %v", repo, err)
 		return nil, err
 	}
 	if strings.Contains(res, "absent") {
-		log.Printf("No tags found in repository %s", repo)
+		m.log.Info("No tags found in repository %s", repo)
 		return []string{}, nil
 	}
-	log.Printf("Fetched tags from repository %s: %s", repo, res)
+	m.log.Info("Fetched tags from repository %s: %s", repo, res)
 	return []string{"v1.0", "v2.0"}, nil
 }
 

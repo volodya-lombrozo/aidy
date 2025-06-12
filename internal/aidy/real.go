@@ -3,7 +3,6 @@ package aidy
 import (
 	"fmt"
 	"hash/fnv"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,7 +16,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 	"github.com/volodya-lombrozo/aidy/internal/git"
 	"github.com/volodya-lombrozo/aidy/internal/github"
-	logger "github.com/volodya-lombrozo/aidy/internal/log"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 	"github.com/volodya-lombrozo/aidy/internal/output"
 	"golang.org/x/mod/semver"
 )
@@ -30,7 +29,7 @@ type real struct {
 	config  config.Config
 	cache   cache.AidyCache
 	printer output.Output
-	logger  logger.Logger
+	logger  log.Logger
 	in      *os.File
 }
 
@@ -46,31 +45,38 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	shell := executor.NewReal()
 	aidy.editor = output.NewEditor(shell)
 	aidy.printer = output.NewPrinter()
-	aidy.logger = logger.NewZerolog(os.Stdout)
+	aidy.logger = log.NewZerolog(os.Stdout)
 	var err error
 	if aidy.git, err = git.NewGit(shell); err != nil {
-		log.Fatalf("failed to initialize git: %v", err)
+		aidy.logger.Error("failed to initialize git: %v", err)
+		os.Exit(1)
 	}
 	if err = aidy.CheckGitInstalled(); err != nil {
-		log.Fatalf("failed to check git installation: %v", err)
+		aidy.logger.Error("git is not installed or not found: %v", err)
+		os.Exit(1)
 	}
 	if aidy.cache, err = NewCache(aidy.git, ".aidy/cache.js"); err != nil {
-		log.Fatalf("failed to initialize cache: %v", err)
+		aidy.logger.Error("failed to initialize cache: %v", err)
+		os.Exit(1)
 	}
 	if aidy.config, err = NewConf(aider, aidy.git); err != nil {
-		log.Fatalf("failed to initialize configuration: %v", err)
+		aidy.logger.Error("failed to initialize configuration: %v", err)
+		os.Exit(1)
 	}
 	if aidy.ai, err = Brain(ailess, summary, aidy.config); err != nil {
-		log.Fatalf("failed to initialize AI: %v", err)
+		aidy.logger.Error("failed to initialize AI: %v", err)
+		os.Exit(1)
 	}
 	if aidy.github, err = NewGitHub(aidy.git, aidy.config, aidy.cache); err != nil {
-		log.Fatalf("failed to initialize GitHub client: %v", err)
+		aidy.logger.Error("failed to initialize GitHub client: %v", err)
+		os.Exit(1)
 	}
 	if err = aidy.InitSummary(summary, "README.md"); err != nil {
 		aidy.logger.Warn("failed to initialize project summary: %v", err)
 	}
 	if err = aidy.SetTarget(); err != nil {
-		log.Fatalf("failed to set target repository: %v", err)
+		aidy.logger.Error("failed to set target repository: %v", err)
+		os.Exit(1)
 	}
 	return &aidy
 }
@@ -297,7 +303,8 @@ func mask(key string) string {
 func (r *real) print(msg string) {
 	err := r.printer.Print(msg)
 	if err != nil {
-		log.Fatalf("Error printing message: %v", err)
+		r.logger.Error("error printing message: %v", err)
+		os.Exit(1)
 	}
 }
 
@@ -360,19 +367,22 @@ func inumber(branch string) string {
 func (r *real) Append() {
 	err := r.git.Append()
 	if err != nil {
-		log.Fatalf("Error appending to commit: %v", err)
+		r.logger.Error("error appending to commit: %v", err)
+		os.Exit(1)
 	}
 }
 
 func (r *real) Clean() {
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Can't understand what is the current directory, '%v'", err)
+		r.logger.Error("Can't understand what is the current directory, '%v'", err)
+		os.Exit(1)
 	}
 	cache := filepath.Join(dir, ".aidy")
 	err = os.RemoveAll(cache)
 	if err != nil {
-		log.Fatalf("Can't clear '.aidy' directory, '%v'", err)
+		r.logger.Error("Can't clear '.aidy' directory, '%v'", err)
+		os.Exit(1)
 	}
 }
 
@@ -506,15 +516,18 @@ func latest(tags []string) string {
 func (r *real) Squash() {
 	base, err := r.git.BaseBranch()
 	if err != nil {
-		log.Fatalf("Error determining base branch: %v", err)
+		r.logger.Error("Error determining base branch: %v", err)
+		os.Exit(1)
 	}
 	err = r.git.Reset("refs/heads/" + base)
 	if err != nil {
-		log.Fatalf("Error executing git reset: %v", err)
+		r.logger.Error("Error executing git reset: %v", err)
+		os.Exit(1)
 	}
 	err = r.Commit()
 	if err != nil {
-		log.Fatalf("Error committing changes: %v", err)
+		r.logger.Error("Error committing changes: %v", err)
+		os.Exit(1)
 	}
 }
 

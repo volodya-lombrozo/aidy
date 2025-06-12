@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
 
 	"github.com/volodya-lombrozo/aidy/internal/cache"
 	"github.com/volodya-lombrozo/aidy/internal/git"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
 type github struct {
@@ -20,6 +21,7 @@ type github struct {
 	git    git.Git
 	token  string
 	ch     cache.AidyCache
+	log    log.Logger
 }
 
 type issue struct {
@@ -43,6 +45,7 @@ func NewGithub(url string, gs git.Git, token string, ch cache.AidyCache) *github
 		git:    gs,
 		token:  token,
 		ch:     ch,
+		log:    log.NewShort(log.NewZerolog(os.Stdout)),
 	}
 }
 
@@ -61,7 +64,9 @@ func (r *github) Description(number string) (string, error) {
 	} else {
 		return "", fmt.Errorf("cannot find a target repository to search for issue '%s'", number)
 	}
-	log.Printf("Title: %s\nBody: %s\n", task.Title, task.Body)
+	r.log.Debug("retrieved issue description for #%s", number)
+	r.log.Debug("issue title: '%s'", task.Title)
+	r.log.Debug("issue body: '%s'", task.Body)
 	return fmt.Sprintf("Title: '%s'\nBody: '%s'", task.Title, task.Body), nil
 }
 
@@ -69,9 +74,9 @@ func (r *github) Labels() ([]string, error) {
 	var labels []label
 	target := r.ch.Remote()
 	if target != "" {
-		log.Printf("Choosing labels from '%s'\n", target)
+		r.log.Debug("retrieving labels for target repository '%s'", target)
 		url := fmt.Sprintf("%s/repos/%s/labels", r.url, target)
-		log.Printf("Trying to get repository labels using the following URL: %s\n", url)
+		r.log.Debug("using the following URL to retrieve labels: %s", url)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return nil, fmt.Errorf("cannot create a new GET request to retrieve labels: %w", err)
@@ -83,7 +88,7 @@ func (r *github) Labels() ([]string, error) {
 		}
 		defer func() {
 			if err := resp.Body.Close(); err != nil {
-				log.Printf("Error closing response body: %v", err)
+				r.log.Error("error closing response body: %v", err)
 			}
 		}()
 		if resp.StatusCode != http.StatusOK {
@@ -137,7 +142,7 @@ func (r *github) Remotes() ([]string, error) {
 // In other words, GET "/issues/:number" works for both issues and PRs.
 func (r *github) description(number string, target string) (issue, error) {
 	url := fmt.Sprintf("%s/repos/%s/issues/%s", r.url, target, number)
-	log.Printf("Trying to get an issue description using the following URL: %s\n", url)
+	r.log.Debug("trying to get an issue description using the following url: %s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return issue{}, fmt.Errorf("cannot create a new GET request to retrieve issue description: %w", err)

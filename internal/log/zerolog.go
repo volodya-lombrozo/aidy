@@ -27,3 +27,7 @@ func (z *Zerolog) Debug(msg string, args ...any) {
 func (z *Zerolog) Warn(msg string, args ...any) {
 	z.logger.Warn().Msgf(msg, args...)
 }
+
+func (z *Zerolog) Error(msg string, args ...any) {
+	z.logger.Error().Msgf(msg, args...)
+}

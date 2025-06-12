@@ -2,16 +2,17 @@ package git
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/volodya-lombrozo/aidy/internal/executor"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
 type real struct {
 	dir   string
 	shell executor.Executor
+	log   log.Logger
 }
 
 func NewGit(shell executor.Executor, dir ...string) (Git, error) {
@@ -29,7 +30,7 @@ func NewGitFallback(shell executor.Executor, fallback func() (string, error), di
 			return nil, fmt.Errorf("failed to get current working directory: %w", err)
 		}
 	}
-	return &real{dir: directory, shell: shell}, nil
+	return &real{dir: directory, shell: shell, log: log.NewShort(log.NewZerolog(os.Stdout))}, nil
 }
 
 func (r *real) Run(arg ...string) (string, error) {
@@ -103,11 +104,13 @@ func (r *real) Diff() (string, error) {
 		diff := out
 		names, err := r.Run("diff", base, "--cached", "--name-status")
 		if err != nil {
-			log.Fatalf("Can't run get a files status diff: '%v'", err)
+			r.log.Error("Can't run get a files status diff: '%v'", err)
+			os.Exit(1)
 		}
 		stat, err := r.Run("diff", base, "--cached", "--stat")
 		if err != nil {
-			log.Fatalf("Can't run get a stat diff: '%v'", err)
+			r.log.Error("Can't run get a stat diff: '%v'", err)
+			os.Exit(1)
 		}
 		return NewSummary(diff, stat, names).Render(), nil
 	}
@@ -170,7 +173,7 @@ func (r *real) Installed() (bool, error) {
 func (r *real) Root() (string, error) {
 	out, err := r.Run("rev-parse", "--show-toplevel")
 	if err != nil {
-		log.Printf("Can't find git root directory, '%v'", err)
+		r.log.Error("can't find git root directory, '%v'", err)
 		return out, err
 	}
 	return strings.TrimSpace(out), nil
