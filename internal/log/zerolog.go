@@ -16,14 +16,14 @@ func NewZerolog(writer io.Writer) Logger {
 	}
 }
 
-func (z *Zerolog) Info(args ...any) {
-	z.logger.Info().Msgf("%v", args...)
+func (z *Zerolog) Info(msg string, args ...any) {
+	z.logger.Info().Msgf(msg, args...)
 }
 
-func (z *Zerolog) Debug(args ...any) {
-	z.logger.Debug().Msgf("%v", args...)
+func (z *Zerolog) Debug(msg string, args ...any) {
+	z.logger.Debug().Msgf(msg, args...)
 }
 
-func (z *Zerolog) Warn(args ...any) {
-	z.logger.Warn().Msgf("%v", args...)
+func (z *Zerolog) Warn(msg string, args ...any) {
+	z.logger.Warn().Msgf(msg, args...)
 }

@@ -17,16 +17,16 @@ func NewShort(original Logger) Logger {
 	}
 }
 
-func (s *Short) Debug(args ...any) {
-	s.Original.Debug(s.logShortf("%v", args...))
+func (s *Short) Debug(msg string, args ...any) {
+	s.Original.Debug(s.logShortf(msg, args...))
 }
 
-func (s *Short) Info(args ...any) {
-	s.Original.Info(s.logShortf("%v", args...))
+func (s *Short) Info(msg string, args ...any) {
+	s.Original.Info(s.logShortf(msg, args...))
 }
 
-func (s *Short) Warn(args ...any) {
-	s.Original.Warn(s.logShortf("%v", args...))
+func (s *Short) Warn(msg string, args ...any) {
+	s.Original.Warn(s.logShortf(msg, args...))
 }
 
 func (s *Short) logShortf(format string, args ...any) string {

@@ -17,6 +17,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 	"github.com/volodya-lombrozo/aidy/internal/git"
 	"github.com/volodya-lombrozo/aidy/internal/github"
+	logger "github.com/volodya-lombrozo/aidy/internal/log"
 	"github.com/volodya-lombrozo/aidy/internal/output"
 	"golang.org/x/mod/semver"
 )
@@ -29,6 +30,7 @@ type real struct {
 	config  config.Config
 	cache   cache.AidyCache
 	printer output.Output
+	logger  logger.Logger
 	in      *os.File
 }
 
@@ -44,6 +46,7 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	shell := executor.NewReal()
 	aidy.editor = output.NewEditor(shell)
 	aidy.printer = output.NewPrinter()
+	aidy.logger = logger.NewZerolog(os.Stdout)
 	var err error
 	if aidy.git, err = git.NewGit(shell); err != nil {
 		log.Fatalf("failed to initialize git: %v", err)
@@ -64,7 +67,7 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 		log.Fatalf("failed to initialize GitHub client: %v", err)
 	}
 	if err = aidy.InitSummary(summary, "README.md"); err != nil {
-		log.Printf("warning: failed to initialize project summary: %v", err)
+		aidy.logger.Warn("failed to initialize project summary: %v", err)
 	}
 	if err = aidy.SetTarget(); err != nil {
 		log.Fatalf("failed to set target repository: %v", err)
@@ -75,15 +78,15 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 func (r real) SetTarget() error {
 	target := r.cache.Remote()
 	if target != "" {
-		r.print(fmt.Sprintf("target repository is set to: %s\n", target))
+		r.logger.Debug("target repository is set to: %s", target)
 	} else {
-		r.print("can't find target")
+		r.logger.Warn("target repository is not set, trying to find one")
 		out, err := r.git.Run("remote", "-v")
 		if err != nil {
 			return fmt.Errorf("error running git remote command: %v", err)
 		}
 		lines := strings.Split(out, "\n")
-		r.print(fmt.Sprintf("found %s remote repositories:\n", out))
+		r.logger.Debug("found %d remote repositories:\n%s", len(lines), out)
 		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/.+?)(?:\.git)?$`)
 		unique := make(map[string]struct{})
 		for _, line := range lines {
@@ -105,7 +108,7 @@ func (r real) SetTarget() error {
 		}
 		sort.Strings(repos)
 		if len(repos) == 1 {
-			r.print(fmt.Sprintf("found one remote repository: %s\n", repos[0]))
+			r.logger.Debug("found one remote repository: %s", repos[0])
 			r.cache.WithRemote(repos[0])
 		} else if len(repos) < 1 {
 			return fmt.Errorf("no remote repositories found, please set one")
@@ -132,7 +135,7 @@ func (r *real) Diff() error {
 	if err != nil {
 		return fmt.Errorf("failed to get diff: '%v'", err)
 	} else {
-		r.print(fmt.Sprintf("Diff with the base branch:\n%s\n", diff))
+		r.print(fmt.Sprintf("diff with the base branch:\n%s\n", diff))
 		return nil
 	}
 }
@@ -312,7 +315,7 @@ func (r *real) PullRequest() error {
 	issue, err := r.github.Description(nissue)
 	if err != nil {
 		issue = "not-found"
-		log.Printf("warning: issue description not found for issue #%s, using default value", nissue)
+		r.logger.Warn("issue description not found for issue #%s because of %v, using default value", nissue, err)
 	}
 	title, err := r.ai.PrTitle(nissue, diff, issue, summary)
 	if err != nil {
@@ -410,7 +413,7 @@ func (r *real) Release(interval string, repo string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get tags: '%v'", err)
 	}
-	log.Printf("tags found: %v, size %d\n", tags, len(tags))
+	r.logger.Debug("found %d tags: %v", len(tags), tags)
 	var notes string
 	var updated string
 	if len(tags) > 0 {
@@ -544,7 +547,8 @@ func (r *real) CheckGitInstalled() error {
 
 func (r *real) InitSummary(required bool, file string) error {
 	if required {
-		log.Println("Undertstanding the project summary")
+		r.logger.Debug("summary is required, checking README.md file")
+		r.logger.Info("understanding the project summary")
 		content, err := os.ReadFile(file)
 		if err != nil {
 			return fmt.Errorf("can't read README.md file, because of '%v'", err)
@@ -560,9 +564,9 @@ func (r *real) InitSummary(required bool, file string) error {
 				return fmt.Errorf("error generating summary for README.md: %v", err)
 			}
 			r.cache.WithSummary(summary, shash)
-			r.print(fmt.Sprintf("project summary was successfully saved with hash '%s'\n", shash))
+			r.logger.Info("summary was generated and saved to the cache with hash '%s', using it", shash)
 		} else {
-			r.print(fmt.Sprintf("project summary is already saved with hash '%s'\n", shash))
+			r.logger.Info("summary is already saved in the cache with hash '%s', using it", shash)
 		}
 	}
 	return nil
