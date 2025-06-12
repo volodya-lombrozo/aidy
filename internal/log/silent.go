@@ -7,11 +7,11 @@ func NewSilent() Logger {
 	return &Silent{}
 }
 
-func (s *Silent) Info(args ...any) {
+func (s *Silent) Info(msg string, args ...any) {
 }
 
-func (s *Silent) Debug(args ...any) {
+func (s *Silent) Debug(msg string, args ...any) {
 }
 
-func (s *Silent) Warn(args ...any) {
+func (s *Silent) Warn(msg string, args ...any) {
 }

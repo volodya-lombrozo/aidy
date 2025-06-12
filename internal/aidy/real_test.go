@@ -16,6 +16,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 	"github.com/volodya-lombrozo/aidy/internal/git"
 	"github.com/volodya-lombrozo/aidy/internal/github"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
 
@@ -119,7 +120,7 @@ func TestReal_InitSummary_ErrorGettingProvider(t *testing.T) {
 
 func TestReal_InitSummary_CreateSummary(t *testing.T) {
 	cache := cache.NewMockAidyCache()
-	aidy := &real{ai: ai.NewMockAI(), git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	aidy := &real{ai: ai.NewMockAI(), git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock(), logger: log.NewMock()}
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "README.md")
 	err := os.WriteFile(path, []byte("mock summary"), 0644)
@@ -134,10 +135,10 @@ func TestReal_InitSummary_CreateSummary(t *testing.T) {
 	assert.Equal(t, "cad99a27bf4de48f", hash, "Expected hash to be 'mock-hash'")
 }
 
-func TestReal_InitSummary_AiError(t *testing.T) {
+func TestReal_InitSummary_AIError(t *testing.T) {
 	cache := cache.NewMockAidyCache()
 	brain := ai.NewFailedMockAI()
-	aidy := &real{ai: brain, git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	aidy := &real{ai: brain, git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock(), logger: log.NewMock()}
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "README.md")
 	err := os.WriteFile(path, []byte("mock summary"), 0644)
@@ -150,7 +151,7 @@ func TestReal_InitSummary_AiError(t *testing.T) {
 }
 
 func TestReal_InitSummary_CantFindReadme(t *testing.T) {
-	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache.NewMockAidyCache(), printer: output.NewMock()}
+	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache.NewMockAidyCache(), printer: output.NewMock(), logger: log.NewMock()}
 
 	err := aidy.InitSummary(true, "README.md")
 
@@ -198,7 +199,7 @@ func TestReal_CheckGitInstalled_Error(t *testing.T) {
 
 func TestReal_SetTarget_IfOnlyOne(t *testing.T) {
 	cache := cache.NewMockAidyCache()
-	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock(), logger: log.NewMock()}
 
 	err := aidy.SetTarget()
 
@@ -210,7 +211,7 @@ func TestReal_SetTarget_IfOnlyOne(t *testing.T) {
 func TestReal_SetTarget_NoRepos(t *testing.T) {
 	cache := cache.NewMockAidyCache()
 	cache.WithRemote("")
-	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	aidy := &real{git: git.NewMock(), config: config.NewMock(), cache: cache, printer: output.NewMock(), logger: log.NewMock()}
 
 	err := aidy.SetTarget()
 
@@ -228,7 +229,7 @@ func TestReal_SetTarget_RealGitOutput(t *testing.T) {
 	require.NoError(t, err, "Failed to create pipe for input")
 	_, err = w.WriteString("1")
 	require.NoError(t, err, "Failed to write to pipe")
-	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock(), logger: log.NewMock()}
 	err = w.Close()
 	require.NoError(t, err, "Failed to close pipe for input")
 
@@ -248,7 +249,7 @@ func TestReal_SetTarget_MultipleRemotes(t *testing.T) {
 	require.NoError(t, err, "Failed to create pipe for input")
 	_, err = w.WriteString("1")
 	require.NoError(t, err, "Failed to write to pipe")
-	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock(), logger: log.NewMock()}
 	err = w.Close()
 	require.NoError(t, err, "Failed to close pipe for input")
 
@@ -268,7 +269,7 @@ func TestReal_SetTarget_MultipleRemotes_WrongChoice(t *testing.T) {
 	require.NoError(t, err, "Failed to create pipe for input")
 	_, err = w.WriteString("3")
 	require.NoError(t, err, "Failed to write to pipe")
-	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock()}
+	aidy := &real{in: r, git: git, config: config.NewMock(), cache: cache, printer: output.NewMock(), logger: log.NewMock()}
 	err = w.Close()
 	require.NoError(t, err, "Failed to close pipe for input")
 
@@ -286,6 +287,7 @@ func TestReal_SetTarget_GitError(t *testing.T) {
 		config:  config.NewMock(),
 		cache:   cache,
 		printer: output.NewMock(),
+		logger:  log.NewMock(),
 	}
 
 	err := aidy.SetTarget()
@@ -303,6 +305,7 @@ func TestReal_SetTarget_PreservesDots(t *testing.T) {
 		config:  config.NewMock(),
 		cache:   cache,
 		printer: output.NewMock(),
+		logger:  log.NewMock(),
 	}
 
 	err := aidy.SetTarget()
@@ -320,7 +323,7 @@ func TestReal_PrintsDiff_Successfully(t *testing.T) {
 
 	captured := printer.Captured()
 	require.NoError(t, err, "Expected no error when printing diff")
-	expected := "Diff with the base branch:\nmock-diff\n"
+	expected := "diff with the base branch:\nmock-diff\n"
 	assert.Equal(t, expected, captured, "Expected diff to be printed")
 }
 
@@ -571,7 +574,7 @@ func TestReal_PullRequest_IssueNotFound(t *testing.T) {
 	github := github.NewMock()
 	github.Error = fmt.Errorf("issue not found")
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
 	err := raidy.PullRequest()
 
@@ -651,7 +654,7 @@ func TestReal_Release_Success(t *testing.T) {
 	mgit := git.NewMock()
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, editor: out}
+	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin")
 	assert.NoError(t, err, "expected no error during release")
@@ -665,7 +668,7 @@ func TestReal_Release_NoTags(t *testing.T) {
 	output := output.NewMock()
 	mockGit := git.NewMockWithShell(shell)
 
-	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output}
+	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
 
 	err := raidy.Release("patch", "origin")
 
@@ -678,20 +681,20 @@ func TestReal_ReleaseUnknownInterval(t *testing.T) {
 	mockGit := git.NewMock()
 	mockAI := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mockGit, ai: mockAI, editor: out}
+	raidy := &real{git: mockGit, ai: mockAI, editor: out, logger: log.NewMock()}
 
 	err := raidy.Release("", "origin")
 
 	assert.EqualError(t, err, "failed to update version: 'unknown version step: '''", "expected error when no tags are present")
 }
 
-func TestReal_ReleaseTagFetchError(t *testing.T) {
+func TestReal_Release_TagFetchError(t *testing.T) {
 	shell := executor.NewMock()
 	shell.Err = fmt.Errorf("error fetching tags")
 	mgit := git.NewMockWithShell(shell)
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, editor: out}
+	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
 
 	err := raidy.Release("patch", "origin")
 
@@ -699,11 +702,11 @@ func TestReal_ReleaseTagFetchError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get tags", "expected error message about fetching tags")
 }
 
-func TestReal_ReleaseNotesGenerationError(t *testing.T) {
+func TestReal_Release_NotesGenerationError(t *testing.T) {
 	mgit := git.NewMock()
 	nobrain := ai.NewFailedMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, editor: out}
+	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
 
 	err := raidy.Release("major", "origin")
 
