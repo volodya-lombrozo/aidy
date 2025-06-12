@@ -21,3 +21,7 @@ func (m *Mock) Debug(msg string, args ...any) {
 func (m *Mock) Warn(msg string, args ...any) {
 	m.Messages = append(m.Messages, fmt.Sprintf("mock warn: %v", fmt.Sprintf(msg, args...)))
 }
+
+func (m *Mock) Error(msg string, args ...any) {
+	m.Messages = append(m.Messages, fmt.Sprintf("mock error: %v", fmt.Sprintf(msg, args...)))
+}

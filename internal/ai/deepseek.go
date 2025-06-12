@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -16,6 +16,7 @@ type DeepSeek struct {
 	url     string
 	model   string
 	summary bool
+	log     log.Logger
 }
 
 type chatMessage struct {
@@ -132,7 +133,7 @@ func (d *DeepSeek) send(system string, user string, summary string) (string, err
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Printf("error closing response body: %v", err)
+			d.log.Error("error closing response body: %v", err)
 		}
 	}()
 	if resp.StatusCode != 200 {

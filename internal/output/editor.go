@@ -3,12 +3,12 @@ package output
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"runtime"
 	"strings"
 
 	"github.com/volodya-lombrozo/aidy/internal/executor"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
 type editor struct {
@@ -17,6 +17,7 @@ type editor struct {
 	err      *os.File
 	in       *os.File
 	out      *os.File
+	log      log.Logger
 }
 
 func NewEditor(shell executor.Executor) *editor {
@@ -26,6 +27,7 @@ func NewEditor(shell executor.Executor) *editor {
 		err:      os.Stderr,
 		in:       os.Stdin,
 		out:      os.Stdout,
+		log:      log.NewShort(log.NewZerolog(os.Stdout)),
 	}
 }
 
@@ -99,19 +101,20 @@ func (e *editor) edit(input string) string {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("created the temp file '%s' for editing\n", tmp.Name())
+	e.log.Debug("created temp file '%s' for editing", tmp.Name())
 	defer func() {
 		if err := os.Remove(tmp.Name()); err != nil {
-			log.Printf("failed to remove temp file: %v", err)
+			e.log.Error("failed to remove temp file '%s': %v", tmp.Name(), err)
 		}
 	}()
 	if _, err := tmp.WriteString(input); err != nil {
 		panic(err)
 	}
 	if err := tmp.Close(); err != nil {
-		log.Printf("failed to close temp file: %v", err)
+		e.log.Error("failed to close temp file '%s': %v", tmp.Name(), err)
 	}
-	log.Printf("use '%s' program for editing\n", e.external)
+	e.log.Debug("temp file '%s' created with content:\n%s", tmp.Name(), input)
+	e.log.Debug("using '%s' as editor", e.external)
 	editor := e.external
 	parts := strings.Fields(editor)
 	args := append(parts[1:], tmp.Name())

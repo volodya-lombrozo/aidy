@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
 func TestRealExecutor_RunCommand(t *testing.T) {
@@ -33,7 +34,7 @@ func TestRealExecutor_RunCommandInDir(t *testing.T) {
 }
 
 func TestRealExecutor_RunInteractively(t *testing.T) {
-	executor := &RealExecutor{}
+	executor := &RealExecutor{log: log.NewShort(log.NewZerolog(os.Stdout))}
 	r, w, err := os.Pipe()
 	require.NoError(t, err, "Failed to create pipe for stdout")
 	executor.out = w

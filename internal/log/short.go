@@ -29,6 +29,10 @@ func (s *Short) Warn(msg string, args ...any) {
 	s.Original.Warn(s.logShortf(msg, args...))
 }
 
+func (s *Short) Error(msg string, args ...any) {
+	s.Original.Error(s.logShortf(msg, args...))
+}
+
 func (s *Short) logShortf(format string, args ...any) string {
 	msg := format
 	if len(args) > 0 {
