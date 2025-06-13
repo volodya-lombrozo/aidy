@@ -857,3 +857,30 @@ func TestUpver(t *testing.T) {
 	}
 
 }
+
+func TestInitLogger_DebugMode(t *testing.T) {
+	InitLogger(false, true)
+
+	logger := log.Get()
+
+	assert.NotNil(t, logger, "Expected logger to be initialized")
+	assert.IsType(t, &log.Short{}, logger, "Expected logger to be of type Short")
+}
+
+func TestInitLogger_SilentMode(t *testing.T) {
+	InitLogger(true, false)
+
+	logger := log.Get()
+
+	assert.NotNil(t, logger, "Expected logger to be initialized")
+	assert.IsType(t, &log.Silent{}, logger, "Expected logger to be of type Silent")
+}
+
+func TestInitLogger_DefaultMode(t *testing.T) {
+	InitLogger(false, false)
+
+	logger := log.Get()
+
+	assert.NotNil(t, logger, "Expected logger to be initialized")
+	assert.IsType(t, &log.Short{}, logger, "Expected logger to be of type Short")
+}

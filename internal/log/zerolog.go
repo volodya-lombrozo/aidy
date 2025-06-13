@@ -10,9 +10,13 @@ type Zerolog struct {
 	logger zerolog.Logger
 }
 
-func NewZerolog(writer io.Writer) Logger {
+func NewZerolog(writer io.Writer, level string) Logger {
+	zlevel, err := zerolog.ParseLevel(level)
+	if err != nil {
+		zlevel = zerolog.InfoLevel
+	}
 	return &Zerolog{
-		logger: zerolog.New(zerolog.ConsoleWriter{Out: writer}).With().Timestamp().Logger(),
+		logger: zerolog.New(zerolog.ConsoleWriter{Out: writer}).Level(zlevel).With().Timestamp().Logger(),
 	}
 }
 

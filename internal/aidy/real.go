@@ -39,13 +39,16 @@ type real struct {
 // - summary: whether to use a project summary in AI requests
 // - aider: whether to use the aider configuration
 // - ailess: whether to use AI or not
-func NewAidy(summary bool, aider bool, ailess bool) Aidy {
+// - silent: whether to suppress output
+// - debug: whether to enable debug logging
+func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool) Aidy {
 	var aidy real
 	aidy.in = os.Stdin
+	InitLogger(silent, debug)
+	aidy.logger = log.Get()
 	shell := executor.NewReal()
 	aidy.editor = output.NewEditor(shell)
 	aidy.printer = output.NewPrinter()
-	aidy.logger = log.NewZerolog(os.Stdout)
 	var err error
 	if aidy.git, err = git.NewGit(shell); err != nil {
 		aidy.logger.Error("failed to initialize git: %v", err)
@@ -81,7 +84,20 @@ func NewAidy(summary bool, aider bool, ailess bool) Aidy {
 	return &aidy
 }
 
-func (r real) SetTarget() error {
+func InitLogger(silent bool, debug bool) {
+	var logger log.Logger
+	if debug {
+		logger = log.NewShort(log.NewZerolog(os.Stdout, "debug"))
+	} else {
+		logger = log.NewShort(log.NewZerolog(os.Stdout, "info"))
+	}
+	if silent {
+		logger = log.NewSilent()
+	}
+	log.Set(logger)
+}
+
+func (r *real) SetTarget() error {
 	target := r.cache.Remote()
 	if target != "" {
 		r.logger.Debug("target repository is set to: %s", target)

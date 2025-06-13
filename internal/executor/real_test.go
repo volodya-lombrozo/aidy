@@ -34,7 +34,7 @@ func TestRealExecutor_RunCommandInDir(t *testing.T) {
 }
 
 func TestRealExecutor_RunInteractively(t *testing.T) {
-	executor := &RealExecutor{log: log.NewShort(log.NewZerolog(os.Stdout))}
+	executor := &RealExecutor{log: log.Get()}
 	r, w, err := os.Pipe()
 	require.NoError(t, err, "Failed to create pipe for stdout")
 	executor.out = w

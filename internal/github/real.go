@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -45,7 +44,7 @@ func NewGithub(url string, gs git.Git, token string, ch cache.AidyCache) *github
 		git:    gs,
 		token:  token,
 		ch:     ch,
-		log:    log.NewShort(log.NewZerolog(os.Stdout)),
+		log:    log.Get(),
 	}
 }
 
