@@ -9,7 +9,7 @@ import (
 
 func TestZerolog_Info(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewZerolog(&buf)
+	logger := NewZerolog(&buf, "info")
 
 	logger.Info("This is an info message")
 
@@ -18,7 +18,7 @@ func TestZerolog_Info(t *testing.T) {
 
 func TestZerolog_Debug(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewZerolog(&buf)
+	logger := NewZerolog(&buf, "debug")
 
 	logger.Debug("This is a debug message")
 
@@ -27,7 +27,7 @@ func TestZerolog_Debug(t *testing.T) {
 
 func TestZerolog_Warn(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewZerolog(&buf)
+	logger := NewZerolog(&buf, "warn")
 
 	logger.Warn("This is a warning message")
 
@@ -36,7 +36,18 @@ func TestZerolog_Warn(t *testing.T) {
 
 func TestZerolog_Info_Parametrised(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewZerolog(&buf)
+	logger := NewZerolog(&buf, "info")
 	logger.Info("This is an info message with param: %d", 42)
 	assert.Contains(t, buf.String(), "This is an info message with param: 42", "Expected info message with parameter to be logged")
+}
+
+func TestZerolog_Unknown_UseInfoInstead(t *testing.T) {
+	var buf bytes.Buffer
+	logger := NewZerolog(&buf, "unknown")
+
+	logger.Debug("This is a debug message")
+	logger.Info("This is an info message")
+
+	assert.Contains(t, buf.String(), "This is an info message", "Expected info message to be logged")
+	assert.NotContains(t, buf.String(), "This is a debug message", "Expected debug message not to be logged")
 }

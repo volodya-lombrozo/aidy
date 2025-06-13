@@ -28,6 +28,6 @@ func TestRootCmd_Executes_WithoutError(t *testing.T) {
 	assert.NoError(t, err, "no error expected")
 }
 
-func mock(summary, aider, ailess bool) aidy.Aidy {
+func mock(summary, aider, ailess, silent, debug bool) aidy.Aidy {
 	return aidy.NewMock()
 }
