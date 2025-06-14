@@ -176,6 +176,7 @@ func (r *real) Commit() error {
 		return fmt.Errorf("error getting current diff: %v", diffErr)
 	}
 	nissue := inumber(branch)
+	r.logger.Info("generating commit message...")
 	msg, cerr := r.ai.CommitMessage(nissue, diff)
 	if cerr != nil {
 		return fmt.Errorf("error generating commit message: %v", cerr)
@@ -184,23 +185,28 @@ func (r *real) Commit() error {
 	if err != nil {
 		return fmt.Errorf("error committing changes: %v", err)
 	}
+	r.logger.Info("commit was created with message: '%s'", msg)
 	return r.Heal()
 }
 
 func (r *real) Issue(task string) error {
 	summary, _ := r.cache.Summary()
+	r.logger.Info("generating issue title...")
 	title, err := r.ai.IssueTitle(task, summary)
 	if err != nil {
 		return fmt.Errorf("error generating title: %v", err)
 	}
+	r.logger.Info("generating issue body...")
 	body, err := r.ai.IssueBody(task, summary)
 	if err != nil {
 		return fmt.Errorf("error generating body: %v", err)
 	}
+	r.logger.Info("retrieving suitable labels...")
 	labels, err := r.github.Labels()
 	if err != nil {
 		return fmt.Errorf("error retrieving labels: %v", err)
 	}
+	r.logger.Info("applying suitable labels for the issue...")
 	suitable, err := r.ai.IssueLabels(body, labels)
 	if err != nil {
 		return fmt.Errorf("error generating suitable labels: %v", err)
@@ -335,15 +341,18 @@ func (r *real) PullRequest() error {
 	}
 	summary, _ := r.cache.Summary()
 	nissue := inumber(branch)
+	r.logger.Info("retrieving the description for issue #%s...", nissue)
 	issue, err := r.github.Description(nissue)
 	if err != nil {
 		issue = "not-found"
 		r.logger.Warn("issue description not found for issue #%s because of %v, using default value", nissue, err)
 	}
+	r.logger.Info("generating pull request title...")
 	title, err := r.ai.PrTitle(nissue, diff, issue, summary)
 	if err != nil {
 		return fmt.Errorf("error generating pull request title: %v", err)
 	}
+	r.logger.Info("generating pull request body...")
 	body, err := r.ai.PrBody(nissue, diff, issue, summary)
 	if err != nil {
 		return fmt.Errorf("error generating pull request body: %v", err)
@@ -386,6 +395,7 @@ func (r *real) Append() {
 		r.logger.Error("error appending to commit: %v", err)
 		os.Exit(1)
 	}
+	r.logger.Info("changes were appended to the last commit")
 }
 
 func (r *real) Clean() {
@@ -400,6 +410,7 @@ func (r *real) Clean() {
 		r.logger.Error("Can't clear '.aidy' directory, '%v'", err)
 		os.Exit(1)
 	}
+	r.logger.Info("'.aidy' directory was cleared")
 }
 
 func (r *real) StartIssue(number string) error {
@@ -411,10 +422,12 @@ func (r *real) StartIssue(number string) error {
 	if found == "" {
 		return fmt.Errorf("error: invalid issue number '%s'", number)
 	}
+	r.logger.Info("retrieving the description for issue #%s...", found)
 	descr, err := r.github.Description(found)
 	if err != nil {
 		return fmt.Errorf("error retrieving issue description: %v", err)
 	}
+	r.logger.Info("generating branch name for issue #%s...", found)
 	raw, err := r.ai.SuggestBranch(descr)
 	if err != nil {
 		return fmt.Errorf("error generating branch name: %v", err)
@@ -450,6 +463,7 @@ func (r *real) Release(interval string, repo string) error {
 			return fmt.Errorf("failed to get git log: '%v'", err)
 		}
 		summary := strings.Join(messages, "\n")
+		r.logger.Info("generating release notes...")
 		notes, err = r.ai.ReleaseNotes(summary)
 		if err != nil {
 			return fmt.Errorf("failed to generate release notes: '%v'", err)
@@ -461,6 +475,7 @@ func (r *real) Release(interval string, repo string) error {
 		if strings.HasPrefix(mtags[latest], "v") {
 			updated = "v" + updated
 		}
+		r.logger.Info("latest tag is '%s', updating to '%s'", latest, updated)
 	} else {
 		updated = "v0.0.1"
 		messages, err := r.git.Log("")
@@ -468,10 +483,12 @@ func (r *real) Release(interval string, repo string) error {
 			return fmt.Errorf("failed to get git log: '%v'", err)
 		}
 		summary := strings.Join(messages, "\n")
+		r.logger.Info("generating release notes for the first release...")
 		notes, err = r.ai.ReleaseNotes(summary)
 		if err != nil {
 			return fmt.Errorf("failed to generate release notes: '%v'", err)
 		}
+		r.logger.Info("no tags found, creating the first release with version '%s'", updated)
 	}
 	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, notes)
 	return r.editor.Print(command)
@@ -545,6 +562,7 @@ func (r *real) Squash() {
 		r.logger.Error("Error committing changes: %v", err)
 		os.Exit(1)
 	}
+	r.logger.Info("changes were squashed")
 }
 
 func (r *real) Heal() error {
