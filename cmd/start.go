@@ -6,7 +6,7 @@ import (
 
 func newStartCmd(ctx *Context) *cobra.Command {
 	command := &cobra.Command{
-		Use:     "start [issue]",
+		Use:     "start [issue-number]",
 		Aliases: []string{"st"},
 		Args:    cobra.ExactArgs(1),
 		Short:   "Start a new issue",
