@@ -688,7 +688,6 @@ func (r *real) Repeat(file string) int {
 		return 1
 	}
 	args, err := os.ReadFile(path)
-	fmt.Printf("reading from '%s': %s\n", path, args)
 	if err != nil {
 		r.logger.Error("Can't repeat, erorr ocurred %w\n", err)
 		return 1
