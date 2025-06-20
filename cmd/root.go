@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -58,12 +57,11 @@ func newRootCmd(create func(bool, bool, bool, bool, bool) aidy.Aidy) *cobra.Comm
 	for idx := range root.Commands() {
 		cmd := root.Commands()[idx]
 		cmd.PostRun = func(cmd *cobra.Command, args []string) {
-			log.Printf("Trying to cache command '%s %s'\n", cmd.Name(), args)
 			name := cmd.Name()
 			if name != "repeat" {
 				err := aidy.CacheArgs(name, args, ".aidy_repeat")
 				if err != nil {
-					fmt.Printf("Can't cache call: %w\n", err)
+					log.Printf("Can't cache call: %w\n", err)
 					os.Exit(1)
 				}
 			}

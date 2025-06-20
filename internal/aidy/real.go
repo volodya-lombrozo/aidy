@@ -700,20 +700,21 @@ func (r *real) Repeat(file string) int {
 
 func CacheArgs(name string, args []string, file string) error {
 	single := strings.Join(args, " ")
-	single = fmt.Sprintf("%s %s", name, single)
 	path, err := fromHome(file)
-	fmt.Printf("Saving to '%s'\n", path)
 	if err != nil {
 		return err
 	}
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		buffer, err := os.Create(file)
+		buffer, err := os.Create(path)
 		if err != nil {
 			return err
 		}
 		defer buffer.Close()
 		written, err := buffer.WriteString(single)
+		if err != nil {
+			return err
+		}
 		if written != len([]byte(single)) {
 			return fmt.Errorf("Broken data was writen to '~/.adiy_repeat': %s", single)
 		}
