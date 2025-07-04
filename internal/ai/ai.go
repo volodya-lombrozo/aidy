@@ -4,7 +4,7 @@ import "fmt"
 
 type AI interface {
 	PrTitle(number string, diff string, issue string, summary string) (string, error)
-	PrBody(number string, diff string, issue string, summary string) (string, error)
+	PrBody(diff string, issue string, summary string) (string, error)
 	IssueTitle(input string, summary string) (string, error)
 	IssueBody(input string, summary string) (string, error)
 	IssueLabels(issue string, available []string) ([]string, error)

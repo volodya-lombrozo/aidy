@@ -50,11 +50,9 @@ The description must:
 - Avoid explaining why the changes were made.
 - Be approximately 50–100 characters long.
 - Use backticks for code or identifiers when appropriate.
-- End with an empty line followed by: "Closes #%s"
 
 Formatting rules:
 - Do not add section headers.
-- Do not include line breaks except before the "Closes" line.
 - Reply only with the pull request body — no additional text or explanations.
 `
 

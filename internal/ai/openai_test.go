@@ -57,7 +57,7 @@ func TestOpenAi_GeneratesTitleWithError(t *testing.T) {
 func TestOpenAi_GeneratesBody(t *testing.T) {
 	openai := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
 
-	body, err := openai.PrBody("123", "test diff", "successful issue-description", "project-summary")
+	body, err := openai.PrBody("test diff", "successful issue-description", "project-summary")
 
 	require.NoError(t, err, "Expected no error when generating PR body")
 	assert.Contains(t, body, "generate a well-structured pull request body", "Expected PR body to match mock response")

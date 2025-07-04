@@ -29,7 +29,7 @@ func (m *Mock) Squash() {
 	m.logs = append(m.logs, "Squash called")
 }
 
-func (m *Mock) PullRequest() error {
+func (m *Mock) PullRequest(fixes bool) error {
 	m.logs = append(m.logs, "PullRequest called")
 	return nil
 }

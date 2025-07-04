@@ -5,7 +5,7 @@ type Aidy interface {
 	PrintConfig() error
 	Commit() error
 	Squash()
-	PullRequest() error
+	PullRequest(fixes bool) error
 	Issue(task string) error
 	Heal() error
 	Append()

@@ -77,10 +77,8 @@ func TestMock_GenerateIssueBody(t *testing.T) {
 
 func TestMock_GenerateBody(t *testing.T) {
 	ai := NewMockAI()
-	branch := "feature-branch"
-	expected := fmt.Sprintf("mock body for %s with issue #issue and summary: summary\n\ndiff:\ndiff", branch)
-
-	body, err := ai.PrBody(branch, "diff", "issue", "summary")
+	expected := "mock body for issue #issue and summary: summary\n\ndiff:\ndiff"
+	body, err := ai.PrBody("diff", "issue", "summary")
 
 	require.NoError(t, err, "Expected no error")
 	assert.Contains(t, body, expected, "Expected body to match")
