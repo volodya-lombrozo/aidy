@@ -11,6 +11,20 @@ It helps generate commit messages, issues, pull requests, releases, and more.
 
 Download the latest stable version from the [releases page](https://github.com/volodya-lombrozo/aidy/releases). Pre-built binaries are available for MacOS, Windows, and Linux.
 
+### Using Go
+
+If you have Go 1.24.1 or later installed, you can run:
+
+```bash
+go install github.com/volodya-lombrozo/aidy@latest
+```
+
+To install a specific version, use:
+
+```bash
+go install github.com/volodya-lombrozo/aidy@v0.1.0
+```
+
 ### From Sources 
 
 You need to have Go 1.24.1 or later installed on your system.
