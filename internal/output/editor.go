@@ -66,9 +66,8 @@ func (e *editor) Print(command string) error {
 }
 
 func (e *editor) run(command string) error {
-	e.printf("running '%s' command\n", command)
+	e.printf("running...\n")
 	parts := cleanQoutes(splitCommand(command))
-	e.printf("command parts '%v'\n", parts)
 	_, err := e.shell.RunInteractively(parts[0], parts[1:]...)
 	if err != nil {
 		return err
