@@ -562,7 +562,7 @@ func TestReal_PullRequest(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Get()}
 
-	err := raidy.PullRequest()
+	err := raidy.PullRequest(false)
 
 	require.NoError(t, err, "expected no error when creating pull request")
 	output := out.Last()
@@ -576,12 +576,26 @@ func TestReal_PullRequest_IssueNotFound(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
-	err := raidy.PullRequest()
+	err := raidy.PullRequest(false)
 
 	require.NoError(t, err, "Expected no error when creating pull request with issue not found")
 	output := out.Last()
 	assert.Contains(t, output, "gh pr create")
 	assert.Contains(t, output, "with issue #not-found")
+	assert.Contains(t, output, "Related to #")
+}
+
+func TestReal_PullRequest_Fixes(t *testing.T) {
+	github := github.NewMock()
+	github.Error = fmt.Errorf("issue not found")
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.PullRequest(true)
+
+	require.NoError(t, err, "Expected no error when creating pull request with issue not found")
+	output := out.Last()
+	assert.Contains(t, output, "Fixes #")
 }
 
 func TestReal_Commit(t *testing.T) {
@@ -806,27 +820,6 @@ func TestHealPRTitle(t *testing.T) {
 	}
 	for _, test := range tests {
 		result := healPRTitle(test.actual, "42")
-		assert.Equal(t, test.expected, result)
-	}
-}
-
-func TestHealPRBody(t *testing.T) {
-	tests := []struct {
-		actual   string
-		expected string
-	}{
-		{"Add clean command to clear cache\nCloses: #75", "Add clean command to clear cache\nCloses #42"},
-		{"add clean command to clear cache\ncloses: #75", "add clean command to clear cache\ncloses #42"},
-		{"add clean command to clear cache\ncloses #75", "add clean command to clear cache\ncloses #42"},
-		{"Add clean command to clear cache", "Add clean command to clear cache"},
-		{"Add clean command to clear cache\nCloses: #master", "Add clean command to clear cache\nCloses: #master"},
-		{"Add clean command to clear cache\nRelated to #7523", "Add clean command to clear cache\nRelated to #42"},
-		{"add clean command to clear cache\nrelated to #7523", "add clean command to clear cache\nrelated to #42"},
-		{"add clean command to clear cache\nrelated to: #7523", "add clean command to clear cache\nrelated to #42"},
-		{"add clean command to clear cache\ntest #7523", "add clean command to clear cache\ntest #7523"},
-	}
-	for _, test := range tests {
-		result := healPRBody(test.actual, "42")
 		assert.Equal(t, test.expected, result)
 	}
 }

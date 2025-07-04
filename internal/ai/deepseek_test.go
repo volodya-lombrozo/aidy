@@ -65,9 +65,8 @@ func TestDeepSeekAI_PrBody(t *testing.T) {
 	ai.url = server.URL
 	expectedDiff := "Test diff"
 	expectedIssue := "Test issue"
-	expectedNumber := "42"
 
-	result, err := ai.PrBody(expectedNumber, expectedDiff, expectedIssue, "")
+	result, err := ai.PrBody(expectedDiff, expectedIssue, "")
 
 	require.NoError(t, err, "Expected no error when generating PR body")
 	assert.Contains(t, result, "generate a well-structured pull request body", "Echo server should return a command")

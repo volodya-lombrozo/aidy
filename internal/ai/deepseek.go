@@ -57,8 +57,8 @@ func (d *DeepSeek) PrTitle(number, diff, issue, summary string) (string, error) 
 	return d.send("You are a helpful assistant generating Git commit titles.", prompt, summary)
 }
 
-func (d *DeepSeek) PrBody(number string, diff string, issue string, summary string) (string, error) {
-	prompt := fmt.Sprintf(PrBody, diff, issue, number)
+func (d *DeepSeek) PrBody(diff string, issue string, summary string) (string, error) {
+	prompt := fmt.Sprintf(PrBody, diff, issue)
 	return d.send("You are a helpful assistant generating Git commit messages.", prompt, summary)
 }
 

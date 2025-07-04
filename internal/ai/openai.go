@@ -42,8 +42,8 @@ func (o *OpenAI) PrTitle(number, diff, issue, summary string) (string, error) {
 	return o.send(prompt, summary)
 }
 
-func (o *OpenAI) PrBody(number, diff, issue, summary string) (string, error) {
-	prompt := fmt.Sprintf(PrBody, diff, issue, number)
+func (o *OpenAI) PrBody(diff, issue, summary string) (string, error) {
+	prompt := fmt.Sprintf(PrBody, diff, issue)
 	return o.send(prompt, summary)
 }
 

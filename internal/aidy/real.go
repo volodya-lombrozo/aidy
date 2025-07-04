@@ -260,19 +260,6 @@ func healQuote(open rune, text string) string {
 	return text
 }
 
-func healPRBody(body string, issue string) string {
-	re := regexp.MustCompile(`(Closes|closes|related to|Related to)\s?:?\s?#(\d+)`)
-	replaced := re.ReplaceAllStringFunc(body, func(m string) string {
-		groups := re.FindStringSubmatch(m)
-		if len(groups) == 3 {
-			verb := groups[1]
-			return fmt.Sprintf("%s #%s", verb, issue)
-		}
-		return m
-	})
-	return replaced
-}
-
 func healPRTitle(text string, issue string) string {
 	re := regexp.MustCompile(`(fix|feat|build|chore|ci|docs|style|refactor|perf|test)\(#(\d+)\)`)
 	replaced := re.ReplaceAllStringFunc(text, func(m string) string {
@@ -330,7 +317,7 @@ func (r *real) print(msg string) {
 	}
 }
 
-func (r *real) PullRequest() error {
+func (r *real) PullRequest(fixes bool) error {
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
@@ -353,9 +340,14 @@ func (r *real) PullRequest() error {
 		return fmt.Errorf("error generating pull request title: %v", err)
 	}
 	r.logger.Info("generating pull request body...")
-	body, err := r.ai.PrBody(nissue, diff, issue, summary)
+	body, err := r.ai.PrBody(diff, issue, summary)
 	if err != nil {
 		return fmt.Errorf("error generating pull request body: %v", err)
+	}
+	if fixes {
+		body = body + fmt.Sprintf("\n\nFixes #%s", nissue)
+	} else {
+		body = body + fmt.Sprintf("\n\nRelated to #%s", nissue)
 	}
 	remote := r.cache.Remote()
 	var repo string
@@ -365,7 +357,7 @@ func (r *real) PullRequest() error {
 		repo = ""
 	}
 	prtitle := healPRTitle(healQuotes(title), nissue)
-	prbody := healPRBody(healQuotes(body), nissue)
+	prbody := healQuotes(body)
 	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo))
 	return r.editor.Print(cmd)
 }

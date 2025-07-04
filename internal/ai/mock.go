@@ -28,8 +28,8 @@ func (m *MockAI) PrTitle(branchName string, diff string, issue string, summary s
 	return fmt.Sprintf("mock title for '%s' with issue #%s and summary: %s", branchName, issue, summary), nil
 }
 
-func (m *MockAI) PrBody(branch string, diff string, issue string, summary string) (string, error) {
-	return fmt.Sprintf("mock body for %s with issue #%s and summary: %s\n\ndiff:\n%s", branch, issue, summary, diff), nil
+func (m *MockAI) PrBody(diff string, issue string, summary string) (string, error) {
+	return fmt.Sprintf("mock body for issue #%s and summary: %s\n\ndiff:\n%s", issue, summary, diff), nil
 }
 
 func (m *MockAI) IssueTitle(input string, summary string) (string, error) {
