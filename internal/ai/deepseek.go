@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/volodya-lombrozo/aidy/internal/log"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
 type DeepSeek struct {
@@ -44,6 +45,7 @@ func NewDeepSeek(apiKey string, summary bool) AI {
 		url:     "https://api.deepseek.com/chat/completions",
 		model:   "deepseek-chat",
 		summary: summary,
+		log: log.Default(),
 	}
 }
 
@@ -88,8 +90,9 @@ func (d *DeepSeek) IssueLabels(issue string, available []string) ([]string, erro
 	return res, nil
 }
 
-func (d *DeepSeek) CommitMessage(number string, diff string) (string, error) {
-	prompt := fmt.Sprintf(CommitMsg, diff, number, number)
+func (d *DeepSeek) CommitMessage(number, diff, descr string) (string, error) {
+	prompt := appendIssue(fmt.Sprintf(CommitMsg, diff, number, number), descr)
+	d.log.Debug("deepseek prompt: %q", prompt)
 	return d.send("You are a helpful assistant writing commit messages.", prompt, "")
 }
 
@@ -106,9 +109,9 @@ func (d *DeepSeek) SuggestBranch(descr string) (string, error) {
 func (d *DeepSeek) send(system string, user string, summary string) (string, error) {
 	content := user
 	if d.summary {
-		content = AppendSummary(content, summary)
+		content = appendSummary(content, summary)
 	}
-	content = TrimPrompt(content)
+	content = trimPrompt(content)
 	body := chatRequest{
 		Model: d.model,
 		Messages: []chatMessage{

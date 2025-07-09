@@ -18,7 +18,7 @@ func Set(logger Logger) {
 	main = logger
 }
 
-func Get() Logger {
+func Default() Logger {
 	if main == nil {
 		panic("logger is not set")
 	}

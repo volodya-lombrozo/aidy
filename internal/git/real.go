@@ -30,7 +30,7 @@ func NewGitFallback(shell executor.Executor, fallback func() (string, error), di
 			return nil, fmt.Errorf("failed to get current working directory: %w", err)
 		}
 	}
-	return &real{dir: directory, shell: shell, log: log.Get()}, nil
+	return &real{dir: directory, shell: shell, log: log.Default()}, nil
 }
 
 func (r *real) Run(arg ...string) (string, error) {

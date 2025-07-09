@@ -40,7 +40,7 @@ func (m *MockAI) IssueBody(input string, summary string) (string, error) {
 	return fmt.Sprintf("mock issue body for '%s' with summary: %s", input, summary), nil
 }
 
-func (m *MockAI) CommitMessage(issue string, diff string) (string, error) {
+func (m *MockAI) CommitMessage(issue, diff, descr string) (string, error) {
 	return fmt.Sprintf("feat(#%s): %s", issue, summary(diff)), nil
 }
 

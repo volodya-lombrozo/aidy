@@ -21,7 +21,7 @@ func NewReal() Executor {
 		out: os.Stdout,
 		in:  os.Stdin,
 		err: os.Stderr,
-		log: log.Get(),
+		log: log.Default(),
 	}
 }
 

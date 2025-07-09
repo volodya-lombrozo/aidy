@@ -132,7 +132,7 @@ func TestOpenAI_CommitMessage(t *testing.T) {
 	number := "123"
 	diff := "successful diff"
 
-	message, err := openAI.CommitMessage(number, diff)
+	message, err := openAI.CommitMessage(number, diff, "")
 
 	require.NoError(t, err, "Expected no error when generating commit message")
 	assert.Contains(t, message, diff, "Expected commit message to contain diff")

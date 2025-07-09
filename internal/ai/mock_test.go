@@ -26,7 +26,7 @@ func TestMockGenerateCommitMessage(t *testing.T) {
 	issue := "100"
 	expected := fmt.Sprintf("feat(#%s): %s", issue, "changed files: ai/mockai.go")
 
-	msg, err := mockAI.CommitMessage(issue, diff)
+	msg, err := mockAI.CommitMessage(issue, diff, "")
 
 	require.NoError(t, err, "Expected no error")
 	assert.Equal(t, expected, msg, "Expected commit message to match")
