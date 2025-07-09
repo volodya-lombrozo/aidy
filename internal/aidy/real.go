@@ -469,7 +469,16 @@ func (r *real) Release(interval string, repo string) error {
 		}
 		r.logger.Info("latest tag is '%s', updating to '%s'", latest, updated)
 	} else {
-		updated = "v0.0.1"
+		switch interval {
+		case "patch":
+			updated = "v0.0.1"
+		case "minor":
+			updated = "v0.1.0"
+		case "major":
+			updated = "v1.0.0"
+		default:
+			return fmt.Errorf("unknown version step: '%s'", interval)
+		}
 		messages, err := r.git.Log("")
 		if err != nil {
 			return fmt.Errorf("failed to get git log: '%v'", err)
