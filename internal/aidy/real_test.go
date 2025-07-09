@@ -676,7 +676,7 @@ func TestReal_Release_Success(t *testing.T) {
 	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
 }
 
-func TestReal_Release_NoTags(t *testing.T) {
+func TestReal_Release_NoTags_Patch(t *testing.T) {
 	shell := executor.NewMock()
 	shell.Output = "absent"
 	output := output.NewMock()
@@ -688,6 +688,36 @@ func TestReal_Release_NoTags(t *testing.T) {
 
 	require.NoError(t, err, "expected no error when releasing with no tags")
 	expected := "git tag --cleanup=verbatim -a \"v0.0.1\" -m \""
+	assert.Contains(t, output.Last(), expected, "expected release command to be generated with no tags")
+}
+
+func TestReal_Release_NoTags_Minor(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "absent"
+	output := output.NewMock()
+	mockGit := git.NewMockWithShell(shell)
+
+	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin")
+
+	require.NoError(t, err, "expected no error when releasing with no tags")
+	expected := "git tag --cleanup=verbatim -a \"v0.1.0\" -m \""
+	assert.Contains(t, output.Last(), expected, "expected release command to be generated with no tags")
+}
+
+func TestReal_Release_NoTags_Major(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "absent"
+	output := output.NewMock()
+	mockGit := git.NewMockWithShell(shell)
+
+	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
+
+	err := raidy.Release("major", "origin")
+
+	require.NoError(t, err, "expected no error when releasing with no tags")
+	expected := "git tag --cleanup=verbatim -a \"v1.0.0\" -m \""
 	assert.Contains(t, output.Last(), expected, "expected release command to be generated with no tags")
 }
 
