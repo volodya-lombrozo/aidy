@@ -11,7 +11,7 @@ func TestSetAndGetLogger(t *testing.T) {
 	mock := NewMock()
 	Set(mock)
 
-	initialised := Get()
+	initialised := Default()
 
 	assert.Equal(t, mock, initialised, "Expected retrieved logger to be the mock logger")
 }
@@ -29,6 +29,6 @@ func TestGetLoggerNotSetPanics(t *testing.T) {
 	}()
 	main = nil
 	require.Panics(t, func() {
-		Get()
+		Default()
 	}, "Expected panic when getting logger that is not set")
 }

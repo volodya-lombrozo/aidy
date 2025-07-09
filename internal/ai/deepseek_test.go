@@ -126,7 +126,7 @@ func TestDeepSeekAI_CommitMessage(t *testing.T) {
 	expectedDiff := "Test diff"
 	expectedNumber := "42"
 
-	result, err := ai.CommitMessage(expectedNumber, expectedDiff)
+	result, err := ai.CommitMessage(expectedNumber, expectedDiff, "")
 
 	require.NoError(t, err, "Expected no error when generating commit message")
 	assert.Contains(t, result, "generate a single-line commit message", "Echo server should return a command")

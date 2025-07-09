@@ -23,14 +23,14 @@ func TestMockAidy_PrintConfig(t *testing.T) {
 
 func TestMockAidy_Commit(t *testing.T) {
 	aidy := NewMock()
-	err := aidy.Commit()
+	err := aidy.Commit(true)
 	require.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "Commit called")
 }
 
 func TestMockAidy_Squash(t *testing.T) {
 	aidy := NewMock()
-	aidy.Squash()
+	aidy.Squash(true)
 	assert.Contains(t, aidy.Logs(), "Squash called")
 }
 

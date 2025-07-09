@@ -20,12 +20,12 @@ func (m *Mock) PrintConfig() error {
 	return nil
 }
 
-func (m *Mock) Commit() error {
+func (m *Mock) Commit(issue bool) error {
 	m.logs = append(m.logs, "Commit called")
 	return nil
 }
 
-func (m *Mock) Squash() {
+func (m *Mock) Squash(issue bool) {
 	m.logs = append(m.logs, "Squash called")
 }
 

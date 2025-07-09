@@ -406,7 +406,7 @@ func TestReal_PrintConfig_NoConfig(t *testing.T) {
 
 func TestReal_Append(t *testing.T) {
 	shell := executor.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), logger: log.Get()}
+	raidy := &real{git: git.NewMockWithShell(shell), logger: log.Default()}
 
 	raidy.Append()
 
@@ -469,7 +469,7 @@ func TestReal_CleanCache(t *testing.T) {
 	}()
 	err = os.Chdir(tmp)
 	require.NoError(t, err, "Failed to change working directory")
-	raidy := &real{logger: log.Get()}
+	raidy := &real{logger: log.Default()}
 
 	raidy.Clean()
 
@@ -481,7 +481,7 @@ func TestReal_StartIssue(t *testing.T) {
 	brain := ai.NewMockAI()
 	shell := executor.NewMock()
 	gh := github.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Get()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Default()}
 
 	err := raidy.StartIssue("42")
 
@@ -497,7 +497,7 @@ func TestReal_StartIssueNoNumber(t *testing.T) {
 	brain := ai.NewMockAI()
 	shell := executor.NewMock()
 	gh := github.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Get()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Default()}
 
 	err := raidy.StartIssue("")
 
@@ -509,7 +509,7 @@ func TestReal_StartIssueInvalidNumber(t *testing.T) {
 	brain := ai.NewMockAI()
 	shell := executor.NewMock()
 	gh := github.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Get()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Default()}
 
 	err := raidy.StartIssue("invalid")
 
@@ -521,7 +521,7 @@ func TestReal_StartIssueBranchNameError(t *testing.T) {
 	brain := ai.NewFailedMockAI()
 	shell := executor.NewMock()
 	gh := github.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Get()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Default()}
 
 	err := raidy.StartIssue("42")
 
@@ -533,7 +533,7 @@ func TestReal_StartIssueBranchNameError(t *testing.T) {
 func TestReal_StartIssueCheckoutError(t *testing.T) {
 	shell := executor.NewMock()
 	shell.Err = fmt.Errorf("error checking out branch")
-	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), logger: log.Get()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), logger: log.Default()}
 
 	err := raidy.StartIssue("42")
 
@@ -543,9 +543,9 @@ func TestReal_StartIssueCheckoutError(t *testing.T) {
 
 func TestReal_Squash(t *testing.T) {
 	shell := executor.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), logger: log.Get()}
+	raidy := &real{github: github.NewMock(), git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), logger: log.Default()}
 
-	raidy.Squash()
+	raidy.Squash(true)
 
 	expected := []string{
 		"git reset --soft refs/heads/main",
@@ -560,7 +560,7 @@ func TestReal_Squash(t *testing.T) {
 
 func TestReal_PullRequest(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Get()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.PullRequest(false)
 
@@ -602,9 +602,9 @@ func TestReal_Commit(t *testing.T) {
 	brain := ai.NewMockAI()
 	shell := executor.NewMock()
 	mgit := git.NewMockWithShell(shell)
-	raidy := &real{git: mgit, ai: brain, logger: log.Get()}
+	raidy := &real{git: mgit, ai: brain, logger: log.Default(), github: github.NewMock()}
 
-	err := raidy.Commit()
+	err := raidy.Commit(true)
 
 	require.NoError(t, err, "expected no error when committing changes")
 	expected := []string{
@@ -620,18 +620,18 @@ func TestReal_Commit(t *testing.T) {
 func TestReal_Commit_CantGetCurrentBranch(t *testing.T) {
 	mgit := git.NewMockWithError(fmt.Errorf("CurrentBranch method fails"))
 
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Get()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default()}
 
-	err := raidy.Commit()
+	err := raidy.Commit(true)
 	require.Error(t, err, "expected error when unable to get current branch")
 	assert.Equal(t, "error getting branch name: CurrentBranch method fails", err.Error(), "Expected error message to match")
 }
 
 func TestReal_Commit_CantGetCurrentDiff(t *testing.T) {
 	mgit := git.NewMockWithError(fmt.Errorf("CurrentDiff method fails"))
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Get()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default()}
 
-	err := raidy.Commit()
+	err := raidy.Commit(true)
 
 	require.Error(t, err, "expected error when unable to get current diff")
 	assert.Equal(t, "error adding changes: CurrentDiff method fails", err.Error(), "Expected error message to match")
@@ -641,9 +641,9 @@ func TestReal_Commit_CantRunGit(t *testing.T) {
 	shell := executor.NewMock()
 	shell.Err = fmt.Errorf("git command failed")
 	mgit := git.NewMockWithShell(shell)
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Get()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default()}
 
-	err := raidy.Commit()
+	err := raidy.Commit(true)
 
 	require.Error(t, err, "expected error when git command fails")
 	assert.Equal(t, "error adding changes: git command failed", err.Error(), "Expected error message to match")
@@ -652,7 +652,7 @@ func TestReal_Commit_CantRunGit(t *testing.T) {
 func TestReal_Issue(t *testing.T) {
 	userInput := "test input"
 	out := output.NewMock()
-	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Get()}
+	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.Issue(userInput)
 
@@ -884,7 +884,7 @@ func TestUpver(t *testing.T) {
 func TestInitLogger_DebugMode(t *testing.T) {
 	InitLogger(false, true)
 
-	logger := log.Get()
+	logger := log.Default()
 
 	assert.NotNil(t, logger, "Expected logger to be initialized")
 	assert.IsType(t, &log.Short{}, logger, "Expected logger to be of type Short")
@@ -893,7 +893,7 @@ func TestInitLogger_DebugMode(t *testing.T) {
 func TestInitLogger_SilentMode(t *testing.T) {
 	InitLogger(true, false)
 
-	logger := log.Get()
+	logger := log.Default()
 
 	assert.NotNil(t, logger, "Expected logger to be initialized")
 	assert.IsType(t, &log.Silent{}, logger, "Expected logger to be of type Silent")
@@ -902,7 +902,7 @@ func TestInitLogger_SilentMode(t *testing.T) {
 func TestInitLogger_DefaultMode(t *testing.T) {
 	InitLogger(false, false)
 
-	logger := log.Get()
+	logger := log.Default()
 
 	assert.NotNil(t, logger, "Expected logger to be initialized")
 	assert.IsType(t, &log.Short{}, logger, "Expected logger to be of type Short")

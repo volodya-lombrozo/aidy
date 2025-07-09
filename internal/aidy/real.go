@@ -45,7 +45,7 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool) Aid
 	var aidy real
 	aidy.in = os.Stdin
 	InitLogger(silent, debug)
-	aidy.logger = log.Get()
+	aidy.logger = log.Default()
 	shell := executor.NewReal()
 	aidy.editor = output.NewEditor(shell)
 	aidy.printer = output.NewPrinter()
@@ -162,7 +162,7 @@ func (r *real) Diff() error {
 	}
 }
 
-func (r *real) Commit() error {
+func (r *real) Commit(issue bool) error {
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
@@ -177,7 +177,16 @@ func (r *real) Commit() error {
 	}
 	nissue := inumber(branch)
 	r.logger.Info("generating commit message...")
-	msg, cerr := r.ai.CommitMessage(nissue, diff)
+	var descr string
+	if issue {
+		descr, err  = r.github.Description(nissue)
+		if err != nil {
+			return fmt.Errorf("error retrieving issue description: %v", err)
+		}
+	} else {
+		descr = ""
+	}
+	msg, cerr := r.ai.CommitMessage(nissue, diff, descr)
 	if cerr != nil {
 		return fmt.Errorf("error generating commit message: %v", cerr)
 	}
@@ -547,7 +556,7 @@ func latest(tags []string) string {
 	return tags[len(tags)-1]
 }
 
-func (r *real) Squash() {
+func (r *real) Squash(issue bool) {
 	base, err := r.git.BaseBranch()
 	if err != nil {
 		r.logger.Error("Error determining base branch: %v", err)
@@ -558,7 +567,7 @@ func (r *real) Squash() {
 		r.logger.Error("Error executing git reset: %v", err)
 		os.Exit(1)
 	}
-	err = r.Commit()
+	err = r.Commit(issue)
 	if err != nil {
 		r.logger.Error("Error committing changes: %v", err)
 		os.Exit(1)

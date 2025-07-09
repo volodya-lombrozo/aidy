@@ -57,8 +57,8 @@ func (o *OpenAI) IssueBody(input string, summary string) (string, error) {
 	return o.send(prompt, summary)
 }
 
-func (o *OpenAI) CommitMessage(number, diff string) (string, error) {
-	prompt := fmt.Sprintf(CommitMsg, diff, number, number)
+func (o *OpenAI) CommitMessage(number, diff, descr string) (string, error) {
+	prompt := appendIssue(fmt.Sprintf(CommitMsg, diff, number, number), descr)
 	return o.send(prompt, "")
 }
 
@@ -95,9 +95,9 @@ func (o *OpenAI) SuggestBranch(descr string) (string, error) {
 func (o *OpenAI) send(prompt, summary string) (string, error) {
 	content := prompt
 	if o.summary {
-		content = AppendSummary(content, summary)
+		content = appendSummary(content, summary)
 	}
-	content = TrimPrompt(content)
+	content = trimPrompt(content)
 	req := openai.ChatCompletionRequest{
 		Model: o.model,
 		Messages: []openai.ChatCompletionMessage{

@@ -44,7 +44,7 @@ func NewGithub(url string, gs git.Git, token string, ch cache.AidyCache) *github
 		git:    gs,
 		token:  token,
 		ch:     ch,
-		log:    log.Get(),
+		log:    log.Default(),
 	}
 }
 

@@ -27,7 +27,7 @@ func NewEditor(shell executor.Executor) *editor {
 		err:      os.Stderr,
 		in:       os.Stdin,
 		out:      os.Stdout,
-		log:      log.Get(),
+		log:      log.Default(),
 	}
 }
 
