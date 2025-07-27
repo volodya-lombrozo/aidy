@@ -47,7 +47,10 @@ func (e *editor) Print(command string) error {
 		case "r":
 			return e.run(cmd)
 		case "e":
-			updated := e.edit(cmd)
+			updated, err := e.edit(cmd)
+			if err != nil {
+				return fmt.Errorf("failed to edit command: %w", err)
+			}
 			if updated == "" {
 				return nil
 			}
@@ -95,7 +98,7 @@ func (e *editor) printfErr(format string, args ...any) {
 	}
 }
 
-func (e *editor) edit(input string) string {
+func (e *editor) edit(input string) (string, error) {
 	tmp, err := os.CreateTemp("", "aidy-editcmd-*.txt")
 	if err != nil {
 		panic(err)
@@ -119,13 +122,13 @@ func (e *editor) edit(input string) string {
 	args := append(parts[1:], tmp.Name())
 	_, err = e.shell.RunInteractively(parts[0], args...)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to run command '%s %s': %w", editor, tmp.Name(), err)
 	}
 	edited, err := os.ReadFile(tmp.Name())
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to read edited file '%s': %w", tmp.Name(), err)
 	}
-	return string(edited)
+	return string(edited), nil
 }
 
 func prettyCommand(command string) string {

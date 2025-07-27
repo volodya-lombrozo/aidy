@@ -45,7 +45,7 @@ func NewDeepSeek(apiKey string, summary bool) AI {
 		url:     "https://api.deepseek.com/chat/completions",
 		model:   "deepseek-chat",
 		summary: summary,
-		log: log.Default(),
+		log:     log.Default(),
 	}
 }
 

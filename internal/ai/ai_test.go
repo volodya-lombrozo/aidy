@@ -148,4 +148,3 @@ func TestAppendIssue_WhenPromptContainsSpecialCharacters_CombinesWithDescription
 
 	require.Equal(t, expected, result)
 }
-
