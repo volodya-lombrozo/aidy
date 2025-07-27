@@ -5,7 +5,7 @@ import (
 )
 
 func newCommitCmd(ctx *Context) *cobra.Command {
-	var issue bool 
+	var issue bool
 	command := &cobra.Command{
 		Use:     "commit",
 		Aliases: []string{"ci"},

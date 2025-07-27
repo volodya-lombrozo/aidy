@@ -111,6 +111,26 @@ func TestEditor_Print_EditOption(t *testing.T) {
 	assert.Equal(t, command, shell.Commands[1], "expected edited command to match")
 }
 
+func TestEditor_Print_EditOption_FailsWithError(t *testing.T) {
+	r, w, _ := os.Pipe()
+	shell := executor.NewMock()
+	editor := NewEditor(shell)
+	shell.Err = fmt.Errorf("simulated error")
+	editor.in = r
+	_, err := io.WriteString(w, "e\n")
+	require.NoError(t, err, "failed to write to pipe")
+	err = w.Close()
+	require.NoError(t, err, "failed to close write pipe")
+	command := "echo 'Hello, World!'"
+
+	err = editor.Print(command)
+
+	assert.Error(t, err, "expected an error when running the command")
+	assert.Contains(t, err.Error(), "simulated error", "expected error message to match")
+	assert.Contains(t, err.Error(), "failed to run command", "expected error to mention command failure")
+
+}
+
 func TestEditor_PrettyCommand(t *testing.T) {
 	tests := []struct{ input, want string }{
 		{"git commit --amend --no-edit", "git commit\n  --amend\n  --no-edit"},

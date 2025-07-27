@@ -179,7 +179,7 @@ func (r *real) Commit(issue bool) error {
 	r.logger.Info("generating commit message...")
 	var descr string
 	if issue {
-		descr, err  = r.github.Description(nissue)
+		descr, err = r.github.Description(nissue)
 		if err != nil {
 			return fmt.Errorf("error retrieving issue description: %v", err)
 		}
