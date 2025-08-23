@@ -10,14 +10,14 @@ type Context struct {
 }
 
 func Execute() error {
-	return newRootCmd(real).Execute()
+	return NewRootCmd(Real).Execute()
 }
 
-func real(summary, aider, ailess, silent, debug bool) aidy.Aidy {
+func Real(summary, aider, ailess, silent, debug bool) aidy.Aidy {
 	return aidy.NewAidy(summary, aider, ailess, silent, debug)
 }
 
-func newRootCmd(create func(bool, bool, bool, bool, bool) aidy.Aidy) *cobra.Command {
+func NewRootCmd(create func(bool, bool, bool, bool, bool) aidy.Aidy) *cobra.Command {
 	var ctx Context
 	var ailess bool
 	var aider bool
