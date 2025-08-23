@@ -12,7 +12,7 @@ import (
 
 func TestRootCmd_PrintsHelp(t *testing.T) {
 	var out bytes.Buffer
-	command := newRootCmd(mock)
+	command := NewRootCmd(mock)
 	command.SetOut(&out)
 	command.SetArgs([]string{"--help"})
 

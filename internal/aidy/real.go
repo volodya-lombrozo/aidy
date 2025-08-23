@@ -78,8 +78,7 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool) Aid
 		aidy.logger.Warn("failed to initialize project summary: %v", err)
 	}
 	if err = aidy.SetTarget(); err != nil {
-		aidy.logger.Error("failed to set target repository: %v", err)
-		os.Exit(1)
+		aidy.logger.Warn("failed to set target repository: %v", err)
 	}
 	return &aidy
 }
