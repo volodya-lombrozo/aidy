@@ -22,5 +22,5 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/zerolog v1.34.0
-	golang.org/x/mod v0.31.0
+	golang.org/x/mod v0.32.0
 )
