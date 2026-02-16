@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -687,4 +688,53 @@ func NewCache(repo git.Git, path string) (cache.AidyCache, error) {
 		return nil, fmt.Errorf("can't open cache: %v", err)
 	}
 	return cache.NewAidyCache(ch), nil
+}
+
+func (r *real) Repeat(file string) int {
+	path, err := fromHome(file)
+	if err != nil {
+		r.logger.Error("Can't repeat, erorr ocurred %w\n", err)
+		return 1
+	}
+	args, err := os.ReadFile(path)
+	if err != nil {
+		r.logger.Error("Can't repeat, erorr ocurred %w\n", err)
+		return 1
+	}
+	cmd := exec.Command("aidy", string(args))
+	cmd.Run()
+	return cmd.ProcessState.ExitCode()
+}
+
+func CacheArgs(name string, args []string, file string) error {
+	single := strings.Join(args, " ")
+	path, err := fromHome(file)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		buffer, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		defer buffer.Close()
+		written, err := buffer.WriteString(single)
+		if err != nil {
+			return err
+		}
+		if written != len([]byte(single)) {
+			return fmt.Errorf("Broken data was writen to '~/.adiy_repeat': %s", single)
+		}
+		return err
+	}
+	return os.WriteFile(path, []byte(single), 0644)
+}
+
+func fromHome(file string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, file), nil
 }
