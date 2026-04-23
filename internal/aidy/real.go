@@ -77,9 +77,6 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool) Aid
 	if err = aidy.InitSummary(summary, "README.md"); err != nil {
 		aidy.logger.Warn("failed to initialize project summary: %v", err)
 	}
-	if err = aidy.SetTarget(); err != nil {
-		aidy.logger.Warn("failed to set target repository: %v", err)
-	}
 	return &aidy
 }
 
@@ -166,6 +163,19 @@ func (r *real) Commit(issue bool) error {
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
 	}
+	nissue := inumber(branch)
+	var descr string
+	if issue {
+		if err = r.SetTarget(); err != nil {
+			r.logger.Warn("failed to set target repository: %v", err)
+		}
+		descr, err = r.github.Description(nissue)
+		if err != nil {
+			return fmt.Errorf("error retrieving issue description: %v", err)
+		}
+	} else {
+		descr = ""
+	}
 	_, err = r.git.Run("add", "--all")
 	if err != nil {
 		return fmt.Errorf("error adding changes: %v", err)
@@ -174,17 +184,7 @@ func (r *real) Commit(issue bool) error {
 	if diffErr != nil {
 		return fmt.Errorf("error getting current diff: %v", diffErr)
 	}
-	nissue := inumber(branch)
 	r.logger.Info("generating commit message...")
-	var descr string
-	if issue {
-		descr, err = r.github.Description(nissue)
-		if err != nil {
-			return fmt.Errorf("error retrieving issue description: %v", err)
-		}
-	} else {
-		descr = ""
-	}
 	msg, cerr := r.ai.CommitMessage(nissue, diff, descr)
 	if cerr != nil {
 		return fmt.Errorf("error generating commit message: %v", cerr)
@@ -198,6 +198,9 @@ func (r *real) Commit(issue bool) error {
 }
 
 func (r *real) Issue(task string) error {
+	if err := r.SetTarget(); err != nil {
+		r.logger.Warn("failed to set target repository: %v", err)
+	}
 	summary, _ := r.cache.Summary()
 	r.logger.Info("generating issue title...")
 	title, err := r.ai.IssueTitle(task, summary)
@@ -326,6 +329,9 @@ func (r *real) print(msg string) {
 }
 
 func (r *real) PullRequest(fixes bool) error {
+	if err := r.SetTarget(); err != nil {
+		r.logger.Warn("failed to set target repository: %v", err)
+	}
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
@@ -414,6 +420,9 @@ func (r *real) Clean() {
 }
 
 func (r *real) StartIssue(number string) error {
+	if err := r.SetTarget(); err != nil {
+		r.logger.Warn("failed to set target repository: %v", err)
+	}
 	if number == "" {
 		return fmt.Errorf("error: no issue number provided")
 	}

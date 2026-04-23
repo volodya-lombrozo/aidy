@@ -481,7 +481,7 @@ func TestReal_StartIssue(t *testing.T) {
 	brain := ai.NewMockAI()
 	shell := executor.NewMock()
 	gh := github.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Default()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.StartIssue("42")
 
@@ -497,7 +497,7 @@ func TestReal_StartIssueNoNumber(t *testing.T) {
 	brain := ai.NewMockAI()
 	shell := executor.NewMock()
 	gh := github.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Default()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.StartIssue("")
 
@@ -509,7 +509,7 @@ func TestReal_StartIssueInvalidNumber(t *testing.T) {
 	brain := ai.NewMockAI()
 	shell := executor.NewMock()
 	gh := github.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Default()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.StartIssue("invalid")
 
@@ -521,7 +521,7 @@ func TestReal_StartIssueBranchNameError(t *testing.T) {
 	brain := ai.NewFailedMockAI()
 	shell := executor.NewMock()
 	gh := github.NewMock()
-	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, logger: log.Default()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: brain, github: gh, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.StartIssue("42")
 
@@ -533,7 +533,7 @@ func TestReal_StartIssueBranchNameError(t *testing.T) {
 func TestReal_StartIssueCheckoutError(t *testing.T) {
 	shell := executor.NewMock()
 	shell.Err = fmt.Errorf("error checking out branch")
-	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), logger: log.Default()}
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.StartIssue("42")
 
@@ -543,7 +543,7 @@ func TestReal_StartIssueCheckoutError(t *testing.T) {
 
 func TestReal_Squash(t *testing.T) {
 	shell := executor.NewMock()
-	raidy := &real{github: github.NewMock(), git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), logger: log.Default()}
+	raidy := &real{github: github.NewMock(), git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	raidy.Squash(true)
 
@@ -602,7 +602,7 @@ func TestReal_Commit(t *testing.T) {
 	brain := ai.NewMockAI()
 	shell := executor.NewMock()
 	mgit := git.NewMockWithShell(shell)
-	raidy := &real{git: mgit, ai: brain, logger: log.Default(), github: github.NewMock()}
+	raidy := &real{git: mgit, ai: brain, logger: log.Default(), github: github.NewMock(), cache: cache.NewMockAidyCache()}
 
 	err := raidy.Commit(true)
 
@@ -620,7 +620,7 @@ func TestReal_Commit(t *testing.T) {
 func TestReal_Commit_CantGetCurrentBranch(t *testing.T) {
 	mgit := git.NewMockWithError(fmt.Errorf("CurrentBranch method fails"))
 
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default(), cache: cache.NewMockAidyCache()}
 
 	err := raidy.Commit(true)
 	require.Error(t, err, "expected error when unable to get current branch")
@@ -629,7 +629,7 @@ func TestReal_Commit_CantGetCurrentBranch(t *testing.T) {
 
 func TestReal_Commit_CantGetCurrentDiff(t *testing.T) {
 	mgit := git.NewMockWithError(fmt.Errorf("CurrentDiff method fails"))
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default(), cache: cache.NewMockAidyCache(), github: github.NewMock()}
 
 	err := raidy.Commit(true)
 
@@ -641,7 +641,7 @@ func TestReal_Commit_CantRunGit(t *testing.T) {
 	shell := executor.NewMock()
 	shell.Err = fmt.Errorf("git command failed")
 	mgit := git.NewMockWithShell(shell)
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), logger: log.Default(), cache: cache.NewMockAidyCache(), github: github.NewMock()}
 
 	err := raidy.Commit(true)
 
