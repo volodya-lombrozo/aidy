@@ -2,6 +2,7 @@ package cache
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -79,6 +80,31 @@ func TestFileCache_Overwrites(t *testing.T) {
 	val, _ := cache.Get("k")
 
 	assert.Equal(t, "v2", val, "Expected value to be overwritten to 'v2'")
+}
+
+func TestFileCache_DoesNotCreateFileWhenNoDataWritten(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cache.json")
+
+	_, err := NewFileCache(path)
+	require.NoError(t, err)
+
+	_, serr := os.Stat(path)
+	assert.True(t, os.IsNotExist(serr), "Cache file must not be created until data is written")
+}
+
+func TestFileCache_CreatesFileOnlyOnFirstWrite(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cache.json")
+
+	c, err := NewFileCache(path)
+	require.NoError(t, err)
+
+	_, serr := os.Stat(path)
+	require.True(t, os.IsNotExist(serr), "Cache file must not exist before any writes")
+
+	require.NoError(t, c.Set("key", "value"))
+
+	_, serr = os.Stat(path)
+	assert.NoError(t, serr, "Cache file must be created after the first write")
 }
 
 func temp(t *testing.T) string {
