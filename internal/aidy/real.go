@@ -164,6 +164,7 @@ func (r *real) Commit(issue bool) error {
 		return fmt.Errorf("error getting branch name: %v", err)
 	}
 	nissue := inumber(branch)
+	r.logger.Info("retrieving the description for issue #%s...", nissue)
 	var descr string
 	if issue {
 		if err = r.SetTarget(); err != nil {
@@ -184,8 +185,9 @@ func (r *real) Commit(issue bool) error {
 	if diffErr != nil {
 		return fmt.Errorf("error getting current diff: %v", diffErr)
 	}
-	r.logger.Info("generating commit message...")
-	msg, cerr := r.ai.CommitMessage(nissue, diff, descr)
+	iref := issueRef(nissue)
+	r.logger.Info("generating commit message for %s...", iref)
+	msg, cerr := r.ai.CommitMessage(iref, diff, descr)
 	if cerr != nil {
 		return fmt.Errorf("error generating commit message: %v", cerr)
 	}
@@ -272,12 +274,12 @@ func healQuote(open rune, text string) string {
 }
 
 func healPRTitle(text string, issue string) string {
-	re := regexp.MustCompile(`(fix|feat|build|chore|ci|docs|style|refactor|perf|test)\(#(\d+)\)`)
+	re := regexp.MustCompile(`(fix|feat|build|chore|ci|docs|style|refactor|perf|test)\((?:#?\d+|#?[A-Z][A-Z0-9]+-\d+)\)`)
 	replaced := re.ReplaceAllStringFunc(text, func(m string) string {
 		groups := re.FindStringSubmatch(m)
-		if len(groups) == 3 {
+		if len(groups) >= 2 {
 			commitType := groups[1]
-			return fmt.Sprintf("%s(#%s)", commitType, issue)
+			return fmt.Sprintf("%s(%s)", commitType, issueRef(issue))
 		}
 		return m
 	})
@@ -349,7 +351,7 @@ func (r *real) PullRequest(fixes bool) error {
 		r.logger.Warn("issue description not found for issue #%s because of %v, using default value", nissue, err)
 	}
 	r.logger.Info("generating pull request title...")
-	title, err := r.ai.PrTitle(nissue, diff, issue, summary)
+	title, err := r.ai.PrTitle(issueRef(nissue), diff, issue, summary)
 	if err != nil {
 		return fmt.Errorf("error generating pull request title: %v", err)
 	}
@@ -359,9 +361,9 @@ func (r *real) PullRequest(fixes bool) error {
 		return fmt.Errorf("error generating pull request body: %v", err)
 	}
 	if fixes {
-		body = body + fmt.Sprintf("\n\nFixes #%s", nissue)
+		body = body + fmt.Sprintf("\n\nFixes %s", issueRef(nissue))
 	} else {
-		body = body + fmt.Sprintf("\n\nRelated to #%s", nissue)
+		body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
 	}
 	remote := r.cache.Remote()
 	var repo string
@@ -384,6 +386,9 @@ func inumber(branch string) string {
 		parts := strings.Split(branch, "/")
 		branch = parts[len(parts)-1]
 	}
+	if found := regexp.MustCompile(`^[A-Z][A-Z0-9]+-\d+`).FindString(branch); found != "" {
+		return found
+	}
 	re, err := regexp.Compile(`\d+`)
 	if err != nil {
 		panic(err)
@@ -393,6 +398,13 @@ func inumber(branch string) string {
 		return branch
 	}
 	return found
+}
+
+func issueRef(id string) string {
+	if regexp.MustCompile(`^\d+$`).MatchString(id) {
+		return "#" + id
+	}
+	return id
 }
 
 func (r *real) Append() {
@@ -593,8 +605,8 @@ func (r *real) Heal() error {
 	if gitErr != nil {
 		return fmt.Errorf("error getting current commit message: %v", gitErr)
 	}
-	re := regexp.MustCompile(`#\d+`)
-	updated := re.ReplaceAllString(message, fmt.Sprintf("#%s", inumber))
+	re := regexp.MustCompile(`#\d+|[A-Z][A-Z0-9]+-\d+`)
+	updated := re.ReplaceAllString(message, issueRef(inumber))
 	err = r.git.Amend(updated)
 	return err
 }

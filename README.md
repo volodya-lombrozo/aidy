@@ -101,6 +101,12 @@ Example output:
 Commit created with message: 'docs(#209): Update README with installation and configuration details'
 ```
 
+or if you a using JIRA-sytle branches:
+
+```
+Commit created with message: 'docs(PROJ-209): Update README with installation and configuration details'
+```
+
 Shorter version is `aidy ci`.
 
 ### Pull Request

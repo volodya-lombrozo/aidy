@@ -567,7 +567,7 @@ func TestReal_PullRequest(t *testing.T) {
 	require.NoError(t, err, "expected no error when creating pull request")
 	output := out.Last()
 	assert.Contains(t, output, "gh pr create", "Expected output to contain 'gh pr create'")
-	assert.Contains(t, output, "--title \"mock title for '41' with issue #mock description for issue '#41' and summary: mock summary\"", "Expected output to contain title")
+	assert.Contains(t, output, "--title \"mock title for '#41' with issue #mock description for issue '#41' and summary: mock summary\"", "Expected output to contain title")
 }
 
 func TestReal_PullRequest_IssueNotFound(t *testing.T) {
@@ -817,6 +817,11 @@ func TestExtractIssueNumber(t *testing.T) {
 		{"spike/777-redesign-login-flow", "777"},
 		{"quickfix-4202-crash-on-load", "4202"},
 		{"ticket_900-improve-ci-speed", "900"},
+		{"bug/PROJ-42", "PROJ-42"},
+		{"feature/PROJ-17", "PROJ-17"},
+		{"fix/ISSUE-100", "ISSUE-100"},
+		{"chore/AB-99-cleanup", "AB-99"},
+		{"feature/proj-42", "42"},
 	}
 
 	for _, test := range tests {
@@ -850,6 +855,20 @@ func TestHealPRTitle(t *testing.T) {
 	}
 	for _, test := range tests {
 		result := healPRTitle(test.actual, "42")
+		assert.Equal(t, test.expected, result)
+	}
+
+	alphanumericTests := []struct {
+		actual   string
+		expected string
+	}{
+		{"feat(#7523): Add feature", "feat(PROJ-17): Add feature"},
+		{"feat(PROJ-99): Add feature", "feat(PROJ-17): Add feature"},
+		{"fix(#7523): Fix bug", "fix(PROJ-17): Fix bug"},
+		{"feat(#master): no change", "feat(#master): no change"},
+	}
+	for _, test := range alphanumericTests {
+		result := healPRTitle(test.actual, "PROJ-17")
 		assert.Equal(t, test.expected, result)
 	}
 }

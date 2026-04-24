@@ -17,10 +17,10 @@ This pull request addresses the following issue:
 
 Carefully review both the diff and the issue description. Then, generate a PR title in the following format:
 
-<type>(#%s): <description>
+<type>(%s): <description>
 
 - Valid <type> values: fix, feat, build, chore, ci, docs, style, refactor, perf, test.
-- Always include the issue number #%s in the title.
+- Always include the issue reference %s in the title.
 - Use the imperative mood (e.g., "add feature", not "added feature" or "adding feature").
 - Keep the title within 72 characters.
 - Do not include explanations, comments, or line breaks. Return only the title line.
@@ -67,11 +67,11 @@ Your task is to generate a single-line commit message for the following changes.
 Review diffs carefully.
 
 The commit message must follow this format:
-<type>(#%s): <description>
+<type>(%s): <description>
 
 Where:
 - <type> is one of: fix, feat, build, chore, ci, docs, style, refactor, perf, test
-- #%s is the issue number (do not modify it)
+- %s is the issue reference (do not modify it)
 
 Ensure the message:
 - Starts with the appropriate prefix

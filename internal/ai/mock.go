@@ -41,7 +41,7 @@ func (m *MockAI) IssueBody(input string, summary string) (string, error) {
 }
 
 func (m *MockAI) CommitMessage(issue, diff, descr string) (string, error) {
-	return fmt.Sprintf("feat(#%s): %s", issue, summary(diff)), nil
+	return fmt.Sprintf("feat(%s): %s", issue, summary(diff)), nil
 }
 
 func (m *MockAI) IssueLabels(issue string, available []string) ([]string, error) {
