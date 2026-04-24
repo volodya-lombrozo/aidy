@@ -18,19 +18,7 @@ func NewFileCache(path string) (Cache, error) {
 	fcache := &fileCache{path: path, store: map[string]string{}}
 	file, err := os.Open(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			dir := filepath.Dir(path)
-			if mkerr := os.MkdirAll(dir, 0755); mkerr != nil {
-				return nil, mkerr
-			}
-			created, cerr := os.Create(path)
-			if cerr != nil {
-				return nil, cerr
-			}
-			if cerr := created.Close(); cerr != nil {
-				return nil, cerr
-			}
-		} else {
+		if !os.IsNotExist(err) {
 			return nil, err
 		}
 	} else {

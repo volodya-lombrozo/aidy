@@ -11,7 +11,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/git"
 )
 
-func TestNewGitCache_CreatesFileIfNotExists(t *testing.T) {
+func TestNewGitCache_DoesNotCreateFileWhenNoDataWritten(t *testing.T) {
 	tmp := t.TempDir()
 	defer clean(t, tmp)
 	name := "cache.json"
@@ -20,8 +20,8 @@ func TestNewGitCache_CreatesFileIfNotExists(t *testing.T) {
 	_, err := NewGitCache(name, git.NewMockWithDir(tmp))
 
 	assert.NoError(t, err, "Expected no error when creating GitCache with a new file path")
-	_, err = os.Stat(file)
-	assert.NoError(t, err, "Expected file to be created")
+	_, serr := os.Stat(file)
+	assert.True(t, os.IsNotExist(serr), "Cache file must not be created until data is written")
 }
 
 func TestGitCache_RootError(t *testing.T) {
