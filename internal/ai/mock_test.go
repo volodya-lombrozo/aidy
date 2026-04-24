@@ -23,8 +23,8 @@ index 97c5ff0..2eea6a0 100644
 
 func TestMockGenerateCommitMessage(t *testing.T) {
 	mockAI := NewMockAI()
-	issue := "100"
-	expected := fmt.Sprintf("feat(#%s): %s", issue, "changed files: ai/mockai.go")
+	issue := "#100"
+	expected := fmt.Sprintf("feat(%s): %s", issue, "changed files: ai/mockai.go")
 
 	msg, err := mockAI.CommitMessage(issue, diff, "")
 
