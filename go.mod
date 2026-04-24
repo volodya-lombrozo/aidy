@@ -1,6 +1,6 @@
 module github.com/volodya-lombrozo/aidy
 
-go 1.24.1
+go 1.25.0
 
 require (
 	github.com/sashabaranov/go-openai v1.41.2
@@ -22,5 +22,5 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/zerolog v1.35.1
-	golang.org/x/mod v0.33.0
+	golang.org/x/mod v0.35.0
 )
