@@ -44,6 +44,7 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 		newIssueCmd(&ctx),
 		newReleaseCmd(&ctx),
 		newPrCmd(&ctx),
+		newMrCmd(&ctx),
 		newHealCmd(&ctx),
 		newSquashCmd(&ctx),
 		newAppendCmd(&ctx),

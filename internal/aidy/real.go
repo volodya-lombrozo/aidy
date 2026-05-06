@@ -22,8 +22,8 @@ import (
 )
 
 type real struct {
-	git     git.Git
-	github  github.Github
+	git    git.Git
+	github github.Github
 	ai      ai.AI
 	editor  output.Output
 	config  config.Config
@@ -376,6 +376,38 @@ func (r *real) PullRequest(fixes bool) error {
 	prtitle := healPRTitle(healQuotes(title), nissue)
 	prbody := healQuotes(body)
 	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo))
+	return r.editor.Print(cmd)
+}
+
+func (r *real) MergeRequest(fixes bool) error {
+	branch, err := r.git.CurrentBranch()
+	if err != nil {
+		return fmt.Errorf("error getting branch name: %v", err)
+	}
+	diff, err := r.git.Diff()
+	if err != nil {
+		return fmt.Errorf("error getting git diff: %v", err)
+	}
+	summary, _ := r.cache.Summary()
+	nissue := inumber(branch)
+	r.logger.Info("generating merge request title...")
+	title, err := r.ai.PrTitle(issueRef(nissue), diff, "", summary)
+	if err != nil {
+		return fmt.Errorf("error generating merge request title: %v", err)
+	}
+	r.logger.Info("generating merge request body...")
+	body, err := r.ai.PrBody(diff, "", summary)
+	if err != nil {
+		return fmt.Errorf("error generating merge request body: %v", err)
+	}
+	if fixes {
+		body = body + fmt.Sprintf("\n\nCloses %s", issueRef(nissue))
+	} else {
+		body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
+	}
+	mrtitle := healPRTitle(healQuotes(title), nissue)
+	mrbody := healQuotes(body)
+	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --body \"%s\"", mrtitle, mrbody))
 	return r.editor.Print(cmd)
 }
 
