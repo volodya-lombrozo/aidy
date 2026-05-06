@@ -34,6 +34,11 @@ func (m *Mock) PullRequest(fixes bool) error {
 	return nil
 }
 
+func (m *Mock) MergeRequest(fixes bool) error {
+	m.logs = append(m.logs, "MergeRequest called")
+	return nil
+}
+
 func (m *Mock) Issue(task string) error {
 	m.logs = append(m.logs, fmt.Sprintf("Issue called with task: %s", task))
 	return nil

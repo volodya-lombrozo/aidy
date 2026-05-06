@@ -6,6 +6,7 @@ type Aidy interface {
 	Commit(issue bool) error
 	Squash(issue bool)
 	PullRequest(fixes bool) error
+	MergeRequest(fixes bool) error
 	Issue(task string) error
 	Heal() error
 	Append()
