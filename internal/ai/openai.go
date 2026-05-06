@@ -17,18 +17,20 @@ type OpenAI struct {
 	model       string
 	temperature float32
 	summary     bool
+	language    string
 }
 
-func NewOpenAI(token, model string, temperature float32, summary bool) *OpenAI {
-	return NewOpenAIWithClient(openai.NewClient(token), model, temperature, summary)
+func NewOpenAI(token, model string, temperature float32, summary bool, language string) *OpenAI {
+	return NewOpenAIWithClient(openai.NewClient(token), model, temperature, summary, language)
 }
 
-func NewOpenAIWithClient(client openClient, model string, temperature float32, summary bool) *OpenAI {
+func NewOpenAIWithClient(client openClient, model string, temperature float32, summary bool, language string) *OpenAI {
 	return &OpenAI{
 		client:      client,
 		model:       model,
 		temperature: temperature,
 		summary:     summary,
+		language:    language,
 	}
 }
 
@@ -97,6 +99,7 @@ func (o *OpenAI) send(prompt, summary string) (string, error) {
 	if o.summary {
 		content = appendSummary(content, summary)
 	}
+	content = appendLanguage(content, o.language)
 	content = trimPrompt(content)
 	req := openai.ChatCompletionRequest{
 		Model: o.model,

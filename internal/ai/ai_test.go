@@ -136,6 +136,26 @@ func TestAppendIssue_WithEmptyPromptAndNonEmptyDescription_AppendsFormattedDescr
 	assert.Equal(t, expected, result)
 }
 
+func TestAppendLanguage_WhenLanguageIsEmpty_ReturnsPromptUnchanged(t *testing.T) {
+	result := appendLanguage("some prompt", "")
+	assert.Equal(t, "some prompt", result)
+}
+
+func TestAppendLanguage_WhenLanguageIsEnglish_ReturnsPromptUnchanged(t *testing.T) {
+	result := appendLanguage("some prompt", "en")
+	assert.Equal(t, "some prompt", result)
+}
+
+func TestAppendLanguage_WhenLanguageIsFrench_PrependsInstruction(t *testing.T) {
+	result := appendLanguage("some prompt", "fr")
+	assert.Equal(t, "You must respond entirely in fr language.\n\nsome prompt", result)
+}
+
+func TestAppendLanguage_WhenLanguageIsFullName_PrependsInstruction(t *testing.T) {
+	result := appendLanguage("some prompt", "German")
+	assert.Equal(t, "You must respond entirely in German language.\n\nsome prompt", result)
+}
+
 func TestAppendIssue_WhenPromptContainsSpecialCharacters_CombinesWithDescriptionProperly(t *testing.T) {
 	prompt := "Prompt with special chars: ~`|\\<>"
 	desc := "Description test"

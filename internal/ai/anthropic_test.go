@@ -15,7 +15,7 @@ import (
 func TestAnthropicAI_Summary(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 	expected := "Test README content"
 
@@ -29,7 +29,7 @@ func TestAnthropicAI_Summary(t *testing.T) {
 func TestAnthropicAI_ReleaseNotes(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", false).(*Anthropic)
+	ai := NewAnthropic("test-token", "", false, "en").(*Anthropic)
 	ai.url = server.URL
 	expected := "Test changes"
 
@@ -43,7 +43,7 @@ func TestAnthropicAI_ReleaseNotes(t *testing.T) {
 func TestAnthropicAI_PrTitle(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 	expectedDiff := "Test diff"
 	expectedIssue := "Test issue"
@@ -60,7 +60,7 @@ func TestAnthropicAI_PrTitle(t *testing.T) {
 func TestAnthropicAI_PrBody(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 	expectedDiff := "Test diff"
 	expectedIssue := "Test issue"
@@ -76,7 +76,7 @@ func TestAnthropicAI_PrBody(t *testing.T) {
 func TestAnthropicAI_IssueTitle(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 	expectedInput := "Test input"
 
@@ -90,7 +90,7 @@ func TestAnthropicAI_IssueTitle(t *testing.T) {
 func TestAnthropicAI_IssueBody(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 	expectedInput := "Test input"
 
@@ -104,7 +104,7 @@ func TestAnthropicAI_IssueBody(t *testing.T) {
 func TestAnthropicAI_IssueLabels(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 	expectedIssue := "Test issue"
 	availableLabels := []string{"bug", "feature", "enhancement"}
@@ -120,7 +120,7 @@ func TestAnthropicAI_IssueLabels(t *testing.T) {
 func TestAnthropicAI_CommitMessage(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 	expectedDiff := "Test diff"
 	expectedNumber := "42"
@@ -135,7 +135,7 @@ func TestAnthropicAI_CommitMessage(t *testing.T) {
 func TestAnthropicAI_SuggestBranch(t *testing.T) {
 	server := anthropicEchoServer(t)
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 	expectedDescr := "Test description"
 
@@ -151,7 +151,7 @@ func TestAnthropicAI_Handle404Response(t *testing.T) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	}))
 	defer server.Close()
-	ai := NewAnthropic("test-token", "", true).(*Anthropic)
+	ai := NewAnthropic("test-token", "", true, "en").(*Anthropic)
 	ai.url = server.URL
 
 	_, err := ai.Summary("Test README content")
@@ -161,12 +161,12 @@ func TestAnthropicAI_Handle404Response(t *testing.T) {
 }
 
 func TestAnthropicAI_DefaultModel(t *testing.T) {
-	ai := NewAnthropic("test-token", "", false).(*Anthropic)
+	ai := NewAnthropic("test-token", "", false, "en").(*Anthropic)
 	assert.Equal(t, anthropicDefaultModel, ai.model, "Expected default model to be set")
 }
 
 func TestAnthropicAI_CustomModel(t *testing.T) {
-	ai := NewAnthropic("test-token", "claude-opus-4-7", false).(*Anthropic)
+	ai := NewAnthropic("test-token", "claude-opus-4-7", false, "en").(*Anthropic)
 	assert.Equal(t, "claude-opus-4-7", ai.model, "Expected custom model to be set")
 }
 

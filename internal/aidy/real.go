@@ -41,7 +41,8 @@ type real struct {
 // - ailess: whether to use AI or not
 // - silent: whether to suppress output
 // - debug: whether to enable debug logging
-func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool) Aidy {
+// - language: language for AI-generated text (e.g. "en", "fr", "de"); defaults to "en"
+func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool, language string) Aidy {
 	var aidy real
 	aidy.in = os.Stdin
 	InitLogger(silent, debug)
@@ -66,7 +67,7 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool) Aid
 		aidy.logger.Error("failed to initialize configuration: %v", err)
 		os.Exit(1)
 	}
-	if aidy.ai, err = Brain(ailess, summary, aidy.config); err != nil {
+	if aidy.ai, err = Brain(ailess, summary, aidy.config, language); err != nil {
 		aidy.logger.Error("failed to initialize AI: %v", err)
 		os.Exit(1)
 	}
@@ -671,7 +672,7 @@ func NewConf(aider bool, git git.Git) (config.Config, error) {
 	return conf, nil
 }
 
-func Brain(ailess bool, summary bool, conf config.Config) (ai.AI, error) {
+func Brain(ailess bool, summary bool, conf config.Config, language string) (ai.AI, error) {
 	if ailess {
 		return ai.NewMockAI(), nil
 	}
@@ -693,11 +694,11 @@ func Brain(ailess bool, summary bool, conf config.Config) (ai.AI, error) {
 	var brain ai.AI
 	switch provider {
 	case "deepseek":
-		brain = ai.NewDeepSeek(token, summary)
+		brain = ai.NewDeepSeek(token, summary, language)
 	case "openai":
-		brain = ai.NewOpenAI(token, model, 0.2, summary)
+		brain = ai.NewOpenAI(token, model, 0.2, summary, language)
 	case "anthropic":
-		brain = ai.NewAnthropic(token, model, summary)
+		brain = ai.NewAnthropic(token, model, summary, language)
 	default:
 		return nil, fmt.Errorf("unknown AI provider '%s' specified in configuration", provider)
 	}

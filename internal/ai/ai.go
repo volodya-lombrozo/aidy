@@ -38,3 +38,10 @@ func appendIssue(prompt, description string) string {
 	appendix := fmt.Sprintf("\nThis is the issue description for which you do it:\n<issue>\n%s\n</issue>\n", description)
 	return prompt + appendix
 }
+
+func appendLanguage(prompt, language string) string {
+	if language == "" || language == "en" {
+		return prompt
+	}
+	return fmt.Sprintf("You must respond entirely in %s language.\n\n", language) + prompt
+}
