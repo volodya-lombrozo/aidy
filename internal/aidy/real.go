@@ -696,6 +696,8 @@ func Brain(ailess bool, summary bool, conf config.Config) (ai.AI, error) {
 		brain = ai.NewDeepSeek(token, summary)
 	case "openai":
 		brain = ai.NewOpenAI(token, model, 0.2, summary)
+	case "anthropic":
+		brain = ai.NewAnthropic(token, model, summary)
 	default:
 		return nil, fmt.Errorf("unknown AI provider '%s' specified in configuration", provider)
 	}

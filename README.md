@@ -80,7 +80,22 @@ models:
     model-id: gpt-4o 
 ```
 
-Only `deepseek` and `openai` providers are supported. Verify the configuration with:
+For Anthropic:
+
+```yaml
+default-model: claude-sonnet
+
+api-keys:
+  github: <github-key>
+  anthropic: <anthropic-key>
+
+models:
+  claude-sonnet:
+    provider: anthropic
+    model-id: claude-sonnet-4-6
+```
+
+Supported providers: `deepseek`, `openai`, and `anthropic`. Verify the configuration with:
 
 ```bash
 aidy conf
