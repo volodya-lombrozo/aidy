@@ -16,11 +16,12 @@ const anthropicDefaultModel = "claude-sonnet-4-6"
 const anthropicVersion = "2023-06-01"
 
 type Anthropic struct {
-	token   string
-	url     string
-	model   string
-	summary bool
-	log     log.Logger
+	token    string
+	url      string
+	model    string
+	summary  bool
+	language string
+	log      log.Logger
 }
 
 type anthropicRequest struct {
@@ -39,16 +40,17 @@ type anthropicResponse struct {
 	Content []anthropicContent `json:"content"`
 }
 
-func NewAnthropic(token, model string, summary bool) AI {
+func NewAnthropic(token, model string, summary bool, language string) AI {
 	if model == "" {
 		model = anthropicDefaultModel
 	}
 	return &Anthropic{
-		token:   token,
-		url:     "https://api.anthropic.com/v1/messages",
-		model:   model,
-		summary: summary,
-		log:     log.Default(),
+		token:    token,
+		url:      "https://api.anthropic.com/v1/messages",
+		model:    model,
+		summary:  summary,
+		language: language,
+		log:      log.Default(),
 	}
 }
 
@@ -114,6 +116,7 @@ func (a *Anthropic) send(system, user, summary string) (string, error) {
 	if a.summary {
 		content = appendSummary(content, summary)
 	}
+	content = appendLanguage(content, a.language)
 	content = trimPrompt(content)
 	body := anthropicRequest{
 		Model:     a.model,

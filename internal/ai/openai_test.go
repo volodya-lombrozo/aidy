@@ -37,7 +37,7 @@ func (m echo) CreateChatCompletion(ctx context.Context, req openai.ChatCompletio
 }
 
 func TestOpenAi_GeneratesTitle(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 
 	title, err := openAI.PrTitle("123", "test diff", "successful issue-description", "project-summary")
 
@@ -46,7 +46,7 @@ func TestOpenAi_GeneratesTitle(t *testing.T) {
 }
 
 func TestOpenAi_GeneratesTitleWithError(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 
 	_, err := openAI.PrTitle("123", "test diff", "error issue-description", "project-summary")
 
@@ -55,7 +55,7 @@ func TestOpenAi_GeneratesTitleWithError(t *testing.T) {
 }
 
 func TestOpenAi_GeneratesBody(t *testing.T) {
-	openai := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openai := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 
 	body, err := openai.PrBody("test diff", "successful issue-description", "project-summary")
 
@@ -64,7 +64,7 @@ func TestOpenAi_GeneratesBody(t *testing.T) {
 }
 
 func TestOpenAI_SuggestBranch(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 	description := "successful description"
 
 	branch, err := openAI.SuggestBranch(description)
@@ -75,7 +75,7 @@ func TestOpenAI_SuggestBranch(t *testing.T) {
 }
 
 func TestOpenAI_SuggestBranch_Error(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 	description := "error description"
 
 	_, err := openAI.SuggestBranch(description)
@@ -85,7 +85,7 @@ func TestOpenAI_SuggestBranch_Error(t *testing.T) {
 }
 
 func TestOpenAI_ReleaseNotes(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 	changes := "successful changes"
 
 	notes, err := openAI.ReleaseNotes(changes)
@@ -96,7 +96,7 @@ func TestOpenAI_ReleaseNotes(t *testing.T) {
 }
 
 func TestOpenAI_ReleaseNotes_Error(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 	changes := "error changes"
 
 	_, err := openAI.ReleaseNotes(changes)
@@ -106,7 +106,7 @@ func TestOpenAI_ReleaseNotes_Error(t *testing.T) {
 }
 
 func TestOpenAI_IssueTitle(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 	input := "successful issue input"
 
 	title, err := openAI.IssueTitle(input, "project-summary")
@@ -117,7 +117,7 @@ func TestOpenAI_IssueTitle(t *testing.T) {
 }
 
 func TestOpenAI_IssueBody(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 	input := "successful issue input"
 
 	body, err := openAI.IssueBody(input, "project-summary")
@@ -128,7 +128,7 @@ func TestOpenAI_IssueBody(t *testing.T) {
 }
 
 func TestOpenAI_CommitMessage(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 	number := "123"
 	diff := "successful diff"
 
@@ -140,7 +140,7 @@ func TestOpenAI_CommitMessage(t *testing.T) {
 }
 
 func TestOpenAI_IssueLabels(t *testing.T) {
-	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false)
+	openAI := NewOpenAIWithClient(NewEcho(), "test-model", 0.5, false, "en")
 	issue := "I successfully suggest using 'feature' label here"
 	available := []string{"bug", "feature", "enhancement"}
 

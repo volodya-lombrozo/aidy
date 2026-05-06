@@ -72,7 +72,7 @@ func TestReal_NewCache_CreatesSuccessfully(t *testing.T) {
 }
 
 func TestReal_InitialisesAI_Mock(t *testing.T) {
-	brain, err := Brain(true, false, config.NewMock())
+	brain, err := Brain(true, false, config.NewMock(), "en")
 
 	require.NoError(t, err, "Expected no error when initializing AI")
 	assert.NotNil(t, brain, "Expected brain to be initialized")
@@ -81,7 +81,7 @@ func TestReal_InitialisesAI_Mock(t *testing.T) {
 func TestReal_InitialisesAI_OpenAI(t *testing.T) {
 	conf := config.NewMock()
 	conf.MockProvider = "openai"
-	brain, err := Brain(false, false, conf)
+	brain, err := Brain(false, false, conf, "en")
 
 	require.NoError(t, err, "Expected no error when initializing AI without cache")
 	assert.NotNil(t, brain, "Expected brain to be initialized")
@@ -91,7 +91,7 @@ func TestReal_InitialisesAI_DeepSeek(t *testing.T) {
 	conf := config.NewMock()
 	conf.MockProvider = "deepseek"
 
-	brain, err := Brain(false, false, conf)
+	brain, err := Brain(false, false, conf, "en")
 
 	require.NoError(t, err, "Expected no error when initializing AI without cache")
 	assert.NotNil(t, brain, "Expected brain to be initialized")
@@ -101,7 +101,7 @@ func TestReal_InitialisesAI_UnknownProvider(t *testing.T) {
 	conf := config.NewMock()
 	conf.MockProvider = "unknown"
 
-	brain, err := Brain(false, false, conf)
+	brain, err := Brain(false, false, conf, "en")
 
 	require.Error(t, err, "Expected error when initializing AI with unknown provider")
 	assert.Nil(t, brain, "Expected brain to be nil when provider is unknown")
@@ -111,7 +111,7 @@ func TestReal_InitSummary_ErrorGettingProvider(t *testing.T) {
 	conf := config.NewMock()
 	conf.Error = fmt.Errorf("error getting provider")
 
-	brain, err := Brain(false, false, conf)
+	brain, err := Brain(false, false, conf, "en")
 
 	require.Error(t, err, "Expected error when getting provider fails")
 	assert.Nil(t, brain, "Expected brain to be nil when getting provider fails")

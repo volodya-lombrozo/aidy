@@ -13,11 +13,12 @@ import (
 )
 
 type DeepSeek struct {
-	token   string
-	url     string
-	model   string
-	summary bool
-	log     log.Logger
+	token    string
+	url      string
+	model    string
+	summary  bool
+	language string
+	log      log.Logger
 }
 
 type chatMessage struct {
@@ -39,13 +40,14 @@ type chatResponse struct {
 	Choices []chatChoice `json:"choices"`
 }
 
-func NewDeepSeek(apiKey string, summary bool) AI {
+func NewDeepSeek(apiKey string, summary bool, language string) AI {
 	return &DeepSeek{
-		token:   apiKey,
-		url:     "https://api.deepseek.com/chat/completions",
-		model:   "deepseek-chat",
-		summary: summary,
-		log:     log.Default(),
+		token:    apiKey,
+		url:      "https://api.deepseek.com/chat/completions",
+		model:    "deepseek-chat",
+		summary:  summary,
+		language: language,
+		log:      log.Default(),
 	}
 }
 
@@ -111,6 +113,7 @@ func (d *DeepSeek) send(system string, user string, summary string) (string, err
 	if d.summary {
 		content = appendSummary(content, summary)
 	}
+	content = appendLanguage(content, d.language)
 	content = trimPrompt(content)
 	body := chatRequest{
 		Model: d.model,

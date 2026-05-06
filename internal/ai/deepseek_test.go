@@ -16,7 +16,7 @@ import (
 func TestDeepSeekAI_Summary(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 	expected := "Test README content"
 
@@ -30,7 +30,7 @@ func TestDeepSeekAI_Summary(t *testing.T) {
 func TestDeepSeekAI_ReleaseNotes(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", false).(*DeepSeek)
+	ai := NewDeepSeek("test-token", false, "en").(*DeepSeek)
 	ai.url = server.URL
 	expected := "Test changes"
 
@@ -44,7 +44,7 @@ func TestDeepSeekAI_ReleaseNotes(t *testing.T) {
 func TestDeepSeekAI_PrTitle(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 	expectedDiff := "Test diff"
 	expectedIssue := "Test issue"
@@ -61,7 +61,7 @@ func TestDeepSeekAI_PrTitle(t *testing.T) {
 func TestDeepSeekAI_PrBody(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 	expectedDiff := "Test diff"
 	expectedIssue := "Test issue"
@@ -77,7 +77,7 @@ func TestDeepSeekAI_PrBody(t *testing.T) {
 func TestDeepSeekAI_IssueTitle(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 	expectedInput := "Test input"
 
@@ -91,7 +91,7 @@ func TestDeepSeekAI_IssueTitle(t *testing.T) {
 func TestDeepSeekAI_IssueBody(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 	expectedInput := "Test input"
 
@@ -105,7 +105,7 @@ func TestDeepSeekAI_IssueBody(t *testing.T) {
 func TestDeepSeekAI_IssueLabels(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 	expectedIssue := "Test issue"
 	availableLabels := []string{"bug", "feature", "enhancement"}
@@ -121,7 +121,7 @@ func TestDeepSeekAI_IssueLabels(t *testing.T) {
 func TestDeepSeekAI_CommitMessage(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 	expectedDiff := "Test diff"
 	expectedNumber := "42"
@@ -136,7 +136,7 @@ func TestDeepSeekAI_CommitMessage(t *testing.T) {
 func TestDeepSeekAI_SuggestBranch(t *testing.T) {
 	server := echoServer(t)
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 	expectedDescr := "Test description"
 
@@ -152,7 +152,7 @@ func TestDeepSeekAI_Handle404Response(t *testing.T) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	}))
 	defer server.Close()
-	ai := NewDeepSeek("test-token", true).(*DeepSeek)
+	ai := NewDeepSeek("test-token", true, "en").(*DeepSeek)
 	ai.url = server.URL
 
 	_, err := ai.Summary("Test README content")
