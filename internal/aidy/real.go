@@ -407,7 +407,7 @@ func (r *real) MergeRequest(fixes bool) error {
 	}
 	mrtitle := healPRTitle(healQuotes(title), nissue)
 	mrbody := healQuotes(body)
-	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --body \"%s\"", mrtitle, mrbody))
+	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"", mrtitle, mrbody))
 	return r.editor.Print(cmd)
 }
 
