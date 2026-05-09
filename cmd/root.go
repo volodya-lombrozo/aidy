@@ -26,9 +26,10 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 	var debug bool
 	var language string
 	root := &cobra.Command{
-		Use:   "aidy",
-		Short: "aidy - ai-powered github cli helper",
-		Long:  "Aidy assists you with generating commit messages, pull requests, issues, and releases",
+		Use:     "aidy",
+		Short:   "aidy - ai-powered github cli helper",
+		Long:    "Aidy assists you with generating commit messages, pull requests, issues, and releases",
+		Version: Version,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			ctx.Assistant = create(summary, aider, ailess, silent, debug, language)
 		},
@@ -52,6 +53,7 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 		newCleanCmd(&ctx),
 		newStartCmd(&ctx),
 		newDiffCmd(&ctx),
+		newVersionCmd(),
 	)
 	return root
 }
