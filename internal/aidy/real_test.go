@@ -856,6 +856,11 @@ func TestExtractIssueNumber(t *testing.T) {
 	}
 }
 
+func TestBranchName(t *testing.T) {
+	assert.Equal(t, "283-fix-mr-body-flag", branchName("283", "`fix-mr-body-flag`"))
+	assert.Equal(t, "42-fix-bug", branchName("42", "fix-bug"))
+}
+
 func TestEscapeBackticks(t *testing.T) {
 	input := "This is a `test` string with `backticks`."
 	expected := "This is a \\`test\\` string with \\`backticks\\`."

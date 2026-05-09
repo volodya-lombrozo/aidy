@@ -498,6 +498,7 @@ func branchName(number string, suggested string) string {
 	suggested = strings.ReplaceAll(suggested, " ", "-")
 	suggested = strings.ReplaceAll(suggested, "_", "-")
 	suggested = strings.ReplaceAll(suggested, "/", "-")
+	suggested = strings.ReplaceAll(suggested, "`", "")
 	return fmt.Sprintf("%s-%s", number, suggested)
 }
 
