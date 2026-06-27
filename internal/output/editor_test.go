@@ -99,7 +99,7 @@ func TestEditor_Print_EditOption(t *testing.T) {
 	shell := executor.NewMock()
 	editor := NewEditor(shell)
 	editor.in = r
-	_, err := io.WriteString(w, "e\n")
+	_, err := io.WriteString(w, "e\nr\n")
 	require.NoError(t, err, "failed to write to pipe")
 	err = w.Close()
 	require.NoError(t, err, "failed to close write pipe")

@@ -34,9 +34,9 @@ func NewEditor(shell executor.Executor) *editor {
 func (e *editor) Print(command string) error {
 	cmd := prettyCommand(command)
 	fmt.Printf("\ngenerated command:\n%s\n", cmd)
+	reader := bufio.NewReader(e.in)
 	for {
 		e.printf("%s", "[r]un, [e]dit, [c]ancel, [p]rint? ")
-		reader := bufio.NewReader(e.in)
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			e.printfErr("%s: %v\n", "Error reading input", err)
@@ -55,7 +55,6 @@ func (e *editor) Print(command string) error {
 				return nil
 			}
 			cmd = updated
-			return e.run(cmd)
 		case "c":
 			e.printf("%s\n", "canceled.")
 			return nil
