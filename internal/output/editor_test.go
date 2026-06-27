@@ -95,20 +95,28 @@ func TestEditor_Print_CancelOption(t *testing.T) {
 }
 
 func TestEditor_Print_EditOption(t *testing.T) {
-	r, w, _ := os.Pipe()
+	input_r, input_w, _ := os.Pipe()
+	output_r, output_w, _ := os.Pipe()
 	shell := executor.NewMock()
 	editor := NewEditor(shell)
-	editor.in = r
-	_, err := io.WriteString(w, "e\n")
+	editor.in = input_r
+	editor.out = output_w
+	_, err := io.WriteString(input_w, "e\nr\n")
 	require.NoError(t, err, "failed to write to pipe")
-	err = w.Close()
+	err = input_w.Close()
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
 	_ = editor.Print(command)
 
+	err = output_w.Close()
+	require.NoError(t, err, "failed to close output pipe")
+	output, err := io.ReadAll(output_r)
+	require.NoError(t, err, "failed to read from output")
 	assert.Len(t, shell.Commands, 2, "expected 2 commands to be run")
 	assert.Equal(t, command, shell.Commands[1], "expected edited command to match")
+	assert.Contains(t, string(output), "updated command", "expected updated command label in output")
+	assert.Contains(t, string(output), command, "expected updated command content in output")
 }
 
 func TestEditor_Print_EditOption_FailsWithError(t *testing.T) {
