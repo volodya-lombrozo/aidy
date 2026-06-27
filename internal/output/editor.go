@@ -55,6 +55,7 @@ func (e *editor) Print(command string) error {
 				return nil
 			}
 			cmd = updated
+			e.printf("\nupdated command:\n%s\n", cmd)
 		case "c":
 			e.printf("%s\n", "canceled.")
 			return nil
