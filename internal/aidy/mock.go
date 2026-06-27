@@ -1,6 +1,9 @@
 package aidy
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type Mock struct {
 	logs []string
@@ -70,3 +73,22 @@ func (m *Mock) StartIssue(number string) error {
 func (m *Mock) Logs() []string {
 	return m.logs
 }
+
+type FailingMock struct{}
+
+func NewFailingMock() *FailingMock {
+	return &FailingMock{}
+}
+
+func (f *FailingMock) Release(interval string, repo string) error   { return errors.New("error") }
+func (f *FailingMock) PrintConfig() error                           { return errors.New("error") }
+func (f *FailingMock) Commit(issue bool) error                      { return errors.New("error") }
+func (f *FailingMock) Squash(issue bool)                            {}
+func (f *FailingMock) PullRequest(fixes bool) error                 { return errors.New("error") }
+func (f *FailingMock) MergeRequest(fixes bool) error                { return errors.New("error") }
+func (f *FailingMock) Issue(task string) error                      { return errors.New("error") }
+func (f *FailingMock) Heal() error                                   { return errors.New("error") }
+func (f *FailingMock) Append()                                       {}
+func (f *FailingMock) Clean()                                        {}
+func (f *FailingMock) Diff() error                                   { return errors.New("error") }
+func (f *FailingMock) StartIssue(number string) error               { return errors.New("error") }
