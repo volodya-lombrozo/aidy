@@ -31,6 +31,7 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 		Long:    "Aidy assists you with generating commit messages, pull requests, issues, and releases",
 		Version: Version,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			cmd.Root().SilenceUsage = true
 			ctx.Assistant = create(summary, aider, ailess, silent, debug, language)
 		},
 	}

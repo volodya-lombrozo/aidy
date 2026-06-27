@@ -28,6 +28,31 @@ func TestRootCmd_Executes_WithoutError(t *testing.T) {
 	assert.NoError(t, err, "no error expected")
 }
 
+func TestRootCmd_PrintsUsageOnBadInput(t *testing.T) {
+	var out bytes.Buffer
+	command := NewRootCmd(mock)
+	command.SetOut(&out)
+	command.SetArgs([]string{"commit", "--unknown-flag"})
+
+	_ = command.Execute()
+
+	assert.Contains(t, out.String(), "Usage:", "usage should be printed on bad user input")
+}
+
+func TestRootCmd_SilencesUsageOnRuntimeError(t *testing.T) {
+	failing := func(summary, aider, ailess, silent, debug bool, language string) aidy.Aidy {
+		return aidy.NewFailingMock()
+	}
+	var out bytes.Buffer
+	command := NewRootCmd(failing)
+	command.SetOut(&out)
+	command.SetArgs([]string{"commit"})
+
+	_ = command.Execute()
+
+	assert.NotContains(t, out.String(), "Usage:", "usage should not be printed on runtime errors")
+}
+
 func mock(summary, aider, ailess, silent, debug bool, language string) aidy.Aidy {
 	return aidy.NewMock()
 }
