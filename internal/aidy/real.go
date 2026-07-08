@@ -22,8 +22,8 @@ import (
 )
 
 type real struct {
-	git    git.Git
-	github github.Github
+	git     git.Git
+	github  github.Github
 	ai      ai.AI
 	editor  output.Output
 	config  config.Config
@@ -331,7 +331,7 @@ func (r *real) print(msg string) {
 	}
 }
 
-func (r *real) PullRequest(fixes bool) error {
+func (r *real) PullRequest(fixes bool, target string) error {
 	if err := r.SetTarget(); err != nil {
 		r.logger.Warn("failed to set target repository: %v", err)
 	}
@@ -373,13 +373,17 @@ func (r *real) PullRequest(fixes bool) error {
 	} else {
 		repo = ""
 	}
+	var base string
+	if target != "" {
+		base = " --base " + target
+	}
 	prtitle := healPRTitle(healQuotes(title), nissue)
 	prbody := healQuotes(body)
-	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s", prtitle, prbody, repo))
+	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s%s", prtitle, prbody, repo, base))
 	return r.editor.Print(cmd)
 }
 
-func (r *real) MergeRequest(fixes bool) error {
+func (r *real) MergeRequest(fixes bool, target string) error {
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
@@ -405,9 +409,13 @@ func (r *real) MergeRequest(fixes bool) error {
 	} else {
 		body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
 	}
+	var targetBranch string
+	if target != "" {
+		targetBranch = " --target-branch " + target
+	}
 	mrtitle := healPRTitle(healQuotes(title), nissue)
 	mrbody := healQuotes(body)
-	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"", mrtitle, mrbody))
+	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"%s", mrtitle, mrbody, targetBranch))
 	return r.editor.Print(cmd)
 }
 
