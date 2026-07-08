@@ -31,3 +31,15 @@ func TestMr_Execution(t *testing.T) {
 	require.NoError(t, err, "no error expected")
 	assert.Contains(t, mock.Logs(), "MergeRequest called")
 }
+
+func TestMr_ExecutionWithTarget(t *testing.T) {
+	mock := aidy.NewMock()
+	ctx := &Context{Assistant: mock}
+	command := newMrCmd(ctx)
+	command.SetArgs([]string{"--target", "develop"})
+
+	err := command.Execute()
+
+	require.NoError(t, err, "no error expected")
+	assert.Contains(t, mock.Logs(), "MergeRequest called")
+}

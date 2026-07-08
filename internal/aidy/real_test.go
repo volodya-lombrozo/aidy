@@ -562,12 +562,23 @@ func TestReal_PullRequest(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
-	err := raidy.PullRequest(false)
+	err := raidy.PullRequest(false, "")
 
 	require.NoError(t, err, "expected no error when creating pull request")
 	output := out.Last()
 	assert.Contains(t, output, "gh pr create", "Expected output to contain 'gh pr create'")
 	assert.Contains(t, output, "--title \"mock title for '#41' with issue #mock description for issue '#41' and summary: mock summary\"", "Expected output to contain title")
+}
+
+func TestReal_PullRequest_Target(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "develop")
+
+	require.NoError(t, err, "expected no error when creating pull request with target branch")
+	output := out.Last()
+	assert.Contains(t, output, "--base develop", "Expected output to contain target branch")
 }
 
 func TestReal_PullRequest_IssueNotFound(t *testing.T) {
@@ -576,7 +587,7 @@ func TestReal_PullRequest_IssueNotFound(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
-	err := raidy.PullRequest(false)
+	err := raidy.PullRequest(false, "")
 
 	require.NoError(t, err, "Expected no error when creating pull request with issue not found")
 	output := out.Last()
@@ -591,7 +602,7 @@ func TestReal_PullRequest_Fixes(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
-	err := raidy.PullRequest(true)
+	err := raidy.PullRequest(true, "")
 
 	require.NoError(t, err, "Expected no error when creating pull request with issue not found")
 	output := out.Last()
@@ -602,7 +613,7 @@ func TestReal_MergeRequest(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
-	err := raidy.MergeRequest(false)
+	err := raidy.MergeRequest(false, "")
 
 	require.NoError(t, err, "expected no error when creating merge request")
 	result := out.Last()
@@ -610,11 +621,22 @@ func TestReal_MergeRequest(t *testing.T) {
 	assert.Contains(t, result, "Related to #")
 }
 
+func TestReal_MergeRequest_Target(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.MergeRequest(false, "develop")
+
+	require.NoError(t, err, "expected no error when creating merge request with target branch")
+	result := out.Last()
+	assert.Contains(t, result, "--target-branch develop", "Expected output to contain target branch")
+}
+
 func TestReal_MergeRequest_Fixes(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
-	err := raidy.MergeRequest(true)
+	err := raidy.MergeRequest(true, "")
 
 	require.NoError(t, err, "expected no error when creating merge request with fixes")
 	result := out.Last()

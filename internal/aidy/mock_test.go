@@ -36,7 +36,7 @@ func TestMockAidy_Squash(t *testing.T) {
 
 func TestMockAidy_PullRequest(t *testing.T) {
 	aidy := NewMock()
-	err := aidy.PullRequest(true)
+	err := aidy.PullRequest(true, "main")
 	require.NoError(t, err)
 	assert.Contains(t, aidy.Logs(), "PullRequest called")
 }
