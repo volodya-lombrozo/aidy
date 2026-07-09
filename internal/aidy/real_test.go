@@ -16,6 +16,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 	"github.com/volodya-lombrozo/aidy/internal/git"
 	"github.com/volodya-lombrozo/aidy/internal/github"
+	"github.com/volodya-lombrozo/aidy/internal/gitlab"
 	"github.com/volodya-lombrozo/aidy/internal/log"
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
@@ -562,7 +563,7 @@ func TestReal_PullRequest(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
-	err := raidy.PullRequest(false, "")
+	err := raidy.PullRequest(false, "", false)
 
 	require.NoError(t, err, "expected no error when creating pull request")
 	output := out.Last()
@@ -574,7 +575,7 @@ func TestReal_PullRequest_Target(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
-	err := raidy.PullRequest(false, "develop")
+	err := raidy.PullRequest(false, "develop", false)
 
 	require.NoError(t, err, "expected no error when creating pull request with target branch")
 	output := out.Last()
@@ -587,7 +588,7 @@ func TestReal_PullRequest_IssueNotFound(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
-	err := raidy.PullRequest(false, "")
+	err := raidy.PullRequest(false, "", false)
 
 	require.NoError(t, err, "Expected no error when creating pull request with issue not found")
 	output := out.Last()
@@ -602,18 +603,54 @@ func TestReal_PullRequest_Fixes(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
-	err := raidy.PullRequest(true, "")
+	err := raidy.PullRequest(true, "", false)
 
 	require.NoError(t, err, "Expected no error when creating pull request with issue not found")
 	output := out.Last()
 	assert.Contains(t, output, "Fixes #")
 }
 
+func TestReal_PullRequest_Duplicate(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "develop", true)
+
+	require.NoError(t, err, "expected no error when duplicating a pull request")
+	output := out.Last()
+	assert.Contains(t, output, "gh pr create", "Expected output to contain 'gh pr create'")
+	assert.Contains(t, output, "--base develop", "Expected output to contain target branch")
+	assert.Contains(t, output, "mock title for branch", "Expected output to reuse the existing pull request title")
+	assert.Contains(t, output, "mock body for branch", "Expected output to reuse the existing pull request body")
+}
+
+func TestReal_PullRequest_Duplicate_NoTarget(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "", true)
+
+	require.Error(t, err, "expected an error when duplicating a pull request without a target branch")
+	assert.Contains(t, err.Error(), "--duplicate requires --target")
+}
+
+func TestReal_PullRequest_Duplicate_NotFound(t *testing.T) {
+	github := github.NewMock()
+	github.Error = fmt.Errorf("no open pull request found for branch 'feature'")
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "develop", true)
+
+	require.Error(t, err, "expected an error when there is no pull request to duplicate")
+	assert.Contains(t, err.Error(), "error finding an existing pull request to duplicate")
+}
+
 func TestReal_MergeRequest(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
-	err := raidy.MergeRequest(false, "")
+	err := raidy.MergeRequest(false, "", false)
 
 	require.NoError(t, err, "expected no error when creating merge request")
 	result := out.Last()
@@ -625,7 +662,7 @@ func TestReal_MergeRequest_Target(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
-	err := raidy.MergeRequest(false, "develop")
+	err := raidy.MergeRequest(false, "develop", false)
 
 	require.NoError(t, err, "expected no error when creating merge request with target branch")
 	result := out.Last()
@@ -636,12 +673,48 @@ func TestReal_MergeRequest_Fixes(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
-	err := raidy.MergeRequest(true, "")
+	err := raidy.MergeRequest(true, "", false)
 
 	require.NoError(t, err, "expected no error when creating merge request with fixes")
 	result := out.Last()
 	assert.Contains(t, result, "glab mr create")
 	assert.Contains(t, result, "Closes #")
+}
+
+func TestReal_MergeRequest_Duplicate(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.MergeRequest(false, "develop", true)
+
+	require.NoError(t, err, "expected no error when duplicating a merge request")
+	result := out.Last()
+	assert.Contains(t, result, "glab mr create", "Expected output to contain 'glab mr create'")
+	assert.Contains(t, result, "--target-branch develop", "Expected output to contain target branch")
+	assert.Contains(t, result, "mock title for branch", "Expected output to reuse the existing merge request title")
+	assert.Contains(t, result, "mock body for branch", "Expected output to reuse the existing merge request body")
+}
+
+func TestReal_MergeRequest_Duplicate_NoTarget(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.MergeRequest(false, "", true)
+
+	require.Error(t, err, "expected an error when duplicating a merge request without a target branch")
+	assert.Contains(t, err.Error(), "--duplicate requires --target")
+}
+
+func TestReal_MergeRequest_Duplicate_NotFound(t *testing.T) {
+	gl := gitlab.NewMock()
+	gl.Error = fmt.Errorf("no open merge request found for branch 'feature'")
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gl, editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.MergeRequest(false, "develop", true)
+
+	require.Error(t, err, "expected an error when there is no merge request to duplicate")
+	assert.Contains(t, err.Error(), "error finding an existing merge request to duplicate")
 }
 
 func TestReal_Commit(t *testing.T) {

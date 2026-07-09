@@ -43,3 +43,15 @@ func TestPr_ExecutionWithTarget(t *testing.T) {
 	require.NoError(t, err, "no error expected")
 	assert.Contains(t, mock.Logs(), "PullRequest called")
 }
+
+func TestPr_ExecutionWithDuplicate(t *testing.T) {
+	mock := aidy.NewMock()
+	ctx := &Context{Assistant: mock}
+	command := newPrCmd(ctx)
+	command.SetArgs([]string{"--target", "develop", "--duplicate"})
+
+	err := command.Execute()
+
+	require.NoError(t, err, "no error expected")
+	assert.Contains(t, mock.Logs(), "PullRequest called")
+}

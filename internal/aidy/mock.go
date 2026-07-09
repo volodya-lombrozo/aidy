@@ -32,12 +32,12 @@ func (m *Mock) Squash(issue bool) {
 	m.logs = append(m.logs, "Squash called")
 }
 
-func (m *Mock) PullRequest(fixes bool, target string) error {
+func (m *Mock) PullRequest(fixes bool, target string, duplicate bool) error {
 	m.logs = append(m.logs, "PullRequest called")
 	return nil
 }
 
-func (m *Mock) MergeRequest(fixes bool, target string) error {
+func (m *Mock) MergeRequest(fixes bool, target string, duplicate bool) error {
 	m.logs = append(m.logs, "MergeRequest called")
 	return nil
 }
@@ -84,8 +84,12 @@ func (f *FailingMock) Release(interval string, repo string) error   { return err
 func (f *FailingMock) PrintConfig() error                           { return errors.New("error") }
 func (f *FailingMock) Commit(issue bool) error                      { return errors.New("error") }
 func (f *FailingMock) Squash(issue bool)                            {}
-func (f *FailingMock) PullRequest(fixes bool, target string) error  { return errors.New("error") }
-func (f *FailingMock) MergeRequest(fixes bool, target string) error { return errors.New("error") }
+func (f *FailingMock) PullRequest(fixes bool, target string, duplicate bool) error {
+	return errors.New("error")
+}
+func (f *FailingMock) MergeRequest(fixes bool, target string, duplicate bool) error {
+	return errors.New("error")
+}
 func (f *FailingMock) Issue(task string) error                      { return errors.New("error") }
 func (f *FailingMock) Heal() error                                  { return errors.New("error") }
 func (f *FailingMock) Append()                                      {}

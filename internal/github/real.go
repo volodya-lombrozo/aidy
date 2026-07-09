@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/volodya-lombrozo/aidy/internal/cache"
 	"github.com/volodya-lombrozo/aidy/internal/git"
@@ -35,6 +36,12 @@ type label struct {
 	Name        string `json:"name"`
 	Color       string `json:"color"`
 	Description string `json:"description"`
+}
+
+type pullRequest struct {
+	Number int    `json:"number"`
+	Title  string `json:"title"`
+	Body   string `json:"body"`
 }
 
 func NewGithub(url string, gs git.Git, token string, ch cache.AidyCache) *github {
@@ -112,6 +119,46 @@ func (r *github) Labels() ([]string, error) {
 		res = append(res, label.Name)
 	}
 	return res, nil
+}
+
+func (r *github) PullRequestByBranch(branch string) (string, string, error) {
+	target := r.ch.Remote()
+	if target == "" {
+		return "", "", fmt.Errorf("cannot find a target repository to search for an open pull request for branch '%s'", branch)
+	}
+	owner := strings.SplitN(target, "/", 2)[0]
+	url := fmt.Sprintf("%s/repos/%s/pulls?head=%s:%s&state=open", r.url, target, owner, branch)
+	r.log.Debug("trying to find an open pull request using the following url: %s", url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("cannot create a new GET request to find a pull request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+r.token)
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("error fetching pull request for branch '%s': %w", branch, err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			r.log.Error("error closing response body: %v", err)
+		}
+	}()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("cannot find a pull request using the following url: '%s'. response: '%s'", url, resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", fmt.Errorf("error reading response body: %w", err)
+	}
+	var prs []pullRequest
+	if err := json.Unmarshal(body, &prs); err != nil {
+		return "", "", fmt.Errorf("error unmarshaling pull requests json: %w", err)
+	}
+	if len(prs) == 0 {
+		return "", "", fmt.Errorf("no open pull request found for branch '%s'", branch)
+	}
+	r.log.Debug("found an open pull request #%d for branch '%s'", prs[0].Number, branch)
+	return prs[0].Title, prs[0].Body, nil
 }
 
 func (r *github) Remotes() ([]string, error) {
