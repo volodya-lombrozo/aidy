@@ -16,6 +16,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 	"github.com/volodya-lombrozo/aidy/internal/git"
 	"github.com/volodya-lombrozo/aidy/internal/github"
+	"github.com/volodya-lombrozo/aidy/internal/gitlab"
 	"github.com/volodya-lombrozo/aidy/internal/log"
 	"github.com/volodya-lombrozo/aidy/internal/output"
 	"golang.org/x/mod/semver"
@@ -24,6 +25,7 @@ import (
 type real struct {
 	git     git.Git
 	github  github.Github
+	gitlab  gitlab.Gitlab
 	ai      ai.AI
 	editor  output.Output
 	config  config.Config
@@ -75,6 +77,7 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool, lan
 		aidy.logger.Error("failed to initialize GitHub client: %v", err)
 		os.Exit(1)
 	}
+	aidy.gitlab = gitlab.NewGitlab(shell)
 	if err = aidy.InitSummary(summary, "README.md"); err != nil {
 		aidy.logger.Warn("failed to initialize project summary: %v", err)
 	}
@@ -331,7 +334,10 @@ func (r *real) print(msg string) {
 	}
 }
 
-func (r *real) PullRequest(fixes bool, target string) error {
+func (r *real) PullRequest(fixes bool, target string, duplicate bool) error {
+	if duplicate && target == "" {
+		return fmt.Errorf("--duplicate requires --target to specify the branch to duplicate the pull request against")
+	}
 	if err := r.SetTarget(); err != nil {
 		r.logger.Warn("failed to set target repository: %v", err)
 	}
@@ -339,32 +345,41 @@ func (r *real) PullRequest(fixes bool, target string) error {
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
 	}
-	diff, err := r.git.Diff()
-	if err != nil {
-		return fmt.Errorf("error getting git diff: %v", err)
-	}
-	summary, _ := r.cache.Summary()
 	nissue := inumber(branch)
-	r.logger.Info("retrieving the description for issue #%s...", nissue)
-	issue, err := r.github.Description(nissue)
-	if err != nil {
-		issue = "not-found"
-		r.logger.Warn("issue description not found for issue #%s because of %v, using default value", nissue, err)
-	}
-	r.logger.Info("generating pull request title...")
-	title, err := r.ai.PrTitle(issueRef(nissue), diff, issue, summary)
-	if err != nil {
-		return fmt.Errorf("error generating pull request title: %v", err)
-	}
-	r.logger.Info("generating pull request body...")
-	body, err := r.ai.PrBody(diff, issue, summary)
-	if err != nil {
-		return fmt.Errorf("error generating pull request body: %v", err)
-	}
-	if fixes {
-		body = body + fmt.Sprintf("\n\nFixes %s", issueRef(nissue))
+	var title, body string
+	if duplicate {
+		r.logger.Info("looking up the open pull request for branch '%s' to duplicate...", branch)
+		title, body, err = r.github.PullRequestByBranch(branch)
+		if err != nil {
+			return fmt.Errorf("error finding an existing pull request to duplicate: %v", err)
+		}
 	} else {
-		body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
+		diff, err := r.git.Diff()
+		if err != nil {
+			return fmt.Errorf("error getting git diff: %v", err)
+		}
+		summary, _ := r.cache.Summary()
+		r.logger.Info("retrieving the description for issue #%s...", nissue)
+		issue, err := r.github.Description(nissue)
+		if err != nil {
+			issue = "not-found"
+			r.logger.Warn("issue description not found for issue #%s because of %v, using default value", nissue, err)
+		}
+		r.logger.Info("generating pull request title...")
+		title, err = r.ai.PrTitle(issueRef(nissue), diff, issue, summary)
+		if err != nil {
+			return fmt.Errorf("error generating pull request title: %v", err)
+		}
+		r.logger.Info("generating pull request body...")
+		body, err = r.ai.PrBody(diff, issue, summary)
+		if err != nil {
+			return fmt.Errorf("error generating pull request body: %v", err)
+		}
+		if fixes {
+			body = body + fmt.Sprintf("\n\nFixes %s", issueRef(nissue))
+		} else {
+			body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
+		}
 	}
 	remote := r.cache.Remote()
 	var repo string
@@ -383,31 +398,43 @@ func (r *real) PullRequest(fixes bool, target string) error {
 	return r.editor.Print(cmd)
 }
 
-func (r *real) MergeRequest(fixes bool, target string) error {
+func (r *real) MergeRequest(fixes bool, target string, duplicate bool) error {
+	if duplicate && target == "" {
+		return fmt.Errorf("--duplicate requires --target to specify the branch to duplicate the merge request against")
+	}
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
 	}
-	diff, err := r.git.Diff()
-	if err != nil {
-		return fmt.Errorf("error getting git diff: %v", err)
-	}
-	summary, _ := r.cache.Summary()
 	nissue := inumber(branch)
-	r.logger.Info("generating merge request title...")
-	title, err := r.ai.PrTitle(issueRef(nissue), diff, "", summary)
-	if err != nil {
-		return fmt.Errorf("error generating merge request title: %v", err)
-	}
-	r.logger.Info("generating merge request body...")
-	body, err := r.ai.PrBody(diff, "", summary)
-	if err != nil {
-		return fmt.Errorf("error generating merge request body: %v", err)
-	}
-	if fixes {
-		body = body + fmt.Sprintf("\n\nCloses %s", issueRef(nissue))
+	var title, body string
+	if duplicate {
+		r.logger.Info("looking up the open merge request for branch '%s' to duplicate...", branch)
+		title, body, err = r.gitlab.MergeRequestByBranch(branch)
+		if err != nil {
+			return fmt.Errorf("error finding an existing merge request to duplicate: %v", err)
+		}
 	} else {
-		body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
+		diff, err := r.git.Diff()
+		if err != nil {
+			return fmt.Errorf("error getting git diff: %v", err)
+		}
+		summary, _ := r.cache.Summary()
+		r.logger.Info("generating merge request title...")
+		title, err = r.ai.PrTitle(issueRef(nissue), diff, "", summary)
+		if err != nil {
+			return fmt.Errorf("error generating merge request title: %v", err)
+		}
+		r.logger.Info("generating merge request body...")
+		body, err = r.ai.PrBody(diff, "", summary)
+		if err != nil {
+			return fmt.Errorf("error generating merge request body: %v", err)
+		}
+		if fixes {
+			body = body + fmt.Sprintf("\n\nCloses %s", issueRef(nissue))
+		} else {
+			body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
+		}
 	}
 	var targetBranch string
 	if target != "" {
