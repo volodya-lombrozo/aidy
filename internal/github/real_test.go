@@ -126,6 +126,61 @@ func TestRealGithub_Labels_UrlParsingError(t *testing.T) {
 	assert.Nil(t, labels, "Labels should be nil on error")
 }
 
+const JsonPullRequests = `[
+  {
+    "number": 42,
+    "title": "PR Title",
+    "body": "PR Body"
+  }
+]`
+
+func TestRealGithub_PullRequestByBranch(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write([]byte(JsonPullRequests)); err != nil {
+			t.Errorf("Error writing response: %v", err)
+		}
+	}))
+	defer ts.Close()
+	gh := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
+
+	title, body, err := gh.PullRequestByBranch("feature-branch")
+
+	require.NoError(t, err, "PullRequestByBranch should not return an error")
+	assert.Equal(t, "PR Title", title)
+	assert.Equal(t, "PR Body", body)
+}
+
+func TestRealGithub_PullRequestByBranch_NotFound(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write([]byte("[]")); err != nil {
+			t.Errorf("Error writing response: %v", err)
+		}
+	}))
+	defer ts.Close()
+	gh := NewGithub(ts.URL, git.NewMock(), "", cache.NewMockAidyCache())
+
+	title, body, err := gh.PullRequestByBranch("feature-branch")
+
+	require.Error(t, err, "PullRequestByBranch should return an error when no PR is found")
+	assert.Contains(t, err.Error(), "no open pull request found for branch 'feature-branch'")
+	assert.Empty(t, title)
+	assert.Empty(t, body)
+}
+
+func TestRealGithub_PullRequestByBranch_NoRemote(t *testing.T) {
+	gh := NewGithub("http://example.com", git.NewMock(), "", cache.NewMockAidyCache())
+	gh.ch.WithRemote("")
+
+	title, body, err := gh.PullRequestByBranch("feature-branch")
+
+	require.Error(t, err, "PullRequestByBranch should return an error when no remote is set")
+	assert.Contains(t, err.Error(), "cannot find a target repository to search for an open pull request for branch 'feature-branch'")
+	assert.Empty(t, title)
+	assert.Empty(t, body)
+}
+
 func TestRealGithub_Labels_InvalidProtocol(t *testing.T) {
 	gh := NewGithub("invalid://protocol", git.NewMock(), "", cache.NewMockAidyCache())
 	gh.ch.WithRemote("invalid-protocol")

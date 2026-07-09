@@ -21,3 +21,7 @@ func (m *MockGithub) Labels() ([]string, error) {
 func (m *MockGithub) Remotes() ([]string, error) {
 	return []string{"volodya-lombrozo/aidy", "volodya-lombrozo/jtcop"}, m.Error
 }
+
+func (m *MockGithub) PullRequestByBranch(branch string) (string, string, error) {
+	return fmt.Sprintf("mock title for branch '%s'", branch), fmt.Sprintf("mock body for branch '%s'", branch), m.Error
+}
