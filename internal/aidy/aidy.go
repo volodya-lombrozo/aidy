@@ -5,8 +5,8 @@ type Aidy interface {
 	PrintConfig() error
 	Commit(issue bool) error
 	Squash(issue bool)
-	PullRequest(fixes bool, target string) error
-	MergeRequest(fixes bool, target string) error
+	PullRequest(fixes bool, target string, duplicate bool) error
+	MergeRequest(fixes bool, target string, duplicate bool) error
 	Issue(task string) error
 	Heal() error
 	Append()
