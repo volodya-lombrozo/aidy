@@ -334,7 +334,7 @@ func (r *real) print(msg string) {
 	}
 }
 
-func (r *real) PullRequest(fixes bool, target string, duplicate bool) error {
+func (r *real) PullRequest(fixes bool, target string, duplicate bool, source string) error {
 	if duplicate && target == "" {
 		return fmt.Errorf("--duplicate requires --target to specify the branch to duplicate the pull request against")
 	}
@@ -345,11 +345,15 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool) error {
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
 	}
-	nissue := inumber(branch)
+	lookup := branch
+	if duplicate && source != "" {
+		lookup = source
+	}
+	nissue := inumber(lookup)
 	var title, body string
 	if duplicate {
-		r.logger.Info("looking up the open pull request for branch '%s' to duplicate...", branch)
-		title, body, err = r.github.PullRequestByBranch(branch)
+		r.logger.Info("looking up the open pull request for branch '%s' to duplicate...", lookup)
+		title, body, err = r.github.PullRequestByBranch(lookup)
 		if err != nil {
 			return fmt.Errorf("error finding an existing pull request to duplicate: %v", err)
 		}
@@ -398,7 +402,7 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool) error {
 	return r.editor.Print(cmd)
 }
 
-func (r *real) MergeRequest(fixes bool, target string, duplicate bool) error {
+func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source string) error {
 	if duplicate && target == "" {
 		return fmt.Errorf("--duplicate requires --target to specify the branch to duplicate the merge request against")
 	}
@@ -406,11 +410,15 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool) error {
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)
 	}
-	nissue := inumber(branch)
+	lookup := branch
+	if duplicate && source != "" {
+		lookup = source
+	}
+	nissue := inumber(lookup)
 	var title, body string
 	if duplicate {
-		r.logger.Info("looking up the open merge request for branch '%s' to duplicate...", branch)
-		title, body, err = r.gitlab.MergeRequestByBranch(branch)
+		r.logger.Info("looking up the open merge request for branch '%s' to duplicate...", lookup)
+		title, body, err = r.gitlab.MergeRequestByBranch(lookup)
 		if err != nil {
 			return fmt.Errorf("error finding an existing merge request to duplicate: %v", err)
 		}
