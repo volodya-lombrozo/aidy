@@ -6,3 +6,4 @@ coverage.out
 # Added by goreleaser init:
 dist/
 .aidy/
+app

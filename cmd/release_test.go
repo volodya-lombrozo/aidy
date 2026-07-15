@@ -25,10 +25,10 @@ func TestRelease_Execution(t *testing.T) {
 	mock := aidy.NewMock()
 	ctx := &Context{Assistant: mock}
 	command := newReleaseCmd(ctx)
-	command.SetArgs([]string{"minor", "--repo", "test-repo"})
+	command.SetArgs([]string{"minor", "--repo", "test-repo", "--notes"})
 
 	err := command.Execute()
 
 	require.NoError(t, err, "no error expected")
-	assert.Contains(t, mock.Logs(), "Release called with interval: minor, repo: test-repo")
+	assert.Contains(t, mock.Logs(), "Release called with interval: minor, repo: test-repo, notes: true")
 }

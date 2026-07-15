@@ -27,6 +27,10 @@ func NewMockWithShell(shell executor.Executor) Git {
 	return &mock{dir: "/dev/null", shell: shell, err: nil, log: log.NewMock()}
 }
 
+func NewMockWithDirAndShell(dir string, shell executor.Executor) Git {
+	return &mock{dir: dir, shell: shell, err: nil, log: log.NewMock()}
+}
+
 func NewMockWithError(err error) Git {
 	return &mock{dir: "/dev/null", shell: executor.NewMock(), err: err, log: log.NewMock()}
 }

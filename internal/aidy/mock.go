@@ -13,8 +13,8 @@ func NewMock() *Mock {
 	return &Mock{logs: []string{}}
 }
 
-func (m *Mock) Release(interval string, repo string) error {
-	m.logs = append(m.logs, fmt.Sprintf("Release called with interval: %s, repo: %s", interval, repo))
+func (m *Mock) Release(interval string, repo string, notes bool) error {
+	m.logs = append(m.logs, fmt.Sprintf("Release called with interval: %s, repo: %s, notes: %t", interval, repo, notes))
 	return nil
 }
 
@@ -80,19 +80,21 @@ func NewFailingMock() *FailingMock {
 	return &FailingMock{}
 }
 
-func (f *FailingMock) Release(interval string, repo string) error   { return errors.New("error") }
-func (f *FailingMock) PrintConfig() error                           { return errors.New("error") }
-func (f *FailingMock) Commit(issue bool) error                      { return errors.New("error") }
-func (f *FailingMock) Squash(issue bool)                            {}
+func (f *FailingMock) Release(interval string, repo string, notes bool) error {
+	return errors.New("error")
+}
+func (f *FailingMock) PrintConfig() error      { return errors.New("error") }
+func (f *FailingMock) Commit(issue bool) error { return errors.New("error") }
+func (f *FailingMock) Squash(issue bool)       {}
 func (f *FailingMock) PullRequest(fixes bool, target string, duplicate bool, source string) error {
 	return errors.New("error")
 }
 func (f *FailingMock) MergeRequest(fixes bool, target string, duplicate bool, source string) error {
 	return errors.New("error")
 }
-func (f *FailingMock) Issue(task string) error                      { return errors.New("error") }
-func (f *FailingMock) Heal() error                                  { return errors.New("error") }
-func (f *FailingMock) Append()                                      {}
-func (f *FailingMock) Clean()                                       {}
-func (f *FailingMock) Diff() error                                  { return errors.New("error") }
-func (f *FailingMock) StartIssue(number string) error               { return errors.New("error") }
+func (f *FailingMock) Issue(task string) error        { return errors.New("error") }
+func (f *FailingMock) Heal() error                    { return errors.New("error") }
+func (f *FailingMock) Append()                        {}
+func (f *FailingMock) Clean()                         {}
+func (f *FailingMock) Diff() error                    { return errors.New("error") }
+func (f *FailingMock) StartIssue(number string) error { return errors.New("error") }

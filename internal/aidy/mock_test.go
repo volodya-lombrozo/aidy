@@ -9,9 +9,9 @@ import (
 
 func TestMockAidy_Release(t *testing.T) {
 	aidy := NewMock()
-	err := aidy.Release("daily", "repo-name")
+	err := aidy.Release("daily", "repo-name", true)
 	assert.NoError(t, err)
-	assert.Contains(t, aidy.Logs(), "Release called with interval: daily, repo: repo-name")
+	assert.Contains(t, aidy.Logs(), "Release called with interval: daily, repo: repo-name, notes: true")
 }
 
 func TestMockAidy_PrintConfig(t *testing.T) {

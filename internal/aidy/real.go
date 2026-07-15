@@ -545,7 +545,7 @@ func branchName(number string, suggested string) string {
 	return fmt.Sprintf("%s-%s", number, suggested)
 }
 
-func (r *real) Release(interval string, repo string) error {
+func (r *real) Release(interval string, repo string, saveNotes bool) error {
 	tags, err := r.git.Tags(repo)
 	if err != nil {
 		return fmt.Errorf("failed to get tags: '%v'", err)
@@ -597,8 +597,68 @@ func (r *real) Release(interval string, repo string) error {
 		}
 		r.logger.Info("no tags found, creating the first release with version '%s'", updated)
 	}
+	if saveNotes {
+		if err := r.save(updated, notes); err != nil {
+			return fmt.Errorf("failed to save release notes: '%v'", err)
+		}
+	}
 	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, notes)
 	return r.editor.Print(command)
+}
+
+// save writes the generated release notes to a markdown file under
+// .github/release-notes/ and/or .gitlab/release-notes/, depending on which
+// hosts the git remotes point to.
+func (r *real) save(version string, notes string) error {
+	root, err := r.git.Root()
+	if err != nil {
+		return fmt.Errorf("failed to get repository root: %w", err)
+	}
+	remotes, err := r.git.Remotes()
+	if err != nil {
+		return fmt.Errorf("failed to get git remotes: %w", err)
+	}
+	targets, err := dirs(remotes)
+	if err != nil {
+		return err
+	}
+	for _, dir := range targets {
+		path := filepath.Join(root, dir, version+".md")
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			return fmt.Errorf("failed to create release notes directory '%s': %w", filepath.Dir(path), err)
+		}
+		if err := os.WriteFile(path, []byte(notes), 0644); err != nil {
+			return fmt.Errorf("failed to write release notes file '%s': %w", path, err)
+		}
+		r.logger.Info("saved release notes to '%s'", path)
+	}
+	return nil
+}
+
+// dirs determines where release notes should be saved based on the hosts of
+// the given git remotes. It errors when no known host is detected, since
+// silently guessing a location could put notes where nobody looks.
+func dirs(remotes []string) ([]string, error) {
+	var found []string
+	if has(remotes, "github.com") {
+		found = append(found, filepath.Join(".github", "release-notes"))
+	}
+	if has(remotes, "gitlab.com") {
+		found = append(found, filepath.Join(".gitlab", "release-notes"))
+	}
+	if len(found) == 0 {
+		return nil, fmt.Errorf("no known git host (github.com or gitlab.com) found in remotes: %v", remotes)
+	}
+	return found, nil
+}
+
+func has(remotes []string, host string) bool {
+	for _, remote := range remotes {
+		if strings.Contains(remote, host) {
+			return true
+		}
+	}
+	return false
 }
 
 func keys(m map[string]string) []string {

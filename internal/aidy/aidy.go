@@ -1,7 +1,7 @@
 package aidy
 
 type Aidy interface {
-	Release(interval, repo string) error
+	Release(interval, repo string, notes bool) error
 	PrintConfig() error
 	Commit(issue bool) error
 	Squash(issue bool)

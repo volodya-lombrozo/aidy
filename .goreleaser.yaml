@@ -28,7 +28,6 @@ archives:
         formats: [zip]
 
 release:
-  header: "{{ .TagContents }}"
   github:
     owner: volodya-lombrozo
     name: aidy
