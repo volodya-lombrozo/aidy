@@ -815,7 +815,7 @@ func TestReal_Release_Success(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
 
-	err := raidy.Release("minor", "origin")
+	err := raidy.Release("minor", "origin", false)
 	assert.NoError(t, err, "expected no error during release")
 	expected := "git tag --cleanup=verbatim -a \"v2.1.0\" -m \""
 	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
@@ -829,7 +829,7 @@ func TestReal_Release_NoTags_Patch(t *testing.T) {
 
 	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
 
-	err := raidy.Release("patch", "origin")
+	err := raidy.Release("patch", "origin", false)
 
 	require.NoError(t, err, "expected no error when releasing with no tags")
 	expected := "git tag --cleanup=verbatim -a \"v0.0.1\" -m \""
@@ -844,7 +844,7 @@ func TestReal_Release_NoTags_Minor(t *testing.T) {
 
 	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
 
-	err := raidy.Release("minor", "origin")
+	err := raidy.Release("minor", "origin", false)
 
 	require.NoError(t, err, "expected no error when releasing with no tags")
 	expected := "git tag --cleanup=verbatim -a \"v0.1.0\" -m \""
@@ -859,7 +859,7 @@ func TestReal_Release_NoTags_Major(t *testing.T) {
 
 	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
 
-	err := raidy.Release("major", "origin")
+	err := raidy.Release("major", "origin", false)
 
 	require.NoError(t, err, "expected no error when releasing with no tags")
 	expected := "git tag --cleanup=verbatim -a \"v1.0.0\" -m \""
@@ -872,7 +872,7 @@ func TestReal_ReleaseUnknownInterval(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: mockGit, ai: mockAI, editor: out, logger: log.NewMock()}
 
-	err := raidy.Release("", "origin")
+	err := raidy.Release("", "origin", false)
 
 	assert.EqualError(t, err, "failed to update version: 'unknown version step: '''", "expected error when no tags are present")
 }
@@ -885,7 +885,7 @@ func TestReal_Release_TagFetchError(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
 
-	err := raidy.Release("patch", "origin")
+	err := raidy.Release("patch", "origin", false)
 
 	assert.Error(t, err, "expected error when fetching tags fails")
 	assert.Contains(t, err.Error(), "failed to get tags", "expected error message about fetching tags")
@@ -897,7 +897,7 @@ func TestReal_Release_NotesGenerationError(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
 
-	err := raidy.Release("major", "origin")
+	err := raidy.Release("major", "origin", false)
 
 	assert.Error(t, err, "expected error when generating release notes fails")
 	assert.Contains(t, err.Error(), "failed to generate release notes", "expected error message about release notes generation")
