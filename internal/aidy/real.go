@@ -545,7 +545,7 @@ func branchName(number string, suggested string) string {
 	return fmt.Sprintf("%s-%s", number, suggested)
 }
 
-func (r *real) Release(interval string, repo string) error {
+func (r *real) Release(interval string, repo string, saveNotes bool) error {
 	tags, err := r.git.Tags(repo)
 	if err != nil {
 		return fmt.Errorf("failed to get tags: '%v'", err)
@@ -597,8 +597,10 @@ func (r *real) Release(interval string, repo string) error {
 		}
 		r.logger.Info("no tags found, creating the first release with version '%s'", updated)
 	}
-	if err := r.save(updated, notes); err != nil {
-		return fmt.Errorf("failed to save release notes: '%v'", err)
+	if saveNotes {
+		if err := r.save(updated, notes); err != nil {
+			return fmt.Errorf("failed to save release notes: '%v'", err)
+		}
 	}
 	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, notes)
 	return r.editor.Print(command)
