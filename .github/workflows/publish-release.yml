@@ -23,11 +23,20 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: stable
+      - name: Resolve release notes file
+        id: notes
+        run: |
+          file=".github/release-notes/${{ github.ref_name }}.md"
+          if [ -f "$file" ]; then
+            echo "flag=--release-notes=$file" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          fi
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          args: release --clean ${{ steps.notes.outputs.flag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
