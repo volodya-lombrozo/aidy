@@ -909,14 +909,72 @@ func TestReal_Release_SaveNotes_GitHub(t *testing.T) {
 	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
 	require.NoError(t, err, "expected no error during release")
-	notes, rerr := os.ReadFile(filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md"))
+	path := filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md")
+	notes, rerr := os.ReadFile(path)
 	require.NoError(t, rerr, "expected release notes file to be written under .github")
 	assert.Contains(t, string(notes), "Mock Release Notes", "expected release notes file to contain generated notes")
+	commands := strings.Join(shell.Commands, "\n")
+	assert.Contains(t, commands, "git add "+path, "expected release notes file to be staged")
+	assert.Contains(t, commands, "git commit -m chore: add release notes for v2.1.0", "expected release notes to be committed")
+}
+
+func TestReal_Release_SaveNotes_UsesReviewedText(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
+	mgit := git.NewMockWithDirAndShell(tmp, shell)
+	out := output.NewMock()
+	out.EditText = "edited release notes"
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", true)
+
+	require.NoError(t, err, "expected no error during release")
+	path := filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md")
+	notes, rerr := os.ReadFile(path)
+	require.NoError(t, rerr, "expected release notes file to be written")
+	assert.Equal(t, "edited release notes", string(notes), "expected the reviewed/edited text to be saved, not the original AI output")
+	assert.Contains(t, out.Last(), "-m \"edited release notes\"", "expected the tag message to use the reviewed text")
+}
+
+func TestReal_Release_SaveNotes_Canceled(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
+	mgit := git.NewMockWithDirAndShell(tmp, shell)
+	out := output.NewMock()
+	out.EditErr = output.ErrCanceled
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", true)
+
+	require.NoError(t, err, "expected no error when the notes review is canceled")
+	_, rerr := os.ReadFile(filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md"))
+	assert.True(t, os.IsNotExist(rerr), "expected no release notes file to be written when canceled")
+	commands := strings.Join(shell.Commands, "\n")
+	assert.NotContains(t, commands, "git add", "expected no release notes file to be staged when canceled")
+	assert.NotContains(t, commands, "git commit", "expected no commit to be made when canceled")
+	assert.NotContains(t, out.Captured(), "git tag", "expected no tag command to be generated when canceled")
+}
+
+func TestReal_Release_SaveNotes_ReviewError(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
+	mgit := git.NewMockWithDirAndShell(tmp, shell)
+	out := output.NewMock()
+	out.EditErr = fmt.Errorf("review failed")
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", true)
+
+	assert.Error(t, err, "expected an error when reviewing release notes fails")
+	assert.Contains(t, err.Error(), "failed to review release notes", "expected error message about reviewing release notes")
 }
 
 func TestReal_Release_SaveNotes_GitLab(t *testing.T) {
@@ -925,7 +983,7 @@ func TestReal_Release_SaveNotes_GitLab(t *testing.T) {
 	shell.Output = "https://gitlab.com/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
@@ -941,7 +999,7 @@ func TestReal_Release_SaveNotes_UnknownHost(t *testing.T) {
 	shell.Output = "https://bitbucket.org/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
@@ -955,7 +1013,7 @@ func TestReal_Release_SkipsSavingNotesByDefault(t *testing.T) {
 	shell.Output = "https://bitbucket.org/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", false)
 
