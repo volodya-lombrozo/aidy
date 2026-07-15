@@ -631,7 +631,15 @@ func (r *real) save(version string, notes string) error {
 			return fmt.Errorf("failed to write release notes file '%s': %w", path, err)
 		}
 		r.logger.Info("saved release notes to '%s'", path)
+		if _, err := r.git.Run("add", path); err != nil {
+			return fmt.Errorf("error adding '%s': %v", path, err)
+		}
 	}
+	message := fmt.Sprintf("chore: add release notes for %s", version)
+	if _, err := r.git.Run("commit", "-m", message); err != nil {
+		return fmt.Errorf("error committing release notes: %v", err)
+	}
+	r.logger.Info("commit was created with message: '%s'", message)
 	return nil
 }
 

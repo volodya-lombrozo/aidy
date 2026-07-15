@@ -914,9 +914,13 @@ func TestReal_Release_SaveNotes_GitHub(t *testing.T) {
 	err := raidy.Release("minor", "origin", true)
 
 	require.NoError(t, err, "expected no error during release")
-	notes, rerr := os.ReadFile(filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md"))
+	path := filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md")
+	notes, rerr := os.ReadFile(path)
 	require.NoError(t, rerr, "expected release notes file to be written under .github")
 	assert.Contains(t, string(notes), "Mock Release Notes", "expected release notes file to contain generated notes")
+	commands := strings.Join(shell.Commands, "\n")
+	assert.Contains(t, commands, "git add "+path, "expected release notes file to be staged")
+	assert.Contains(t, commands, "git commit -m chore: add release notes for v2.1.0", "expected release notes to be committed")
 }
 
 func TestReal_Release_SaveNotes_GitLab(t *testing.T) {
