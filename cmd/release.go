@@ -17,6 +17,6 @@ func newReleaseCmd(ctx *Context) *cobra.Command {
 		},
 	}
 	command.Flags().StringVarP(&repo, "repo", "r", "", "repository where to look for tags")
-	command.Flags().BoolVarP(&notes, "notes", "n", false, "Save generated release notes as a markdown file named after the tag")
+	command.Flags().BoolVar(&notes, "notes", false, "Save generated release notes as a markdown file named after the tag")
 	return command
 }

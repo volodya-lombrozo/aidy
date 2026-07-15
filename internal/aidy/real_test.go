@@ -903,6 +903,67 @@ func TestReal_Release_NotesGenerationError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to generate release notes", "expected error message about release notes generation")
 }
 
+func TestReal_Release_SaveNotes_GitHub(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
+	mgit := git.NewMockWithDirAndShell(tmp, shell)
+	out := output.NewMock()
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", true)
+
+	require.NoError(t, err, "expected no error during release")
+	notes, rerr := os.ReadFile(filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md"))
+	require.NoError(t, rerr, "expected release notes file to be written under .github")
+	assert.Contains(t, string(notes), "Mock Release Notes", "expected release notes file to contain generated notes")
+}
+
+func TestReal_Release_SaveNotes_GitLab(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://gitlab.com/volodya-lombrozo/aidy.git"
+	mgit := git.NewMockWithDirAndShell(tmp, shell)
+	out := output.NewMock()
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", true)
+
+	require.NoError(t, err, "expected no error during release")
+	notes, rerr := os.ReadFile(filepath.Join(tmp, ".gitlab", "release-notes", "v2.1.0.md"))
+	require.NoError(t, rerr, "expected release notes file to be written under .gitlab")
+	assert.Contains(t, string(notes), "Mock Release Notes", "expected release notes file to contain generated notes")
+}
+
+func TestReal_Release_SaveNotes_UnknownHost(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://bitbucket.org/volodya-lombrozo/aidy.git"
+	mgit := git.NewMockWithDirAndShell(tmp, shell)
+	out := output.NewMock()
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", true)
+
+	assert.Error(t, err, "expected error when the git host can't be determined")
+	assert.Contains(t, err.Error(), "no known git host", "expected error to mention the unknown host")
+}
+
+func TestReal_Release_SkipsSavingNotesByDefault(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://bitbucket.org/volodya-lombrozo/aidy.git"
+	mgit := git.NewMockWithDirAndShell(tmp, shell)
+	out := output.NewMock()
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", false)
+
+	require.NoError(t, err, "expected no error when notes saving is disabled, even with an unknown host")
+	_, rerr := os.ReadFile(filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md"))
+	assert.True(t, os.IsNotExist(rerr), "expected no release notes file to be written when --notes is not set")
+}
+
 func TestHealQoutes(t *testing.T) {
 	message := healQuotes("\"with \" qoutes\"")
 	assert.Equal(t, "\"with \" qoutes\"", message)
