@@ -962,6 +962,21 @@ func TestReal_Release_SaveNotes_Canceled(t *testing.T) {
 	assert.NotContains(t, out.Captured(), "git tag", "expected no tag command to be generated when canceled")
 }
 
+func TestReal_Release_SaveNotes_ReviewError(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
+	mgit := git.NewMockWithDirAndShell(tmp, shell)
+	out := output.NewMock()
+	out.EditErr = fmt.Errorf("review failed")
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", true)
+
+	assert.Error(t, err, "expected an error when reviewing release notes fails")
+	assert.Contains(t, err.Error(), "failed to review release notes", "expected error message about reviewing release notes")
+}
+
 func TestReal_Release_SaveNotes_GitLab(t *testing.T) {
 	tmp := t.TempDir()
 	shell := executor.NewMock()

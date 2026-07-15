@@ -120,3 +120,46 @@ func TestTextEditor_Edit_EditOption_FailsWithError(t *testing.T) {
 	assert.Contains(t, err.Error(), "simulated error", "expected error message to match")
 	assert.Contains(t, err.Error(), "failed to edit text", "expected error to mention text editing failure")
 }
+
+func TestTextEditor_Edit_InvalidOption(t *testing.T) {
+	input_r, input_w, _ := os.Pipe()
+	err_r, err_w, _ := os.Pipe()
+	shell := executor.NewMock()
+	editor := NewTextEditor(shell)
+	editor.in = input_r
+	editor.err = err_w
+	_, err := io.WriteString(input_w, "x\na\n")
+	require.NoError(t, err, "failed to write to pipe")
+	err = input_w.Close()
+	require.NoError(t, err, "failed to close write pipe")
+	text := "release notes text"
+
+	result, err := editor.Edit(text)
+
+	require.NoError(t, err, "Edit should not return an error once a valid option is given")
+	assert.Equal(t, text, result, "expected the original text to be returned unchanged")
+	err = err_w.Close()
+	require.NoError(t, err, "failed to close error pipe")
+	output, err := io.ReadAll(err_r)
+	require.NoError(t, err, "failed to read from error output")
+	assert.Contains(t, string(output), "please type a, e, c, or p", "expected a hint about valid options")
+}
+
+func TestTextEditor_Edit_ReadError(t *testing.T) {
+	input_r, input_w, _ := os.Pipe()
+	err_r, err_w, _ := os.Pipe()
+	shell := executor.NewMock()
+	editor := NewTextEditor(shell)
+	editor.in = input_r
+	editor.err = err_w
+	require.NoError(t, input_w.Close(), "failed to close write pipe")
+	text := "release notes text"
+
+	_, err := editor.Edit(text)
+
+	assert.Error(t, err, "expected an error when reading input fails")
+	require.NoError(t, err_w.Close(), "failed to close error pipe")
+	output, rerr := io.ReadAll(err_r)
+	require.NoError(t, rerr, "failed to read from error output")
+	assert.Contains(t, string(output), "Error reading input", "expected an input-reading error message")
+}
