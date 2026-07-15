@@ -4,6 +4,8 @@ import "strings"
 
 type Mock struct {
 	captured []string
+	EditErr  error
+	EditText string
 }
 
 func NewMock() *Mock {
@@ -13,6 +15,17 @@ func NewMock() *Mock {
 func (m *Mock) Print(command string) error {
 	m.captured = append(m.captured, command)
 	return nil
+}
+
+func (m *Mock) Edit(text string) (string, error) {
+	m.captured = append(m.captured, text)
+	if m.EditErr != nil {
+		return "", m.EditErr
+	}
+	if m.EditText != "" {
+		return m.EditText, nil
+	}
+	return text, nil
 }
 
 func (m *Mock) Captured() string {

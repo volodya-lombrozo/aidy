@@ -1,6 +1,7 @@
 package aidy
 
 import (
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"os"
@@ -23,16 +24,17 @@ import (
 )
 
 type real struct {
-	git     git.Git
-	github  github.Github
-	gitlab  gitlab.Gitlab
-	ai      ai.AI
-	editor  output.Output
-	config  config.Config
-	cache   cache.AidyCache
-	printer output.Output
-	logger  log.Logger
-	in      *os.File
+	git        git.Git
+	github     github.Github
+	gitlab     gitlab.Gitlab
+	ai         ai.AI
+	editor     output.Output
+	config     config.Config
+	cache      cache.AidyCache
+	printer    output.Output
+	texteditor output.TextEditor
+	logger     log.Logger
+	in         *os.File
 }
 
 // Create a real aidy instance
@@ -52,6 +54,7 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool, lan
 	shell := executor.NewReal()
 	aidy.editor = output.NewEditor(shell)
 	aidy.printer = output.NewPrinter()
+	aidy.texteditor = output.NewTextEditor(shell)
 	var err error
 	if aidy.git, err = git.NewGit(shell); err != nil {
 		aidy.logger.Error("failed to initialize git: %v", err)
@@ -598,6 +601,15 @@ func (r *real) Release(interval string, repo string, saveNotes bool) error {
 		r.logger.Info("no tags found, creating the first release with version '%s'", updated)
 	}
 	if saveNotes {
+		reviewed, err := r.texteditor.Edit(notes)
+		if err != nil {
+			if errors.Is(err, output.ErrCanceled) {
+				r.logger.Info("release canceled")
+				return nil
+			}
+			return fmt.Errorf("failed to review release notes: '%v'", err)
+		}
+		notes = reviewed
 		if err := r.save(updated, notes); err != nil {
 			return fmt.Errorf("failed to save release notes: '%v'", err)
 		}
