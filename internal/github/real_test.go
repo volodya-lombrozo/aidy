@@ -164,7 +164,7 @@ func TestRealGithub_PullRequestByBranch_NotFound(t *testing.T) {
 	title, body, err := gh.PullRequestByBranch("feature-branch")
 
 	require.Error(t, err, "PullRequestByBranch should return an error when no PR is found")
-	assert.Contains(t, err.Error(), "no open pull request found for branch 'feature-branch'")
+	assert.Contains(t, err.Error(), "no pull request found for branch 'feature-branch'")
 	assert.Empty(t, title)
 	assert.Empty(t, body)
 }
@@ -176,7 +176,7 @@ func TestRealGithub_PullRequestByBranch_NoRemote(t *testing.T) {
 	title, body, err := gh.PullRequestByBranch("feature-branch")
 
 	require.Error(t, err, "PullRequestByBranch should return an error when no remote is set")
-	assert.Contains(t, err.Error(), "cannot find a target repository to search for an open pull request for branch 'feature-branch'")
+	assert.Contains(t, err.Error(), "cannot find a target repository to search for a pull request for branch 'feature-branch'")
 	assert.Empty(t, title)
 	assert.Empty(t, body)
 }

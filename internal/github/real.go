@@ -124,11 +124,11 @@ func (r *github) Labels() ([]string, error) {
 func (r *github) PullRequestByBranch(branch string) (string, string, error) {
 	target := r.ch.Remote()
 	if target == "" {
-		return "", "", fmt.Errorf("cannot find a target repository to search for an open pull request for branch '%s'", branch)
+		return "", "", fmt.Errorf("cannot find a target repository to search for a pull request for branch '%s'", branch)
 	}
 	owner := strings.SplitN(target, "/", 2)[0]
-	url := fmt.Sprintf("%s/repos/%s/pulls?head=%s:%s&state=open", r.url, target, owner, branch)
-	r.log.Debug("trying to find an open pull request using the following url: %s", url)
+	url := fmt.Sprintf("%s/repos/%s/pulls?head=%s:%s&state=all", r.url, target, owner, branch)
+	r.log.Debug("trying to find a pull request using the following url: %s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("cannot create a new GET request to find a pull request: %w", err)
@@ -155,9 +155,9 @@ func (r *github) PullRequestByBranch(branch string) (string, string, error) {
 		return "", "", fmt.Errorf("error unmarshaling pull requests json: %w", err)
 	}
 	if len(prs) == 0 {
-		return "", "", fmt.Errorf("no open pull request found for branch '%s'", branch)
+		return "", "", fmt.Errorf("no pull request found for branch '%s'", branch)
 	}
-	r.log.Debug("found an open pull request #%d for branch '%s'", prs[0].Number, branch)
+	r.log.Debug("found a pull request #%d for branch '%s'", prs[0].Number, branch)
 	return prs[0].Title, prs[0].Body, nil
 }
 
