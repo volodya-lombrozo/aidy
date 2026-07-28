@@ -649,7 +649,7 @@ func TestReal_PullRequest_Duplicate_NoTarget(t *testing.T) {
 
 func TestReal_PullRequest_Duplicate_NotFound(t *testing.T) {
 	github := github.NewMock()
-	github.Error = fmt.Errorf("no open pull request found for branch 'feature'")
+	github.Error = fmt.Errorf("no pull request found for branch 'feature'")
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
@@ -733,7 +733,7 @@ func TestReal_MergeRequest_Duplicate_NoTarget(t *testing.T) {
 
 func TestReal_MergeRequest_Duplicate_NotFound(t *testing.T) {
 	gl := gitlab.NewMock()
-	gl.Error = fmt.Errorf("no open merge request found for branch 'feature'")
+	gl.Error = fmt.Errorf("no merge request found for branch 'feature'")
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gl, editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 

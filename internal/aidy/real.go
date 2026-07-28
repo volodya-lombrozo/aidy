@@ -355,7 +355,7 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 	nissue := inumber(lookup)
 	var title, body string
 	if duplicate {
-		r.logger.Info("looking up the open pull request for branch '%s' to duplicate...", lookup)
+		r.logger.Info("looking up the pull request for branch '%s' to duplicate...", lookup)
 		title, body, err = r.github.PullRequestByBranch(lookup)
 		if err != nil {
 			return fmt.Errorf("error finding an existing pull request to duplicate: %v", err)
@@ -420,7 +420,7 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 	nissue := inumber(lookup)
 	var title, body string
 	if duplicate {
-		r.logger.Info("looking up the open merge request for branch '%s' to duplicate...", lookup)
+		r.logger.Info("looking up the merge request for branch '%s' to duplicate...", lookup)
 		title, body, err = r.gitlab.MergeRequestByBranch(lookup)
 		if err != nil {
 			return fmt.Errorf("error finding an existing merge request to duplicate: %v", err)

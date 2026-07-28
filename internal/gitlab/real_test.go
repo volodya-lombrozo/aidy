@@ -18,7 +18,7 @@ func TestReal_MergeRequestByBranch(t *testing.T) {
 	require.NoError(t, err, "MergeRequestByBranch should not return an error")
 	assert.Equal(t, "MR Title", title)
 	assert.Equal(t, "MR Body", body)
-	assert.Contains(t, shell.Commands[0], "glab mr list --source-branch feature-branch --output json")
+	assert.Contains(t, shell.Commands[0], "glab mr list --source-branch feature-branch --all --output json")
 }
 
 func TestReal_MergeRequestByBranch_NotFound(t *testing.T) {
@@ -29,7 +29,7 @@ func TestReal_MergeRequestByBranch_NotFound(t *testing.T) {
 	title, body, err := gl.MergeRequestByBranch("feature-branch")
 
 	require.Error(t, err, "MergeRequestByBranch should return an error when no MR is found")
-	assert.Contains(t, err.Error(), "no open merge request found for branch 'feature-branch'")
+	assert.Contains(t, err.Error(), "no merge request found for branch 'feature-branch'")
 	assert.Empty(t, title)
 	assert.Empty(t, body)
 }
