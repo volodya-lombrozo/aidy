@@ -42,6 +42,7 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 	root.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "print debug logs")
 	root.PersistentFlags().StringVarP(&language, "language", "l", "en", "language for AI-generated text (e.g. fr, de, ja)")
 	root.AddCommand(
+		newInitCmd(),
 		newCommitCmd(&ctx),
 		newIssueCmd(&ctx),
 		newReleaseCmd(&ctx),

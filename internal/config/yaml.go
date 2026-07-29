@@ -25,6 +25,14 @@ func YamlConf(filepath string) (*YamlConfig, error) {
 	return &config, nil
 }
 
+func WriteYaml(filepath string, config *YamlConfig) error {
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath, data, 0600)
+}
+
 func (c *YamlConfig) OpenAiKey() (string, error) {
 	return c.APIKeys["openai"], nil
 }
