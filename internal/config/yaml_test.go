@@ -184,6 +184,40 @@ func TestYaml_Token(t *testing.T) {
 	assert.Equal(t, "sk-...", token, "Token should match")
 }
 
+func TestWriteYaml(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.yml")
+	original := &YamlConfig{
+		DefaultModel: "openai",
+		APIKeys: map[string]string{
+			"openai": "sk-test",
+			"github": "gh-test",
+		},
+		Models: map[string]map[string]string{
+			"openai": {
+				"provider": "openai",
+				"model-id": "gpt-4o",
+			},
+		},
+	}
+
+	err := WriteYaml(path, original)
+
+	require.NoError(t, err, "no error expected")
+	written, err := YamlConf(path)
+	require.NoError(t, err, "written config should be readable")
+	assert.Equal(t, "openai", written.DefaultModel)
+	assert.Equal(t, "sk-test", written.APIKeys["openai"])
+	assert.Equal(t, "gh-test", written.APIKeys["github"])
+	assert.Equal(t, "gpt-4o", written.Models["openai"]["model-id"])
+}
+
+func TestWriteYaml_FileWriteError(t *testing.T) {
+	err := WriteYaml("/non/existent/dir/config.yml", &YamlConfig{})
+
+	assert.Error(t, err, "Expected an error when the file cannot be written")
+}
+
 func clean(t *testing.T, tmp string) {
 	if err := os.RemoveAll(tmp); err != nil {
 		t.Fatalf("Error removing temp directory: %v", err)

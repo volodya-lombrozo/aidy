@@ -24,6 +24,23 @@ func TestInit_Help(t *testing.T) {
 	assert.Contains(t, out.String(), "Create a ~/.aidy.conf.yml configuration file")
 }
 
+func TestInit_ExecuteWritesToHomeConfig(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	command := newInitCmd()
+	command.SetIn(strings.NewReader("2\n\nsk-test-openai-key\n"))
+	var out bytes.Buffer
+	command.SetOut(&out)
+
+	err := command.Execute()
+
+	require.NoError(t, err, "no error expected")
+	home, err := os.UserHomeDir()
+	require.NoError(t, err)
+	conf, err := config.YamlConf(filepath.Join(home, ".aidy.conf.yml"))
+	require.NoError(t, err, "config file should be readable")
+	assert.Equal(t, "openai", conf.DefaultModel)
+}
+
 func TestRunInit_CreatesConfigFileByProviderNumber(t *testing.T) {
 	path := filepath.Join(t.TempDir(), ".aidy.conf.yml")
 	in := strings.NewReader("2\n\nsk-test-openai-key\n")
