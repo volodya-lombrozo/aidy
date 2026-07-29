@@ -50,7 +50,15 @@ You need to have Go 1.24.1 or later installed on your system.
 
 ## Configuration
 
-Create a configuration file in your home directory `~/.aidy.conf.yml` with the following minimal content:
+The quickest way to get started is to run:
+
+```bash
+aidy init
+```
+
+This walks you through choosing an AI provider, a model, and an API key, then writes `~/.aidy.conf.yml` for you. It also asks for a GitHub API key, which you can skip if you don't have one yet. If a configuration file already exists, you'll be asked before it's overwritten.
+
+Alternatively, create the configuration file in your home directory `~/.aidy.conf.yml` yourself with the following minimal content:
 
 ```yaml
 default-model: deepseek
