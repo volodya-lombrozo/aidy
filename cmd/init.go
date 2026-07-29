@@ -48,8 +48,7 @@ func runInit(in io.Reader, out io.Writer, path string) error {
 			return err
 		}
 		if !overwrite {
-			fmt.Fprintln(out, "aborted, the existing configuration file was left untouched.")
-			return nil
+			return printf(out, "aborted, the existing configuration file was left untouched.\n")
 		}
 	}
 	provider, err := askProvider(reader, out)
@@ -85,17 +84,22 @@ func runInit(in io.Reader, out io.Writer, path string) error {
 	if err := config.WriteYaml(path, conf); err != nil {
 		return fmt.Errorf("error writing configuration file: %v", err)
 	}
-	fmt.Fprintf(out, "configuration file created at '%s'\n", path)
-	return nil
+	return printf(out, "configuration file created at '%s'\n", path)
 }
 
 func askProvider(reader *bufio.Reader, out io.Writer) (string, error) {
-	fmt.Fprintln(out, "choose an AI provider:")
+	if err := printf(out, "choose an AI provider:\n"); err != nil {
+		return "", err
+	}
 	for i, p := range providers {
-		fmt.Fprintf(out, "  (%d) %s\n", i+1, p)
+		if err := printf(out, "  (%d) %s\n", i+1, p); err != nil {
+			return "", err
+		}
 	}
 	for {
-		fmt.Fprint(out, "enter the number of the provider to use: ")
+		if err := printf(out, "enter the number of the provider to use: "); err != nil {
+			return "", err
+		}
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			return "", fmt.Errorf("error reading input: %v", err)
@@ -106,15 +110,21 @@ func askProvider(reader *bufio.Reader, out io.Writer) (string, error) {
 				return p, nil
 			}
 		}
-		fmt.Fprintln(out, "invalid choice, please try again.")
+		if err := printf(out, "invalid choice, please try again.\n"); err != nil {
+			return "", err
+		}
 	}
 }
 
 func ask(reader *bufio.Reader, out io.Writer, prompt string, def string) (string, error) {
+	var err error
 	if def != "" {
-		fmt.Fprintf(out, "%s [%s]: ", prompt, def)
+		err = printf(out, "%s [%s]: ", prompt, def)
 	} else {
-		fmt.Fprintf(out, "%s: ", prompt)
+		err = printf(out, "%s: ", prompt)
+	}
+	if err != nil {
+		return "", err
 	}
 	line, err := reader.ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
@@ -136,16 +146,25 @@ func askRequired(reader *bufio.Reader, out io.Writer, prompt string) (string, er
 		if answer != "" {
 			return answer, nil
 		}
-		fmt.Fprintln(out, "this value is required, please try again.")
+		if err := printf(out, "this value is required, please try again.\n"); err != nil {
+			return "", err
+		}
 	}
 }
 
 func askYesNo(reader *bufio.Reader, out io.Writer, prompt string) (bool, error) {
-	fmt.Fprintf(out, "%s [y/N]: ", prompt)
+	if err := printf(out, "%s [y/N]: ", prompt); err != nil {
+		return false, err
+	}
 	line, err := reader.ReadString('\n')
 	if err != nil {
 		return false, fmt.Errorf("error reading input: %v", err)
 	}
 	answer := strings.ToLower(strings.TrimSpace(line))
 	return answer == "y" || answer == "yes", nil
+}
+
+func printf(out io.Writer, format string, args ...any) error {
+	_, err := fmt.Fprintf(out, format, args...)
+	return err
 }
