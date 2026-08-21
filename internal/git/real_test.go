@@ -272,6 +272,25 @@ func TestRealGetBranchName(t *testing.T) {
 	assert.Equal(t, "main-branch", branch, "Expected branch name to be 'main-branch'")
 }
 
+func TestRealGetBranchName_NoCommitsYet(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "empty-repo")
+	require.NoError(t, err, "failed to create temp dir")
+	defer func() {
+		require.NoError(t, os.RemoveAll(tmp), "Error removing temp directory")
+	}()
+	cmd := exec.Command("git", "init", "--initial-branch", "main")
+	cmd.Dir = tmp
+	require.NoError(t, cmd.Run(), "failed to initialize git repo")
+
+	gs, err := NewGit(executor.NewReal(), tmp)
+	require.NoError(t, err, "git should be createad without any problems")
+
+	branch, err := gs.CurrentBranch()
+
+	require.NoError(t, err, "Expected no error retrieving branch name in a repo with no commits yet")
+	assert.Equal(t, "main", branch, "Expected branch name to be 'main'")
+}
+
 func TestRealGetBaseBranchName(t *testing.T) {
 	repoDir, cleanup := setup(t)
 	defer cleanup()
