@@ -70,7 +70,7 @@ func (r *real) Append() error {
 }
 
 func (r *real) CurrentBranch() (string, error) {
-	branchName, err := r.Run("rev-parse", "--abbrev-ref", "HEAD")
+	branchName, err := r.Run("symbolic-ref", "--short", "HEAD")
 	if err != nil {
 		return "", err
 	}
