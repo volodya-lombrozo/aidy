@@ -240,9 +240,9 @@ func (r *real) Issue(task string) error {
 	}
 	var cmd string
 	if len(suitable) > 0 {
-		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", healQuotes(title), healQuotes(body), strings.Join(suitable, ","))))
+		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title %s --body %s --label %s", quoted(healQuotes(title)), quoted(healQuotes(body)), quoted(strings.Join(suitable, ",")))))
 	} else {
-		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQuotes(title), healQuotes(body))))
+		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title %s --body %s", quoted(healQuotes(title)), quoted(healQuotes(body)))))
 	}
 	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
 	return r.editor.Print(cmd)
@@ -250,6 +250,18 @@ func (r *real) Issue(task string) error {
 
 func escapeBackticks(input string) string {
 	return strings.ReplaceAll(input, "`", "\\`")
+}
+
+// quoted wraps s in double quotes, escaping inner quotes and backslashes so
+// splitCommand keeps the value as a single argument (see #328).
+func quoted(s string) string {
+	return `"` + escapeDoubleQuotes(s) + `"`
+}
+
+func escapeDoubleQuotes(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	return s
 }
 
 func healQuotes(text string) string {
@@ -401,7 +413,7 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 	}
 	prtitle := healPRTitle(healQuotes(title), nissue)
 	prbody := healQuotes(body)
-	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s%s", prtitle, prbody, repo, base))
+	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title %s --body %s%s%s", quoted(prtitle), quoted(prbody), repo, base))
 	return r.editor.Print(cmd)
 }
 
@@ -453,7 +465,7 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 	}
 	mrtitle := healPRTitle(healQuotes(title), nissue)
 	mrbody := healQuotes(body)
-	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"%s", mrtitle, mrbody, targetBranch))
+	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title %s --description %s%s", quoted(mrtitle), quoted(mrbody), targetBranch))
 	return r.editor.Print(cmd)
 }
 

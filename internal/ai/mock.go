@@ -6,7 +6,9 @@ import (
 )
 
 type MockAI struct {
-	fail bool
+	fail              bool
+	PrBodyOverride    string
+	IssueBodyOverride string
 }
 
 func NewMockAI() AI {
@@ -29,6 +31,9 @@ func (m *MockAI) PrTitle(branchName string, diff string, issue string, summary s
 }
 
 func (m *MockAI) PrBody(diff string, issue string, summary string) (string, error) {
+	if m.PrBodyOverride != "" {
+		return m.PrBodyOverride, nil
+	}
 	return fmt.Sprintf("mock body for issue #%s and summary: %s\n\ndiff:\n%s", issue, summary, diff), nil
 }
 
@@ -37,6 +42,9 @@ func (m *MockAI) IssueTitle(input string, summary string) (string, error) {
 }
 
 func (m *MockAI) IssueBody(input string, summary string) (string, error) {
+	if m.IssueBodyOverride != "" {
+		return m.IssueBodyOverride, nil
+	}
 	return fmt.Sprintf("mock issue body for '%s' with summary: %s", input, summary), nil
 }
 

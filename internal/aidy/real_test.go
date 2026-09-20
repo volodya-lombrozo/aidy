@@ -1111,6 +1111,40 @@ func TestEscapeBackticks(t *testing.T) {
 	}
 }
 
+func TestEscapeDoubleQuotes(t *testing.T) {
+	assert.Equal(t, `fatal: not a git repository`, escapeDoubleQuotes(`fatal: not a git repository`))
+	assert.Equal(t, `\"fatal: not a git repository\"`, escapeDoubleQuotes(`"fatal: not a git repository"`))
+	assert.Equal(t, `a\\\"b`, escapeDoubleQuotes(`a\"b`))
+	assert.Equal(t, `"\"fatal: not a git repository\""`, quoted(`"fatal: not a git repository"`))
+}
+
+func TestReal_PullRequest_EscapesInnerQuotesInBody(t *testing.T) {
+	out := output.NewMock()
+	mock := &ai.MockAI{PrBodyOverride: `Silence "fatal: not a git repository" messages from cluttering the output when benchmarks run in non-git directories.`}
+	raidy := &real{git: git.NewMock(), ai: mock, github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.PullRequest(true, "", false, "")
+
+	require.NoError(t, err, "expected no error when creating pull request")
+	printed := out.Last()
+	assert.Contains(t, printed, `gh pr create`)
+	assert.Contains(t, printed, `--body "Silence \"fatal: not a git repository\" messages from cluttering the output when benchmarks run in non-git directories.`)
+	assert.NotContains(t, printed, `--body "Silence "fatal`)
+}
+
+func TestReal_Issue_EscapesInnerQuotesInBody(t *testing.T) {
+	out := output.NewMock()
+	mock := &ai.MockAI{IssueBodyOverride: `Repro: "fatal: not a git repository"`}
+	raidy := &real{git: git.NewMock(), ai: mock, github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.Issue("quote in body")
+
+	require.NoError(t, err, "expected no error when creating issue")
+	printed := out.Last()
+	assert.Contains(t, printed, `gh issue create`)
+	assert.Contains(t, printed, `--body "Repro: \"fatal: not a git repository\""`)
+}
+
 func TestHealPRTitle(t *testing.T) {
 	tests := []struct {
 		actual   string

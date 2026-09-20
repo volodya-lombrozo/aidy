@@ -204,6 +204,24 @@ func TestEditor_CleanQoutes(t *testing.T) {
 	}
 }
 
+func TestEditor_Print_RunOption_InnerQuotes(t *testing.T) {
+	r, w, _ := os.Pipe()
+	shell := executor.NewMock()
+	editor := NewEditor(shell)
+	editor.in = r
+	_, err := io.WriteString(w, "r\n")
+	require.NoError(t, err, "failed to write to pipe")
+	err = w.Close()
+	require.NoError(t, err, "failed to close write pipe")
+	command := `gh pr create --title "fix quotes" --body "Silence \"fatal: not a git repository\" messages"`
+
+	err = editor.Print(command)
+
+	require.NoError(t, err, "Print should not return an error")
+	require.Len(t, shell.Commands, 1, "expected 1 command to be run")
+	assert.Equal(t, `gh pr create --title fix quotes --body Silence "fatal: not a git repository" messages`, shell.Commands[0])
+}
+
 func TestEditor_SplitCommand(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -224,6 +242,8 @@ func TestEditor_SplitCommand(t *testing.T) {
 		{"git commit\n  --message \"hello\nworld\"", []string{"git", "commit", "--message", "\"hello\nworld\""}},
 		{"gh issue create --title \"tests for \\`edit\\` and \\`run\\`\" --body \"new \\`edit\\` and \\`run\\` handling.\" --label \"enh,good first issue\" --repo v/a",
 			[]string{"gh", "issue", "create", "--title", "\"tests for `edit` and `run`\"", "--body", "\"new `edit` and `run` handling.\"", "--label", "\"enh,good first issue\"", "--repo", "v/a"}},
+		{`gh pr create --title "fix quotes" --body "Silence \"fatal: not a git repository\" messages"`,
+			[]string{"gh", "pr", "create", "--title", `"fix quotes"`, "--body", `"Silence "fatal: not a git repository" messages"`}},
 	}
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {
