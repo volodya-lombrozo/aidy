@@ -156,6 +156,11 @@ func TestAppendLanguage_WhenLanguageIsFullName_PrependsInstruction(t *testing.T)
 	assert.Equal(t, "You must respond entirely in German language.\n\nsome prompt", result)
 }
 
+func TestAppendLanguage_WhenLanguageLooksLikeAFlag_ReturnsPromptUnchanged(t *testing.T) {
+	result := appendLanguage("some prompt", "--duplicate")
+	assert.Equal(t, "some prompt", result)
+}
+
 func TestAppendIssue_WhenPromptContainsSpecialCharacters_CombinesWithDescriptionProperly(t *testing.T) {
 	prompt := "Prompt with special chars: ~`|\\<>"
 	desc := "Description test"

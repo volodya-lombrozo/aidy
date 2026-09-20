@@ -56,3 +56,51 @@ func TestRootCmd_SilencesUsageOnRuntimeError(t *testing.T) {
 func mock(summary, aider, ailess, silent, debug bool, language string) aidy.Aidy {
 	return aidy.NewMock()
 }
+
+func TestRootCmd_LanguageShortFlagDoesNotSwallowDuplicate(t *testing.T) {
+	command := NewRootCmd(mock)
+	var errBuf bytes.Buffer
+	command.SetErr(&errBuf)
+	command.SetArgs([]string{"mr", "-f", "-l", "--duplicate"})
+
+	err := command.Execute()
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid language \"--duplicate\"")
+	assert.Contains(t, err.Error(), "flag needs an argument")
+}
+
+func TestRootCmd_LanguageEqualsFlagValueIsRejected(t *testing.T) {
+	command := NewRootCmd(mock)
+	var errBuf bytes.Buffer
+	command.SetErr(&errBuf)
+	command.SetArgs([]string{"mr", "-f", "--language=--duplicate"})
+
+	err := command.Execute()
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid language \"--duplicate\"")
+	assert.Contains(t, err.Error(), "flag needs an argument")
+}
+
+func TestRootCmd_LanguageThenDuplicateStillWorks(t *testing.T) {
+	var gotLang string
+	mockAidy := aidy.NewMock()
+	factory := func(summary, aider, ailess, silent, debug bool, language string) aidy.Aidy {
+		gotLang = language
+		return mockAidy
+	}
+	command := NewRootCmd(factory)
+	command.SetArgs([]string{"mr", "-f", "-l", "fr", "--duplicate"})
+
+	err := command.Execute()
+
+	require.NoError(t, err)
+	assert.Equal(t, "fr", gotLang)
+	assert.Contains(t, mockAidy.Logs(), "MergeRequest called")
+	mr, _, findErr := command.Find([]string{"mr"})
+	require.NoError(t, findErr)
+	dup, dupErr := mr.Flags().GetBool("duplicate")
+	require.NoError(t, dupErr)
+	assert.True(t, dup)
+}

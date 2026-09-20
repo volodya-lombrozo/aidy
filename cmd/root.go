@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/volodya-lombrozo/aidy/internal/aidy"
 )
@@ -30,9 +33,13 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 		Short:   "aidy - ai-powered github cli helper",
 		Long:    "Aidy assists you with generating commit messages, pull requests, issues, and releases",
 		Version: Version,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateLanguage(language); err != nil {
+				return err
+			}
 			cmd.Root().SilenceUsage = true
 			ctx.Assistant = create(summary, aider, ailess, silent, debug, language)
+			return nil
 		},
 	}
 	root.PersistentFlags().BoolVarP(&ailess, "no-ai", "n", false, "don't use AI")
@@ -58,4 +65,15 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 		newVersionCmd(),
 	)
 	return root
+}
+
+func validateLanguage(language string) error {
+	language = strings.TrimSpace(language)
+	if language == "" {
+		return fmt.Errorf("flag needs an argument: 'l' in -l / --language")
+	}
+	if strings.HasPrefix(language, "-") {
+		return fmt.Errorf("invalid language %q: flag needs an argument: 'l' in -l / --language", language)
+	}
+	return nil
 }

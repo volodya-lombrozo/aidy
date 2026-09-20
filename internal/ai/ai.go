@@ -1,6 +1,9 @@
 package ai
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type AI interface {
 	PrTitle(number, diff, issue, summary string) (string, error)
@@ -40,7 +43,8 @@ func appendIssue(prompt, description string) string {
 }
 
 func appendLanguage(prompt, language string) string {
-	if language == "" || language == "en" {
+	language = strings.TrimSpace(language)
+	if language == "" || language == "en" || strings.HasPrefix(language, "-") {
 		return prompt
 	}
 	return fmt.Sprintf("You must respond entirely in %s language.\n\n", language) + prompt
