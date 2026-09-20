@@ -361,7 +361,7 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 			return fmt.Errorf("error finding an existing pull request to duplicate: %v", err)
 		}
 	} else {
-		diff, err := r.git.Diff()
+		diff, err := r.reviewDiff(target, source)
 		if err != nil {
 			return fmt.Errorf("error getting git diff: %v", err)
 		}
@@ -426,7 +426,7 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 			return fmt.Errorf("error finding an existing merge request to duplicate: %v", err)
 		}
 	} else {
-		diff, err := r.git.Diff()
+		diff, err := r.reviewDiff(target, source)
 		if err != nil {
 			return fmt.Errorf("error getting git diff: %v", err)
 		}
@@ -455,6 +455,46 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 	mrbody := healQuotes(body)
 	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"%s", mrtitle, mrbody, targetBranch))
 	return r.editor.Print(cmd)
+}
+
+// reviewDiff is the diff fed to PrTitle/PrBody.
+// git.Diff() always diffs --cached against local main/master, so --source/--target
+// were only appended to gh/glab and the AI described the wrong changes.
+// With either flag, diff <base>...<head> via Git.Run (Git forbids extra interface methods).
+func (r *real) reviewDiff(target, source string) (string, error) {
+	if target == "" && source == "" {
+		return r.git.Diff()
+	}
+	base := target
+	if base == "" {
+		var err error
+		base, err = r.git.BaseBranch()
+		if err != nil {
+			return "", fmt.Errorf("error determining base branch: %v", err)
+		}
+	}
+	head := source
+	if head == "" {
+		var err error
+		head, err = r.git.CurrentBranch()
+		if err != nil {
+			return "", fmt.Errorf("error getting branch name: %v", err)
+		}
+	}
+	spec := base + "..." + head
+	out, err := r.git.Run("diff", spec)
+	if err != nil {
+		return "", fmt.Errorf("error running git diff %s: %v", spec, err)
+	}
+	names, err := r.git.Run("diff", spec, "--name-status")
+	if err != nil {
+		return "", fmt.Errorf("error running git diff %s --name-status: %v", spec, err)
+	}
+	stat, err := r.git.Run("diff", spec, "--stat")
+	if err != nil {
+		return "", fmt.Errorf("error running git diff %s --stat: %v", spec, err)
+	}
+	return git.NewSummary(out, stat, names).Render(), nil
 }
 
 func inumber(branch string) string {

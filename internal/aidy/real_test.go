@@ -582,6 +582,59 @@ func TestReal_PullRequest_Target(t *testing.T) {
 	assert.Contains(t, output, "--base develop", "Expected output to contain target branch")
 }
 
+func TestReal_PullRequest_DiffUsesTargetAndSource(t *testing.T) {
+	out := output.NewMock()
+	shell := executor.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "develop", false, "feature-x")
+
+	require.NoError(t, err, "expected no error when creating pull request with source and target")
+	joined := strings.Join(shell.Commands, "\n")
+	assert.Contains(t, joined, "git diff develop...feature-x", "AI diff should be target...source, not main --cached")
+	assert.Contains(t, joined, "git diff develop...feature-x --name-status")
+	assert.Contains(t, joined, "git diff develop...feature-x --stat")
+	assert.Contains(t, out.Last(), "--base develop")
+}
+
+func TestReal_PullRequest_DiffUsesTargetAndCurrentBranch(t *testing.T) {
+	out := output.NewMock()
+	shell := executor.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "develop", false, "")
+
+	require.NoError(t, err, "expected no error when creating pull request with target only")
+	joined := strings.Join(shell.Commands, "\n")
+	assert.Contains(t, joined, "git diff develop...41_working_branch", "AI diff should be target...current branch")
+	assert.NotContains(t, joined, "git diff main --cached")
+}
+
+func TestReal_PullRequest_DiffUsesSourceAgainstBaseBranch(t *testing.T) {
+	out := output.NewMock()
+	shell := executor.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "", false, "feature-x")
+
+	require.NoError(t, err, "expected no error when creating pull request with source only")
+	joined := strings.Join(shell.Commands, "\n")
+	assert.Contains(t, joined, "git diff main...feature-x", "AI diff should be BaseBranch...source when --target is omitted")
+}
+
+func TestReal_MergeRequest_DiffUsesTargetAndSource(t *testing.T) {
+	out := output.NewMock()
+	shell := executor.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.MergeRequest(false, "develop", false, "feature-x")
+
+	require.NoError(t, err, "expected no error when creating merge request with source and target")
+	joined := strings.Join(shell.Commands, "\n")
+	assert.Contains(t, joined, "git diff develop...feature-x", "AI diff should be target...source")
+	assert.Contains(t, out.Last(), "--target-branch develop")
+}
+
 func TestReal_PullRequest_IssueNotFound(t *testing.T) {
 	github := github.NewMock()
 	github.Error = fmt.Errorf("issue not found")
