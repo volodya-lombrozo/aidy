@@ -10,6 +10,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRootCmd_PrintsVersionFlag(t *testing.T) {
+	var out bytes.Buffer
+	command := NewRootCmd(mock)
+	command.SetOut(&out)
+	command.SetArgs([]string{"--version"})
+
+	err := command.Execute()
+
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), resolvedVersion())
+}
+
 func TestRootCmd_PrintsHelp(t *testing.T) {
 	var out bytes.Buffer
 	command := NewRootCmd(mock)
