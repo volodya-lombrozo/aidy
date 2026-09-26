@@ -238,11 +238,13 @@ func (r *real) Issue(task string) error {
 	} else {
 		repo = ""
 	}
+	ititle := shellSafe(title)
+	ibody := shellSafe(body)
 	var cmd string
 	if len(suitable) > 0 {
-		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", healQuotes(title), healQuotes(body), strings.Join(suitable, ","))))
+		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", ititle, ibody, strings.Join(suitable, ","))))
 	} else {
-		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", healQuotes(title), healQuotes(body))))
+		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", ititle, ibody)))
 	}
 	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
 	return r.editor.Print(cmd)
@@ -252,11 +254,19 @@ func escapeBackticks(input string) string {
 	return strings.ReplaceAll(input, "`", "\\`")
 }
 
+func escapeQuotes(input string) string {
+	return strings.ReplaceAll(input, "\"", "\\\"")
+}
+
 func healQuotes(text string) string {
 	clean := healQuote('`', text)
 	clean = healQuote('\'', clean)
 	clean = healQuote('"', clean)
 	return clean
+}
+
+func shellSafe(text string) string {
+	return escapeQuotes(healQuotes(text))
 }
 
 func healQuote(open rune, text string) string {
@@ -399,8 +409,8 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 	if target != "" {
 		base = " --base " + target
 	}
-	prtitle := healPRTitle(healQuotes(title), nissue)
-	prbody := healQuotes(body)
+	prtitle := escapeQuotes(healPRTitle(healQuotes(title), nissue))
+	prbody := shellSafe(body)
 	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s%s", prtitle, prbody, repo, base))
 	return r.editor.Print(cmd)
 }
@@ -451,8 +461,8 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 	if target != "" {
 		targetBranch = " --target-branch " + target
 	}
-	mrtitle := healPRTitle(healQuotes(title), nissue)
-	mrbody := healQuotes(body)
+	mrtitle := escapeQuotes(healPRTitle(healQuotes(title), nissue))
+	mrbody := shellSafe(body)
 	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"%s", mrtitle, mrbody, targetBranch))
 	return r.editor.Print(cmd)
 }
@@ -614,7 +624,7 @@ func (r *real) Release(interval string, repo string, saveNotes bool) error {
 			return fmt.Errorf("failed to save release notes: '%v'", err)
 		}
 	}
-	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, notes)
+	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, escapeQuotes(notes))
 	return r.editor.Print(command)
 }
 

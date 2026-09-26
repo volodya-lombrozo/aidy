@@ -809,6 +809,19 @@ func TestReal_Issue(t *testing.T) {
 	assert.Contains(t, output, "--label \"bug,documentation,question\"")
 }
 
+func TestReal_Issue_EscapesDoubleQuotes(t *testing.T) {
+	userInput := `task with "quoted" input`
+	out := output.NewMock()
+	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.Issue(userInput)
+
+	require.NoError(t, err, "expected no error when creating issue")
+	output := out.Last()
+	assert.Contains(t, output, `\"quoted\"`, "expected embedded double quotes to be escaped so the generated command stays valid")
+	assert.NotContains(t, output, `"quoted"`, "unescaped double quotes would break the generated shell command")
+}
+
 func TestReal_Release_Success(t *testing.T) {
 	mgit := git.NewMock()
 	nobrain := ai.NewMockAI()
@@ -1109,6 +1122,21 @@ func TestEscapeBackticks(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, result)
 	}
+}
+
+func TestEscapeQuotes(t *testing.T) {
+	input := `This is a "test" string with "quotes".`
+	expected := `This is a \"test\" string with \"quotes\".`
+	result := escapeQuotes(input)
+
+	if result != expected {
+		t.Fatalf("Expected '%s', got '%s'", expected, result)
+	}
+}
+
+func TestShellSafe(t *testing.T) {
+	assert.Equal(t, `body with \"quotes\" inside`, shellSafe(`body with "quotes" inside`))
+	assert.Equal(t, "top level quotes should be removed", shellSafe("`top level quotes should be removed`"))
 }
 
 func TestHealPRTitle(t *testing.T) {
