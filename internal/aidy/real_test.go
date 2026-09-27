@@ -610,6 +610,19 @@ func TestReal_PullRequest_Fixes(t *testing.T) {
 	assert.Contains(t, output, "Fixes #")
 }
 
+func TestReal_PullRequest_Regenerates(t *testing.T) {
+	out := output.NewMock()
+	out.Generations = 3
+	hub := github.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: hub, reviewer: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.PullRequest(false, "", false, "")
+
+	require.NoError(t, err, "expected no error when regenerating a pull request")
+	assert.Equal(t, 1, hub.Descriptions, "expected the issue to be fetched once, no matter how many commands are generated")
+	assert.Contains(t, out.Last(), "gh pr create", "expected the last generated command to be the one shown")
+}
+
 func TestReal_PullRequest_Duplicate(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
@@ -832,6 +845,41 @@ func TestReal_Release_Success(t *testing.T) {
 	assert.NoError(t, err, "expected no error during release")
 	expected := "git tag --cleanup=verbatim -a \"v2.1.0\" -m \""
 	assert.Contains(t, out.Last(), expected, "expected release command to be generated")
+}
+
+func TestReal_Release_Regenerates(t *testing.T) {
+	shell := executor.NewMock()
+	out := output.NewMock()
+	out.Generations = 3
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), reviewer: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", false)
+
+	require.NoError(t, err, "expected no error when regenerating release notes")
+	logs := 0
+	for _, command := range shell.Commands {
+		if strings.HasPrefix(command, "git log") {
+			logs++
+		}
+	}
+	assert.Equal(t, 1, logs, "expected the git log to be read once, no matter how many notes are generated")
+	assert.Contains(t, out.Last(), "git tag --cleanup=verbatim -a \"v2.1.0\"", "expected the last generated command to be the one shown")
+}
+
+func TestReal_Release_SaveNotes_Regenerates(t *testing.T) {
+	tmp := t.TempDir()
+	shell := executor.NewMock()
+	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
+	out := output.NewMock()
+	out.Generations = 2
+	raidy := &real{git: git.NewMockWithDirAndShell(tmp, shell), ai: ai.NewMockAI(), reviewer: out, textreviewer: out, logger: log.NewMock()}
+
+	err := raidy.Release("minor", "origin", true)
+
+	require.NoError(t, err, "expected no error when regenerating release notes")
+	notes, rerr := os.ReadFile(filepath.Join(tmp, ".github", "release-notes", "v2.1.0.md"))
+	require.NoError(t, rerr, "expected release notes file to be written")
+	assert.Contains(t, out.Last(), "-m \""+string(notes)+"\"", "expected the saved notes and the tag message to be the same version")
 }
 
 func TestReal_Release_NoTags_Patch(t *testing.T) {

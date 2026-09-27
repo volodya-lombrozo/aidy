@@ -3,7 +3,8 @@ package github
 import "fmt"
 
 type MockGithub struct {
-	Error error
+	Error        error
+	Descriptions int
 }
 
 func NewMock() *MockGithub {
@@ -11,6 +12,7 @@ func NewMock() *MockGithub {
 }
 
 func (m *MockGithub) Description(number string) (string, error) {
+	m.Descriptions++
 	return fmt.Sprintf("mock description for issue '#%s'", number), m.Error
 }
 

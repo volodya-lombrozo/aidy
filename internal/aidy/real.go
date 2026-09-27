@@ -211,25 +211,10 @@ func (r *real) Issue(task string) error {
 		r.logger.Warn("failed to set target repository: %v", err)
 	}
 	summary, _ := r.cache.Summary()
-	r.logger.Info("generating issue title...")
-	title, err := r.ai.IssueTitle(task, summary)
-	if err != nil {
-		return fmt.Errorf("error generating title: %v", err)
-	}
-	r.logger.Info("generating issue body...")
-	body, err := r.ai.IssueBody(task, summary)
-	if err != nil {
-		return fmt.Errorf("error generating body: %v", err)
-	}
 	r.logger.Info("retrieving suitable labels...")
 	labels, err := r.github.Labels()
 	if err != nil {
 		return fmt.Errorf("error retrieving labels: %v", err)
-	}
-	r.logger.Info("applying suitable labels for the issue...")
-	suitable, err := r.ai.IssueLabels(body, labels)
-	if err != nil {
-		return fmt.Errorf("error generating suitable labels: %v", err)
 	}
 	remote := r.cache.Remote()
 	var repo string
@@ -238,16 +223,33 @@ func (r *real) Issue(task string) error {
 	} else {
 		repo = ""
 	}
-	ititle := shellSafe(title)
-	ibody := shellSafe(body)
-	var cmd string
-	if len(suitable) > 0 {
-		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", ititle, ibody, strings.Join(suitable, ","))))
-	} else {
-		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", ititle, ibody)))
+	command := func() (string, error) {
+		r.logger.Info("generating issue title...")
+		title, err := r.ai.IssueTitle(task, summary)
+		if err != nil {
+			return "", fmt.Errorf("error generating title: %v", err)
+		}
+		r.logger.Info("generating issue body...")
+		body, err := r.ai.IssueBody(task, summary)
+		if err != nil {
+			return "", fmt.Errorf("error generating body: %v", err)
+		}
+		r.logger.Info("applying suitable labels for the issue...")
+		suitable, err := r.ai.IssueLabels(body, labels)
+		if err != nil {
+			return "", fmt.Errorf("error generating suitable labels: %v", err)
+		}
+		ititle := shellSafe(title)
+		ibody := shellSafe(body)
+		var cmd string
+		if len(suitable) > 0 {
+			cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\" --label \"%s\"", ititle, ibody, strings.Join(suitable, ","))))
+		} else {
+			cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", ititle, ibody)))
+		}
+		return fmt.Sprintf("%s%s\n", cmd, repo), nil
 	}
-	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
-	return r.reviewer.Print(cmd)
+	return r.reviewer.Print(command)
 }
 
 func escapeBackticks(input string) string {
@@ -340,7 +342,7 @@ func mask(key string) string {
 }
 
 func (r *real) print(msg string) {
-	err := r.printer.Print(msg)
+	err := r.printer.Print(output.Fixed(msg))
 	if err != nil {
 		r.logger.Error("error printing message: %v", err)
 		os.Exit(1)
@@ -363,41 +365,6 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 		lookup = source
 	}
 	nissue := inumber(lookup)
-	var title, body string
-	if duplicate {
-		r.logger.Info("looking up the pull request for branch '%s' to duplicate...", lookup)
-		title, body, err = r.github.PullRequestByBranch(lookup)
-		if err != nil {
-			return fmt.Errorf("error finding an existing pull request to duplicate: %v", err)
-		}
-	} else {
-		diff, err := r.git.Diff()
-		if err != nil {
-			return fmt.Errorf("error getting git diff: %v", err)
-		}
-		summary, _ := r.cache.Summary()
-		r.logger.Info("retrieving the description for issue #%s...", nissue)
-		issue, err := r.github.Description(nissue)
-		if err != nil {
-			issue = "not-found"
-			r.logger.Warn("issue description not found for issue #%s because of %v, using default value", nissue, err)
-		}
-		r.logger.Info("generating pull request title...")
-		title, err = r.ai.PrTitle(issueRef(nissue), diff, issue, summary)
-		if err != nil {
-			return fmt.Errorf("error generating pull request title: %v", err)
-		}
-		r.logger.Info("generating pull request body...")
-		body, err = r.ai.PrBody(diff, issue, summary)
-		if err != nil {
-			return fmt.Errorf("error generating pull request body: %v", err)
-		}
-		if fixes {
-			body = body + fmt.Sprintf("\n\nFixes %s", issueRef(nissue))
-		} else {
-			body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
-		}
-	}
 	remote := r.cache.Remote()
 	var repo string
 	if remote != "" {
@@ -409,10 +376,52 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 	if target != "" {
 		base = " --base " + target
 	}
-	prtitle := escapeQuotes(healPRTitle(healQuotes(title), nissue))
-	prbody := shellSafe(body)
-	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s%s", prtitle, prbody, repo, base))
-	return r.reviewer.Print(cmd)
+	assemble := func(title string, body string) string {
+		prtitle := escapeQuotes(healPRTitle(healQuotes(title), nissue))
+		prbody := shellSafe(body)
+		return escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s%s", prtitle, prbody, repo, base))
+	}
+	if duplicate {
+		duplicated := func() (string, error) {
+			r.logger.Info("looking up the pull request for branch '%s' to duplicate...", lookup)
+			title, body, err := r.github.PullRequestByBranch(lookup)
+			if err != nil {
+				return "", fmt.Errorf("error finding an existing pull request to duplicate: %v", err)
+			}
+			return assemble(title, body), nil
+		}
+		return r.reviewer.Print(duplicated)
+	}
+	diff, err := r.git.Diff()
+	if err != nil {
+		return fmt.Errorf("error getting git diff: %v", err)
+	}
+	summary, _ := r.cache.Summary()
+	r.logger.Info("retrieving the description for issue #%s...", nissue)
+	issue, err := r.github.Description(nissue)
+	if err != nil {
+		issue = "not-found"
+		r.logger.Warn("issue description not found for issue #%s because of %v, using default value", nissue, err)
+	}
+	command := func() (string, error) {
+		r.logger.Info("generating pull request title...")
+		title, err := r.ai.PrTitle(issueRef(nissue), diff, issue, summary)
+		if err != nil {
+			return "", fmt.Errorf("error generating pull request title: %v", err)
+		}
+		r.logger.Info("generating pull request body...")
+		body, err := r.ai.PrBody(diff, issue, summary)
+		if err != nil {
+			return "", fmt.Errorf("error generating pull request body: %v", err)
+		}
+		if fixes {
+			body = body + fmt.Sprintf("\n\nFixes %s", issueRef(nissue))
+		} else {
+			body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
+		}
+		return assemble(title, body), nil
+	}
+	return r.reviewer.Print(command)
 }
 
 func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source string) error {
@@ -428,43 +437,50 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 		lookup = source
 	}
 	nissue := inumber(lookup)
-	var title, body string
+	var targetBranch string
+	if target != "" {
+		targetBranch = " --target-branch " + target
+	}
+	assemble := func(title string, body string) string {
+		mrtitle := escapeQuotes(healPRTitle(healQuotes(title), nissue))
+		mrbody := shellSafe(body)
+		return escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"%s", mrtitle, mrbody, targetBranch))
+	}
 	if duplicate {
-		r.logger.Info("looking up the merge request for branch '%s' to duplicate...", lookup)
-		title, body, err = r.gitlab.MergeRequestByBranch(lookup)
-		if err != nil {
-			return fmt.Errorf("error finding an existing merge request to duplicate: %v", err)
+		duplicated := func() (string, error) {
+			r.logger.Info("looking up the merge request for branch '%s' to duplicate...", lookup)
+			title, body, err := r.gitlab.MergeRequestByBranch(lookup)
+			if err != nil {
+				return "", fmt.Errorf("error finding an existing merge request to duplicate: %v", err)
+			}
+			return assemble(title, body), nil
 		}
-	} else {
-		diff, err := r.git.Diff()
-		if err != nil {
-			return fmt.Errorf("error getting git diff: %v", err)
-		}
-		summary, _ := r.cache.Summary()
+		return r.reviewer.Print(duplicated)
+	}
+	diff, err := r.git.Diff()
+	if err != nil {
+		return fmt.Errorf("error getting git diff: %v", err)
+	}
+	summary, _ := r.cache.Summary()
+	command := func() (string, error) {
 		r.logger.Info("generating merge request title...")
-		title, err = r.ai.PrTitle(issueRef(nissue), diff, "", summary)
+		title, err := r.ai.PrTitle(issueRef(nissue), diff, "", summary)
 		if err != nil {
-			return fmt.Errorf("error generating merge request title: %v", err)
+			return "", fmt.Errorf("error generating merge request title: %v", err)
 		}
 		r.logger.Info("generating merge request body...")
-		body, err = r.ai.PrBody(diff, "", summary)
+		body, err := r.ai.PrBody(diff, "", summary)
 		if err != nil {
-			return fmt.Errorf("error generating merge request body: %v", err)
+			return "", fmt.Errorf("error generating merge request body: %v", err)
 		}
 		if fixes {
 			body = body + fmt.Sprintf("\n\nCloses %s", issueRef(nissue))
 		} else {
 			body = body + fmt.Sprintf("\n\nRelated to %s", issueRef(nissue))
 		}
+		return assemble(title, body), nil
 	}
-	var targetBranch string
-	if target != "" {
-		targetBranch = " --target-branch " + target
-	}
-	mrtitle := escapeQuotes(healPRTitle(healQuotes(title), nissue))
-	mrbody := shellSafe(body)
-	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"%s", mrtitle, mrbody, targetBranch))
-	return r.reviewer.Print(cmd)
+	return r.reviewer.Print(command)
 }
 
 func inumber(branch string) string {
@@ -564,26 +580,17 @@ func (r *real) Release(interval string, repo string, saveNotes bool) error {
 		return fmt.Errorf("failed to get tags: '%v'", err)
 	}
 	r.logger.Debug("found %d tags: %v", len(tags), tags)
-	var notes string
+	var since string
 	var updated string
 	if len(tags) > 0 {
 		mtags := clearTags(tags)
 		latest := latest(keys(mtags))
-		messages, err := r.git.Log(mtags[latest])
-		if err != nil {
-			return fmt.Errorf("failed to get git log: '%v'", err)
-		}
-		summary := strings.Join(messages, "\n")
-		r.logger.Info("generating release notes...")
-		notes, err = r.ai.ReleaseNotes(summary)
-		if err != nil {
-			return fmt.Errorf("failed to generate release notes: '%v'", err)
-		}
+		since = mtags[latest]
 		updated, err = upver(latest, interval)
 		if err != nil {
 			return fmt.Errorf("failed to update version: '%v'", err)
 		}
-		if strings.HasPrefix(mtags[latest], "v") {
+		if strings.HasPrefix(since, "v") {
 			updated = "v" + updated
 		}
 		r.logger.Info("latest tag is '%s', updating to '%s'", latest, updated)
@@ -598,17 +605,23 @@ func (r *real) Release(interval string, repo string, saveNotes bool) error {
 		default:
 			return fmt.Errorf("unknown version step: '%s'", interval)
 		}
-		messages, err := r.git.Log("")
-		if err != nil {
-			return fmt.Errorf("failed to get git log: '%v'", err)
-		}
-		summary := strings.Join(messages, "\n")
-		r.logger.Info("generating release notes for the first release...")
-		notes, err = r.ai.ReleaseNotes(summary)
-		if err != nil {
-			return fmt.Errorf("failed to generate release notes: '%v'", err)
-		}
 		r.logger.Info("no tags found, creating the first release with version '%s'", updated)
+	}
+	messages, err := r.git.Log(since)
+	if err != nil {
+		return fmt.Errorf("failed to get git log: '%v'", err)
+	}
+	summary := strings.Join(messages, "\n")
+	notes := func() (string, error) {
+		r.logger.Info("generating release notes...")
+		generated, err := r.ai.ReleaseNotes(summary)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate release notes: '%v'", err)
+		}
+		return generated, nil
+	}
+	assemble := func(notes string) string {
+		return fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, escapeQuotes(notes))
 	}
 	if saveNotes {
 		reviewed, err := r.textreviewer.Review(notes)
@@ -619,12 +632,19 @@ func (r *real) Release(interval string, repo string, saveNotes bool) error {
 			}
 			return fmt.Errorf("failed to review release notes: '%v'", err)
 		}
-		notes = reviewed
-		if err := r.save(updated, notes); err != nil {
+		if err := r.save(updated, reviewed); err != nil {
 			return fmt.Errorf("failed to save release notes: '%v'", err)
 		}
+		saved := output.Fixed(assemble(reviewed))
+		return r.reviewer.Print(saved)
 	}
-	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, escapeQuotes(notes))
+	command := func() (string, error) {
+		generated, err := notes()
+		if err != nil {
+			return "", err
+		}
+		return assemble(generated), nil
+	}
 	return r.reviewer.Print(command)
 }
 

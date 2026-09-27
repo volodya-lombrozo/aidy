@@ -15,7 +15,7 @@ func TestPrinter_Print(t *testing.T) {
 	os.Stdout = w
 	printer := NewPrinter()
 
-	_ = printer.Print("hello")
+	_ = printer.Print(Fixed("hello"))
 	err := w.Close()
 	require.NoError(t, err, "failed to close write pipe")
 	var buf bytes.Buffer
