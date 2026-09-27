@@ -85,12 +85,6 @@ func (e *editor) printf(format string, args ...any) {
 	}
 }
 
-func (e *editor) printfErr(format string, args ...any) {
-	if _, err := fmt.Fprintf(e.err, format, args...); err != nil {
-		panic(err)
-	}
-}
-
 func (e *editor) edit(input string) (string, error) {
 	tmp, err := os.CreateTemp("", "aidy-editcmd-*.txt")
 	if err != nil {

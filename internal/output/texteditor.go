@@ -1,7 +1,6 @@
 package output
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -40,37 +39,31 @@ func NewTextEditor(shell executor.Executor) *textEditor {
 
 func (e *textEditor) Edit(text string) (string, error) {
 	e.printf("\n%s\n", text)
-	reader := bufio.NewReader(e.in)
-	for {
-		e.printf("%s", "[a]ccept, [e]dit, [c]ancel, [p]rint? ")
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			e.printfErr("%s: %v\n", "Error reading input", err)
-			return "", err
-		}
-		switch strings.ToLower(strings.TrimSpace(line)) {
-		case "a":
-			return text, nil
-		case "e":
-			updated, err := e.edit(text)
+	p := prompt{in: e.in, out: e.out, err: e.err}
+	return p.run(text, []choice{
+		{key: "a", label: "[a]ccept", act: func(cur string) (string, bool, error) {
+			return cur, true, nil
+		}},
+		{key: "e", label: "[e]dit", act: func(cur string) (string, bool, error) {
+			updated, err := e.edit(cur)
 			if err != nil {
-				return "", fmt.Errorf("failed to edit text: %w", err)
+				return "", true, fmt.Errorf("failed to edit text: %w", err)
 			}
 			if updated == "" {
-				return "", ErrCanceled
+				return "", true, ErrCanceled
 			}
-			text = updated
-			e.printf("\nupdated:\n%s\n", text)
-		case "c":
+			e.printf("\nupdated:\n%s\n", updated)
+			return updated, false, nil
+		}},
+		{key: "c", label: "[c]ancel", act: func(cur string) (string, bool, error) {
 			e.printf("%s\n", "canceled.")
-			return "", ErrCanceled
-		case "p":
-			e.printf("%s\n", text)
-			return "", ErrCanceled
-		default:
-			e.printfErr("%s\n", "please type a, e, c, or p and press enter.")
-		}
-	}
+			return "", true, ErrCanceled
+		}},
+		{key: "p", label: "[p]rint", act: func(cur string) (string, bool, error) {
+			e.printf("%s\n", cur)
+			return "", true, ErrCanceled
+		}},
+	})
 }
 
 func (e *textEditor) edit(input string) (string, error) {
@@ -103,12 +96,6 @@ func (e *textEditor) edit(input string) (string, error) {
 
 func (e *textEditor) printf(format string, args ...any) {
 	if _, err := fmt.Fprintf(e.out, format, args...); err != nil {
-		panic(err)
-	}
-}
-
-func (e *textEditor) printfErr(format string, args ...any) {
-	if _, err := fmt.Fprintf(e.err, format, args...); err != nil {
 		panic(err)
 	}
 }
