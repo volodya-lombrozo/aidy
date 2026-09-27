@@ -22,7 +22,7 @@ func TestReviewer_Print_RunOption(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	err = reviewer.Print(command)
+	err = reviewer.Print(Fixed(command))
 
 	require.NoError(t, err, "Print should not return an error")
 	assert.Len(t, shell.Commands, 1, "expected 1 command to be run")
@@ -41,7 +41,7 @@ func TestReviewer_Print_RunOption_Error(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	err = reviewer.Print(command)
+	err = reviewer.Print(Fixed(command))
 
 	assert.Error(t, err, "expected an error when running the command")
 	assert.Equal(t, "simulated error", err.Error(), "expected error message to match")
@@ -60,7 +60,7 @@ func TestReviewer_Print_PrintOption(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	err = reviewer.Print(command)
+	err = reviewer.Print(Fixed(command))
 
 	assert.NoError(t, err, "Print should not return an error")
 	err = output_w.Close()
@@ -84,7 +84,7 @@ func TestReviewer_Print_CancelOption(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	_ = reviewer.Print(command)
+	_ = reviewer.Print(Fixed(command))
 
 	err = output_w.Close()
 	require.NoError(t, err, "failed to close output pipe")
@@ -107,7 +107,7 @@ func TestReviewer_Print_EditOption(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	_ = reviewer.Print(command)
+	_ = reviewer.Print(Fixed(command))
 
 	err = output_w.Close()
 	require.NoError(t, err, "failed to close output pipe")
@@ -131,12 +131,96 @@ func TestReviewer_Print_EditOption_FailsWithError(t *testing.T) {
 	require.NoError(t, err, "failed to close write pipe")
 	command := "echo 'Hello, World!'"
 
-	err = reviewer.Print(command)
+	err = reviewer.Print(Fixed(command))
 
 	assert.Error(t, err, "expected an error when running the command")
 	assert.Contains(t, err.Error(), "simulated error", "expected error message to match")
 	assert.Contains(t, err.Error(), "failed to run command", "expected error to mention command failure")
 
+}
+
+func TestReviewer_Print_GenerateOption(t *testing.T) {
+	input_r, input_w, _ := os.Pipe()
+	output_r, output_w, _ := os.Pipe()
+	shell := executor.NewMock()
+	reviewer := NewReviewer(shell)
+	reviewer.in = input_r
+	reviewer.out = output_w
+	_, err := io.WriteString(input_w, "g\nr\n")
+	require.NoError(t, err, "failed to write to pipe")
+	err = input_w.Close()
+	require.NoError(t, err, "failed to close write pipe")
+	generated := 0
+	command := func() (string, error) {
+		generated++
+		return fmt.Sprintf("echo version-%d", generated), nil
+	}
+
+	err = reviewer.Print(command)
+
+	require.NoError(t, err, "Print should not return an error")
+	assert.Equal(t, 2, generated, "expected a second version to be generated on demand")
+	require.Len(t, shell.Commands, 1, "expected 1 command to be run")
+	assert.Equal(t, "echo version-2", shell.Commands[0], "expected the freshly generated command to be run")
+	err = output_w.Close()
+	require.NoError(t, err, "failed to close output pipe")
+	out, err := io.ReadAll(output_r)
+	require.NoError(t, err, "failed to read from output")
+	assert.Contains(t, string(out), "[g]enerate", "expected the generate option to be offered")
+	assert.Contains(t, string(out), "echo version-2", "expected the new command to be shown")
+}
+
+func TestReviewer_Print_FailsWhenTextFails(t *testing.T) {
+	reviewer := NewReviewer(executor.NewMock())
+	command := func() (string, error) {
+		return "", fmt.Errorf("simulated error")
+	}
+
+	err := reviewer.Print(command)
+
+	require.Error(t, err, "expected an error when the generator fails")
+	assert.Contains(t, err.Error(), "simulated error", "expected the generator error to be reported")
+}
+
+func TestReviewer_Print_FailsWhenRegenerationFails(t *testing.T) {
+	r, w, _ := os.Pipe()
+	reviewer := NewReviewer(executor.NewMock())
+	reviewer.in = r
+	_, err := io.WriteString(w, "g\n")
+	require.NoError(t, err, "failed to write to pipe")
+	err = w.Close()
+	require.NoError(t, err, "failed to close write pipe")
+	generated := 0
+	command := func() (string, error) {
+		generated++
+		if generated > 1 {
+			return "", fmt.Errorf("simulated error")
+		}
+		return "echo 'Hello, World!'", nil
+	}
+
+	err = reviewer.Print(command)
+
+	require.Error(t, err, "expected an error when regeneration fails")
+	assert.Contains(t, err.Error(), "simulated error", "expected the generator error to be reported")
+}
+
+func TestReviewer_Print_GenerateOption_KeepsFixedCommand(t *testing.T) {
+	input_r, input_w, _ := os.Pipe()
+	shell := executor.NewMock()
+	reviewer := NewReviewer(shell)
+	reviewer.in = input_r
+	_, err := io.WriteString(input_w, "g\nr\n")
+	require.NoError(t, err, "failed to write to pipe")
+	err = input_w.Close()
+	require.NoError(t, err, "failed to close write pipe")
+	command := "echo 'Hello, World!'"
+
+	err = reviewer.Print(Fixed(command))
+
+	require.NoError(t, err, "Print should not return an error")
+	require.Len(t, shell.Commands, 1, "expected 1 command to be run")
+	assert.Equal(t, command, shell.Commands[0], "expected a fixed command to stay the same when generated again")
 }
 
 func TestReviewer_PrettyCommand(t *testing.T) {

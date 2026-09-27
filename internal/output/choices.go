@@ -35,6 +35,18 @@ func editChoice(ed *editor, noun string, out io.Writer) choice {
 	}}
 }
 
+func generateChoice(text Text, noun string, out io.Writer) choice {
+	return choice{key: "g", label: "[g]enerate", act: func(current string) (string, verdict, error) {
+		printf(out, "generating a new %s...\n", noun)
+		generated, err := text()
+		if err != nil {
+			return "", canceled, err
+		}
+		printf(out, "\ngenerated %s:\n%s\n", noun, generated)
+		return generated, again, nil
+	}}
+}
+
 // cancelChoice throws the buffer away.
 func cancelChoice(out io.Writer) choice {
 	return choice{key: "c", label: "[c]ancel", act: func(current string) (string, verdict, error) {

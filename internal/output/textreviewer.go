@@ -10,7 +10,7 @@ import (
 var ErrCanceled = errors.New("canceled")
 
 type TextReviewer interface {
-	Review(text string) (string, error)
+	Review(text Text) (string, error)
 }
 
 // textReviewer is reviewer's counterpart for free text: same prompt, same
@@ -35,12 +35,17 @@ func NewTextReviewer(shell executor.Executor) *textReviewer {
 // Review shows text and returns the accepted version. Unlike Print, backing
 // out here leaves the caller with nothing to work with, so a canceled
 // prompt is reported as ErrCanceled.
-func (r *textReviewer) Review(text string) (string, error) {
-	printf(r.out, "\n%s\n", text)
+func (r *textReviewer) Review(text Text) (string, error) {
+	current, err := text()
+	if err != nil {
+		return "", err
+	}
+	printf(r.out, "\n%s\n", current)
 	p := prompt{in: r.in, out: r.out, err: r.err}
-	reviewed, v, err := p.run(text, []choice{
+	reviewed, v, err := p.run(current, []choice{
 		acceptChoice(),
 		editChoice(r.editor, "text", r.out),
+		generateChoice(text, "text", r.out),
 		cancelChoice(r.out),
 		printChoice(r.out),
 	})

@@ -33,17 +33,32 @@ func NewReviewer(shell executor.Executor) *reviewer {
 // Print shows a generated shell command and offers to run it. Backing out
 // is not a failure here - the user simply chose not to run anything - so a
 // canceled prompt returns no error.
-func (r *reviewer) Print(command string) error {
-	cmd := prettyCommand(command)
-	printf(r.out, "\ngenerated command:\n%s\n", cmd)
+func (r *reviewer) Print(text Text) error {
+	pretty := prettified(text)
+	command, err := pretty()
+	if err != nil {
+		return err
+	}
+	printf(r.out, "\ngenerated command:\n%s\n", command)
 	p := prompt{in: r.in, out: r.out, err: r.err}
-	_, _, err := p.run(cmd, []choice{
+	_, _, err = p.run(command, []choice{
 		runChoice(r.shell, r.out),
 		editChoice(r.editor, "command", r.out),
+		generateChoice(pretty, "command", r.out),
 		cancelChoice(r.out),
 		printChoice(r.out),
 	})
 	return err
+}
+
+func prettified(text Text) Text {
+	return func() (string, error) {
+		command, err := text()
+		if err != nil {
+			return "", err
+		}
+		return prettyCommand(command), nil
+	}
 }
 
 // runChoice executes the buffer as a shell command. It lives here rather
