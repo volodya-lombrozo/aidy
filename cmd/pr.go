@@ -18,8 +18,8 @@ func newPrCmd(ctx *Context) *cobra.Command {
 		},
 	}
 	command.Flags().BoolVarP(&fixes, "fixes", "f", false, "Create a PR with 'fixes' keyword")
-	command.Flags().StringVarP(&target, "target", "t", "", "Target branch for the PR")
+	command.Flags().StringVarP(&target, "target", "t", "", "Target branch for the PR, also the base of the diff (defaults to 'main' or 'master')")
 	command.Flags().BoolVar(&duplicate, "duplicate", false, "Reuse an existing PR's title and body against --target")
-	command.Flags().StringVar(&source, "source", "", "Branch whose existing PR to duplicate (defaults to the current branch)")
+	command.Flags().StringVar(&source, "source", "", "Branch the PR comes from, also the source of the diff, or whose existing PR to duplicate (defaults to the current branch)")
 	return command
 }

@@ -403,7 +403,7 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 		}
 		return r.reviewer.Print(duplicated)
 	}
-	diff, err := r.git.Diff()
+	diff, err := r.git.Diff(target, source)
 	if err != nil {
 		return fmt.Errorf("error getting git diff: %v", err)
 	}
@@ -469,7 +469,7 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 		}
 		return r.reviewer.Print(duplicated)
 	}
-	diff, err := r.git.Diff()
+	diff, err := r.git.Diff(target, source)
 	if err != nil {
 		return fmt.Errorf("error getting git diff: %v", err)
 	}

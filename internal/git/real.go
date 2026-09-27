@@ -92,28 +92,97 @@ func (r *real) BaseBranch() (string, error) {
 	}
 }
 
-func (r *real) Diff() (string, error) {
-	base, err := r.BaseBranch()
+func (r *real) Diff(refs ...string) (string, error) {
+	scope, err := r.scope(refs)
 	if err != nil {
-		return "", fmt.Errorf("error determining base branch: %v", err)
-	}
-	out, diffErr := r.Run("diff", base, "--cached")
-	if diffErr != nil {
 		return "", err
-	} else {
-		diff := out
-		names, err := r.Run("diff", base, "--cached", "--name-status")
-		if err != nil {
-			r.log.Error("Can't run get a files status diff: '%v'", err)
-			os.Exit(1)
-		}
-		stat, err := r.Run("diff", base, "--cached", "--stat")
-		if err != nil {
-			r.log.Error("Can't run get a stat diff: '%v'", err)
-			os.Exit(1)
-		}
-		return NewSummary(diff, stat, names).Render(), nil
 	}
+	diff, err := r.diff(scope)
+	if err != nil {
+		return "", fmt.Errorf("can't get a diff: %w", err)
+	}
+	names, err := r.diff(scope, "--name-status")
+	if err != nil {
+		return "", fmt.Errorf("can't get a files status diff: %w", err)
+	}
+	stat, err := r.diff(scope, "--stat")
+	if err != nil {
+		return "", fmt.Errorf("can't get a stat diff: %w", err)
+	}
+	return NewSummary(diff, stat, names).Render(), nil
+}
+
+func (r *real) scope(refs []string) ([]string, error) {
+	target, source := pair(refs)
+	if target == "" {
+		detected, err := r.BaseBranch()
+		if err != nil {
+			return nil, fmt.Errorf("error determining base branch: %v", err)
+		}
+		target = detected
+	}
+	base, err := r.revision(target)
+	if err != nil {
+		return nil, err
+	}
+	if source == "" {
+		return []string{r.forkPoint(base, "HEAD"), "--cached"}, nil
+	}
+	head, err := r.revision(source)
+	if err != nil {
+		return nil, err
+	}
+	return []string{r.forkPoint(base, head), head}, nil
+}
+
+func pair(refs []string) (string, string) {
+	var first, second string
+	if len(refs) > 0 {
+		first = refs[0]
+	}
+	if len(refs) > 1 {
+		second = refs[1]
+	}
+	return first, second
+}
+
+func (r *real) revision(branch string) (string, error) {
+	if r.resolves(branch) {
+		return branch, nil
+	}
+	out, err := r.Run("remote")
+	if err != nil {
+		return "", fmt.Errorf("can't list remotes to look up branch '%s': %w", branch, err)
+	}
+	for remote := range strings.FieldsSeq(out) {
+		tracking := remote + "/" + branch
+		if r.resolves(tracking) {
+			return tracking, nil
+		}
+	}
+	return "", fmt.Errorf("branch '%s' is not found, neither locally nor on any remote", branch)
+}
+
+func (r *real) resolves(ref string) bool {
+	_, err := r.Run("rev-parse", "--verify", "--quiet", ref+"^{commit}")
+	return err == nil
+}
+
+func (r *real) forkPoint(base string, head string) string {
+	out, err := r.Run("merge-base", base, head)
+	if err != nil {
+		return base
+	}
+	fork := strings.TrimSpace(out)
+	if fork == "" {
+		return base
+	}
+	return fork
+}
+
+func (r *real) diff(scope []string, options ...string) (string, error) {
+	args := append([]string{"diff"}, scope...)
+	return r.Run(append(args, options...)...)
 }
 
 func (r *real) CurrentDiff() (string, error) {

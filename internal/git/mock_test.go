@@ -186,6 +186,24 @@ func TestMock_Diff(t *testing.T) {
 	assert.Equal(t, "mock-diff", output)
 }
 
+func TestMock_Diff_WithRefs(t *testing.T) {
+	git := NewMock()
+
+	output, err := git.Diff("develop", "feature-x")
+
+	require.NoError(t, err)
+	assert.Equal(t, "mock-diff for develop feature-x", output)
+}
+
+func TestMock_Diff_WithEmptyRefs(t *testing.T) {
+	git := NewMock()
+
+	output, err := git.Diff("", "")
+
+	require.NoError(t, err)
+	assert.Equal(t, "mock-diff", output)
+}
+
 func TestMock_CurrentDiff(t *testing.T) {
 	git := NewMock()
 
