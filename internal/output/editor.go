@@ -1,7 +1,6 @@
 package output
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"runtime"
@@ -34,38 +33,32 @@ func NewEditor(shell executor.Executor) *editor {
 func (e *editor) Print(command string) error {
 	cmd := prettyCommand(command)
 	fmt.Printf("\ngenerated command:\n%s\n", cmd)
-	reader := bufio.NewReader(e.in)
-	for {
-		e.printf("%s", "[r]un, [e]dit, [c]ancel, [p]rint? ")
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			e.printfErr("%s: %v\n", "Error reading input", err)
-			return err
-		}
-		choice := strings.ToLower(strings.TrimSpace(line))
-		switch choice {
-		case "r":
-			return e.run(cmd)
-		case "e":
-			updated, err := e.edit(cmd)
+	p := prompt{in: e.in, out: e.out, err: e.err}
+	_, err := p.run(cmd, []choice{
+		{key: "r", label: "[r]un", act: func(cur string) (string, bool, error) {
+			return cur, true, e.run(cur)
+		}},
+		{key: "e", label: "[e]dit", act: func(cur string) (string, bool, error) {
+			updated, err := e.edit(cur)
 			if err != nil {
-				return fmt.Errorf("failed to edit command: %w", err)
+				return cur, true, fmt.Errorf("failed to edit command: %w", err)
 			}
 			if updated == "" {
-				return nil
+				return cur, true, nil
 			}
-			cmd = updated
-			e.printf("\nupdated command:\n%s\n", cmd)
-		case "c":
+			e.printf("\nupdated command:\n%s\n", updated)
+			return updated, false, nil
+		}},
+		{key: "c", label: "[c]ancel", act: func(cur string) (string, bool, error) {
 			e.printf("%s\n", "canceled.")
-			return nil
-		case "p":
-			e.printf("%s\n", cmd)
-			return nil
-		default:
-			e.printfErr("%s\n", "please type r, e, c, or p and press enter.")
-		}
-	}
+			return cur, true, nil
+		}},
+		{key: "p", label: "[p]rint", act: func(cur string) (string, bool, error) {
+			e.printf("%s\n", cur)
+			return cur, true, nil
+		}},
+	})
+	return err
 }
 
 func (e *editor) run(command string) error {
