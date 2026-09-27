@@ -14,7 +14,7 @@ import (
 func TestReviewer_Print_RunOption(t *testing.T) {
 	r, w, _ := os.Pipe()
 	shell := executor.NewMock()
-	reviewer := NewEditor(shell)
+	reviewer := NewReviewer(shell)
 	reviewer.in = r
 	_, err := io.WriteString(w, "r\n")
 	require.NoError(t, err, "failed to write to pipe")
@@ -33,7 +33,7 @@ func TestReviewer_Print_RunOption_Error(t *testing.T) {
 	r, w, _ := os.Pipe()
 	shell := executor.NewMock()
 	shell.Err = fmt.Errorf("simulated error")
-	reviewer := NewEditor(shell)
+	reviewer := NewReviewer(shell)
 	reviewer.in = r
 	_, err := io.WriteString(w, "r\n")
 	require.NoError(t, err, "failed to write to pipe")
@@ -51,7 +51,7 @@ func TestReviewer_Print_PrintOption(t *testing.T) {
 	input_r, input_w, _ := os.Pipe()
 	output_r, output_w, _ := os.Pipe()
 	shell := executor.NewMock()
-	reviewer := NewEditor(shell)
+	reviewer := NewReviewer(shell)
 	reviewer.in = input_r
 	reviewer.out = output_w
 	_, err := io.WriteString(input_w, "p\n")
@@ -75,7 +75,7 @@ func TestReviewer_Print_CancelOption(t *testing.T) {
 	input_r, input_w, _ := os.Pipe()
 	output_r, output_w, _ := os.Pipe()
 	shell := executor.NewMock()
-	reviewer := NewEditor(shell)
+	reviewer := NewReviewer(shell)
 	reviewer.in = input_r
 	reviewer.out = output_w
 	_, err := io.WriteString(input_w, "c\n")
@@ -98,7 +98,7 @@ func TestReviewer_Print_EditOption(t *testing.T) {
 	input_r, input_w, _ := os.Pipe()
 	output_r, output_w, _ := os.Pipe()
 	shell := executor.NewMock()
-	reviewer := NewEditor(shell)
+	reviewer := NewReviewer(shell)
 	reviewer.in = input_r
 	reviewer.out = output_w
 	_, err := io.WriteString(input_w, "e\nr\n")
@@ -122,7 +122,7 @@ func TestReviewer_Print_EditOption(t *testing.T) {
 func TestReviewer_Print_EditOption_FailsWithError(t *testing.T) {
 	r, w, _ := os.Pipe()
 	shell := executor.NewMock()
-	reviewer := NewEditor(shell)
+	reviewer := NewReviewer(shell)
 	shell.Err = fmt.Errorf("simulated error")
 	reviewer.in = r
 	_, err := io.WriteString(w, "e\n")

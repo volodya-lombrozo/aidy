@@ -38,31 +38,31 @@ func TestMock_Captured(t *testing.T) {
 	require.Equal(t, "command1\ncommand2", mock.Captured(), "expected captured commands joined by newline")
 }
 
-func TestMock_Edit_DefaultAccepts(t *testing.T) {
+func TestMock_Review_DefaultAccepts(t *testing.T) {
 	mock := NewMock()
 
-	result, err := mock.Edit("some text")
+	result, err := mock.Review("some text")
 
 	require.NoError(t, err, "expected no error by default")
 	require.Equal(t, "some text", result, "expected the original text to be returned unchanged")
 	require.Equal(t, "some text", mock.Captured(), "expected the text to be recorded")
 }
 
-func TestMock_Edit_ReturnsConfiguredText(t *testing.T) {
+func TestMock_Review_ReturnsConfiguredText(t *testing.T) {
 	mock := NewMock()
-	mock.EditText = "edited text"
+	mock.ReviewText = "edited text"
 
-	result, err := mock.Edit("some text")
+	result, err := mock.Review("some text")
 
 	require.NoError(t, err, "expected no error")
 	require.Equal(t, "edited text", result, "expected the configured text to be returned")
 }
 
-func TestMock_Edit_ReturnsConfiguredError(t *testing.T) {
+func TestMock_Review_ReturnsConfiguredError(t *testing.T) {
 	mock := NewMock()
-	mock.EditErr = ErrCanceled
+	mock.ReviewErr = ErrCanceled
 
-	result, err := mock.Edit("some text")
+	result, err := mock.Review("some text")
 
 	require.ErrorIs(t, err, ErrCanceled, "expected the configured error to be returned")
 	require.Equal(t, "", result, "expected no text to be returned on error")

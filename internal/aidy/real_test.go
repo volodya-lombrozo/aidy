@@ -561,7 +561,7 @@ func TestReal_Squash(t *testing.T) {
 
 func TestReal_PullRequest(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.PullRequest(false, "", false, "")
 
@@ -573,7 +573,7 @@ func TestReal_PullRequest(t *testing.T) {
 
 func TestReal_PullRequest_Target(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.PullRequest(false, "develop", false, "")
 
@@ -586,7 +586,7 @@ func TestReal_PullRequest_IssueNotFound(t *testing.T) {
 	github := github.NewMock()
 	github.Error = fmt.Errorf("issue not found")
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, reviewer: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
 	err := raidy.PullRequest(false, "", false, "")
 
@@ -601,7 +601,7 @@ func TestReal_PullRequest_Fixes(t *testing.T) {
 	github := github.NewMock()
 	github.Error = fmt.Errorf("issue not found")
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, reviewer: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
 	err := raidy.PullRequest(true, "", false, "")
 
@@ -612,7 +612,7 @@ func TestReal_PullRequest_Fixes(t *testing.T) {
 
 func TestReal_PullRequest_Duplicate(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.PullRequest(false, "develop", true, "")
 
@@ -626,7 +626,7 @@ func TestReal_PullRequest_Duplicate(t *testing.T) {
 
 func TestReal_PullRequest_Duplicate_Source(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.PullRequest(false, "develop", true, "feature-x")
 
@@ -639,7 +639,7 @@ func TestReal_PullRequest_Duplicate_Source(t *testing.T) {
 
 func TestReal_PullRequest_Duplicate_NoTarget(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.PullRequest(false, "", true, "")
 
@@ -651,7 +651,7 @@ func TestReal_PullRequest_Duplicate_NotFound(t *testing.T) {
 	github := github.NewMock()
 	github.Error = fmt.Errorf("no pull request found for branch 'feature'")
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github, reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.PullRequest(false, "develop", true, "")
 
@@ -661,7 +661,7 @@ func TestReal_PullRequest_Duplicate_NotFound(t *testing.T) {
 
 func TestReal_MergeRequest(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.MergeRequest(false, "", false, "")
 
@@ -673,7 +673,7 @@ func TestReal_MergeRequest(t *testing.T) {
 
 func TestReal_MergeRequest_Target(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.MergeRequest(false, "develop", false, "")
 
@@ -684,7 +684,7 @@ func TestReal_MergeRequest_Target(t *testing.T) {
 
 func TestReal_MergeRequest_Fixes(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
 
 	err := raidy.MergeRequest(true, "", false, "")
 
@@ -696,7 +696,7 @@ func TestReal_MergeRequest_Fixes(t *testing.T) {
 
 func TestReal_MergeRequest_Duplicate(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.MergeRequest(false, "develop", true, "")
 
@@ -710,7 +710,7 @@ func TestReal_MergeRequest_Duplicate(t *testing.T) {
 
 func TestReal_MergeRequest_Duplicate_Source(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.MergeRequest(false, "develop", true, "feature-x")
 
@@ -723,7 +723,7 @@ func TestReal_MergeRequest_Duplicate_Source(t *testing.T) {
 
 func TestReal_MergeRequest_Duplicate_NoTarget(t *testing.T) {
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gitlab.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.MergeRequest(false, "", true, "")
 
@@ -735,7 +735,7 @@ func TestReal_MergeRequest_Duplicate_NotFound(t *testing.T) {
 	gl := gitlab.NewMock()
 	gl.Error = fmt.Errorf("no merge request found for branch 'feature'")
 	out := output.NewMock()
-	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gl, editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), gitlab: gl, reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.MergeRequest(false, "develop", true, "")
 
@@ -797,7 +797,7 @@ func TestReal_Commit_CantRunGit(t *testing.T) {
 func TestReal_Issue(t *testing.T) {
 	userInput := "test input"
 	out := output.NewMock()
-	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.Issue(userInput)
 
@@ -812,7 +812,7 @@ func TestReal_Issue(t *testing.T) {
 func TestReal_Issue_EscapesDoubleQuotes(t *testing.T) {
 	userInput := `task with "quoted" input`
 	out := output.NewMock()
-	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), editor: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.Issue(userInput)
 
@@ -826,7 +826,7 @@ func TestReal_Release_Success(t *testing.T) {
 	mgit := git.NewMock()
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: nobrain, reviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", false)
 	assert.NoError(t, err, "expected no error during release")
@@ -840,7 +840,7 @@ func TestReal_Release_NoTags_Patch(t *testing.T) {
 	output := output.NewMock()
 	mockGit := git.NewMockWithShell(shell)
 
-	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
+	raidy := &real{git: mockGit, ai: ai.NewMockAI(), reviewer: output, logger: log.NewMock()}
 
 	err := raidy.Release("patch", "origin", false)
 
@@ -855,7 +855,7 @@ func TestReal_Release_NoTags_Minor(t *testing.T) {
 	output := output.NewMock()
 	mockGit := git.NewMockWithShell(shell)
 
-	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
+	raidy := &real{git: mockGit, ai: ai.NewMockAI(), reviewer: output, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", false)
 
@@ -870,7 +870,7 @@ func TestReal_Release_NoTags_Major(t *testing.T) {
 	output := output.NewMock()
 	mockGit := git.NewMockWithShell(shell)
 
-	raidy := &real{git: mockGit, ai: ai.NewMockAI(), editor: output, logger: log.NewMock()}
+	raidy := &real{git: mockGit, ai: ai.NewMockAI(), reviewer: output, logger: log.NewMock()}
 
 	err := raidy.Release("major", "origin", false)
 
@@ -883,7 +883,7 @@ func TestReal_ReleaseUnknownInterval(t *testing.T) {
 	mockGit := git.NewMock()
 	mockAI := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mockGit, ai: mockAI, editor: out, logger: log.NewMock()}
+	raidy := &real{git: mockGit, ai: mockAI, reviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("", "origin", false)
 
@@ -896,7 +896,7 @@ func TestReal_Release_TagFetchError(t *testing.T) {
 	mgit := git.NewMockWithShell(shell)
 	nobrain := ai.NewMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: nobrain, reviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("patch", "origin", false)
 
@@ -908,7 +908,7 @@ func TestReal_Release_NotesGenerationError(t *testing.T) {
 	mgit := git.NewMock()
 	nobrain := ai.NewFailedMockAI()
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: nobrain, editor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: nobrain, reviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("major", "origin", false)
 
@@ -922,7 +922,7 @@ func TestReal_Release_SaveNotes_GitHub(t *testing.T) {
 	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), reviewer: out, textreviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
@@ -942,8 +942,8 @@ func TestReal_Release_SaveNotes_UsesReviewedText(t *testing.T) {
 	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	out.EditText = "edited release notes"
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+	out.ReviewText = "edited release notes"
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), reviewer: out, textreviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
@@ -961,8 +961,8 @@ func TestReal_Release_SaveNotes_Canceled(t *testing.T) {
 	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	out.EditErr = output.ErrCanceled
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+	out.ReviewErr = output.ErrCanceled
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), reviewer: out, textreviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
@@ -981,8 +981,8 @@ func TestReal_Release_SaveNotes_ReviewError(t *testing.T) {
 	shell.Output = "https://github.com/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	out.EditErr = fmt.Errorf("review failed")
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+	out.ReviewErr = fmt.Errorf("review failed")
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), reviewer: out, textreviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
@@ -996,7 +996,7 @@ func TestReal_Release_SaveNotes_GitLab(t *testing.T) {
 	shell.Output = "https://gitlab.com/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), reviewer: out, textreviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
@@ -1012,7 +1012,7 @@ func TestReal_Release_SaveNotes_UnknownHost(t *testing.T) {
 	shell.Output = "https://bitbucket.org/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), reviewer: out, textreviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", true)
 
@@ -1026,7 +1026,7 @@ func TestReal_Release_SkipsSavingNotesByDefault(t *testing.T) {
 	shell.Output = "https://bitbucket.org/volodya-lombrozo/aidy.git"
 	mgit := git.NewMockWithDirAndShell(tmp, shell)
 	out := output.NewMock()
-	raidy := &real{git: mgit, ai: ai.NewMockAI(), editor: out, texteditor: out, logger: log.NewMock()}
+	raidy := &real{git: mgit, ai: ai.NewMockAI(), reviewer: out, textreviewer: out, logger: log.NewMock()}
 
 	err := raidy.Release("minor", "origin", false)
 

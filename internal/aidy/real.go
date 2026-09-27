@@ -24,17 +24,17 @@ import (
 )
 
 type real struct {
-	git        git.Git
-	github     github.Github
-	gitlab     gitlab.Gitlab
-	ai         ai.AI
-	editor     output.Output
-	config     config.Config
-	cache      cache.AidyCache
-	printer    output.Output
-	texteditor output.TextEditor
-	logger     log.Logger
-	in         *os.File
+	git          git.Git
+	github       github.Github
+	gitlab       gitlab.Gitlab
+	ai           ai.AI
+	reviewer     output.Output
+	config       config.Config
+	cache        cache.AidyCache
+	printer      output.Output
+	textreviewer output.TextReviewer
+	logger       log.Logger
+	in           *os.File
 }
 
 // Create a real aidy instance
@@ -52,9 +52,9 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool, lan
 	InitLogger(silent, debug)
 	aidy.logger = log.Default()
 	shell := executor.NewReal()
-	aidy.editor = output.NewEditor(shell)
+	aidy.reviewer = output.NewReviewer(shell)
 	aidy.printer = output.NewPrinter()
-	aidy.texteditor = output.NewTextEditor(shell)
+	aidy.textreviewer = output.NewTextReviewer(shell)
 	var err error
 	if aidy.git, err = git.NewGit(shell); err != nil {
 		aidy.logger.Error("failed to initialize git: %v", err)
@@ -247,7 +247,7 @@ func (r *real) Issue(task string) error {
 		cmd = fmt.Sprintf("\n%s", escapeBackticks(fmt.Sprintf("gh issue create --title \"%s\" --body \"%s\"", ititle, ibody)))
 	}
 	cmd = fmt.Sprintf("%s%s\n", cmd, repo)
-	return r.editor.Print(cmd)
+	return r.reviewer.Print(cmd)
 }
 
 func escapeBackticks(input string) string {
@@ -412,7 +412,7 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 	prtitle := escapeQuotes(healPRTitle(healQuotes(title), nissue))
 	prbody := shellSafe(body)
 	cmd := escapeBackticks(fmt.Sprintf("gh pr create --title \"%s\" --body \"%s\"%s%s", prtitle, prbody, repo, base))
-	return r.editor.Print(cmd)
+	return r.reviewer.Print(cmd)
 }
 
 func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source string) error {
@@ -464,7 +464,7 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 	mrtitle := escapeQuotes(healPRTitle(healQuotes(title), nissue))
 	mrbody := shellSafe(body)
 	cmd := escapeBackticks(fmt.Sprintf("glab mr create --title \"%s\" --description \"%s\"%s", mrtitle, mrbody, targetBranch))
-	return r.editor.Print(cmd)
+	return r.reviewer.Print(cmd)
 }
 
 func inumber(branch string) string {
@@ -611,7 +611,7 @@ func (r *real) Release(interval string, repo string, saveNotes bool) error {
 		r.logger.Info("no tags found, creating the first release with version '%s'", updated)
 	}
 	if saveNotes {
-		reviewed, err := r.texteditor.Edit(notes)
+		reviewed, err := r.textreviewer.Review(notes)
 		if err != nil {
 			if errors.Is(err, output.ErrCanceled) {
 				r.logger.Info("release canceled")
@@ -625,7 +625,7 @@ func (r *real) Release(interval string, repo string, saveNotes bool) error {
 		}
 	}
 	command := fmt.Sprintf("git tag --cleanup=verbatim -a \"%s\" -m \"%s\" ", updated, escapeQuotes(notes))
-	return r.editor.Print(command)
+	return r.reviewer.Print(command)
 }
 
 // save writes the generated release notes to a markdown file under

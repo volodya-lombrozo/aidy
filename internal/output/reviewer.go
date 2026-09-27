@@ -20,7 +20,7 @@ type reviewer struct {
 	out    *os.File
 }
 
-func NewEditor(shell executor.Executor) *reviewer {
+func NewReviewer(shell executor.Executor) *reviewer {
 	return &reviewer{
 		editor: newEditor(shell),
 		shell:  shell,
