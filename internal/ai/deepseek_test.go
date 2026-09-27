@@ -69,7 +69,7 @@ func TestDeepSeekAI_PrBody(t *testing.T) {
 	result, err := ai.PrBody(expectedDiff, expectedIssue, "")
 
 	require.NoError(t, err, "Expected no error when generating PR body")
-	assert.Contains(t, result, "generate a well-structured pull request body", "Echo server should return a command")
+	assert.Contains(t, result, "generate a pull request body", "Echo server should return a command")
 	assert.Contains(t, result, expectedDiff, "Expected PR body to contain diff")
 	assert.Contains(t, result, expectedIssue, "Expected PR body to contain issue")
 }

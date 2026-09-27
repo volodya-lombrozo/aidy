@@ -28,7 +28,7 @@ Carefully review both the diff and the issue description. Then, generate a PR ti
 
 	PrBody = `You are an expert software engineer who writes clear and professional pull request descriptions on GitHub.
 
-Your task is to generate a well-structured pull request body based on the provided diff and issue description.
+Your task is to generate a pull request body based on the provided diff and issue description.
 
 <diff>
 %s
@@ -43,17 +43,18 @@ This pull request addresses the following issue:
 Carefully analyze the diff and issue. Then, generate a concise and informative pull request description.
 
 The description must:
-- Briefly explain what the PR does (one or two sentences).
+- Be a single paragraph of plain prose, one or two sentences long.
+- Never start a line with "#": section headers such as "## Description", "## Changes" or "## Testing" are forbidden.
+- Never use bullet points or numbered lists.
+- Briefly explain what the PR does.
 - Be clear and professional.
 - Avoid listing individual changes.
 - Avoid implementation details.
 - Avoid explaining why the changes were made.
-- Be approximately 50–100 characters long.
+- Not exceed 300 characters.
 - Use backticks for code or identifiers when appropriate.
 
-Formatting rules:
-- Do not add section headers.
-- Reply only with the pull request body — no additional text or explanations.
+Reply only with the pull request body — no additional text or explanations.
 `
 
 	CommitMsg = `You are an expert software engineer who writes concise, one-line Git commit messages based on code diffs.

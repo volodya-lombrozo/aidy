@@ -623,6 +623,29 @@ func TestReal_PullRequest_Regenerates(t *testing.T) {
 	assert.Contains(t, out.Last(), "gh pr create", "expected the last generated command to be the one shown")
 }
 
+// headersAI generates a body with markdown section headers, the way a model
+// sometimes does despite being told not to.
+type headersAI struct {
+	ai.AI
+}
+
+func (h *headersAI) PrBody(diff string, issue string, summary string) (string, error) {
+	return "## Description\n\nEscapes double quotes.\n\n## Testing\n\nNew tests added.", nil
+}
+
+func TestReal_PullRequest_StripsHeaders(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: &headersAI{ai.NewMockAI()}, github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.PullRequest(false, "", false, "")
+
+	require.NoError(t, err, "expected no error when creating pull request")
+	result := out.Last()
+	assert.NotContains(t, result, "##", "Expected markdown headers to be stripped from the body")
+	assert.Contains(t, result, "Escapes double quotes.", "Expected the prose to survive header stripping")
+	assert.Contains(t, result, "New tests added.", "Expected the prose to survive header stripping")
+}
+
 func TestReal_PullRequest_Duplicate(t *testing.T) {
 	out := output.NewMock()
 	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
@@ -705,6 +728,18 @@ func TestReal_MergeRequest_Fixes(t *testing.T) {
 	result := out.Last()
 	assert.Contains(t, result, "glab mr create")
 	assert.Contains(t, result, "Closes #")
+}
+
+func TestReal_MergeRequest_StripsHeaders(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: &headersAI{ai.NewMockAI()}, github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.MergeRequest(false, "", false, "")
+
+	require.NoError(t, err, "expected no error when creating merge request")
+	result := out.Last()
+	assert.NotContains(t, result, "##", "Expected markdown headers to be stripped from the description")
+	assert.Contains(t, result, "Escapes double quotes.", "Expected the prose to survive header stripping")
 }
 
 func TestReal_MergeRequest_Duplicate(t *testing.T) {
@@ -1185,6 +1220,62 @@ func TestEscapeQuotes(t *testing.T) {
 func TestShellSafe(t *testing.T) {
 	assert.Equal(t, `body with \"quotes\" inside`, shellSafe(`body with "quotes" inside`))
 	assert.Equal(t, "top level quotes should be removed", shellSafe("`top level quotes should be removed`"))
+}
+
+func TestHealPRBody(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			"keeps plain prose untouched",
+			"Escapes double quotes in generated `aidy` commands.",
+			"Escapes double quotes in generated `aidy` commands.",
+		},
+		{
+			"removes a single header",
+			"## Description\n\nEscapes double quotes in generated commands.",
+			"Escapes double quotes in generated commands.",
+		},
+		{
+			"removes all headers and keeps the prose",
+			"## Description\n\nFix command failures.\n\n## Changes\n\nIntroduce `escapeQuotes()`.\n\n## Testing\n\nNew tests added.",
+			"Fix command failures.\n\nIntroduce `escapeQuotes()`.\n\nNew tests added.",
+		},
+		{
+			"removes headers of any level",
+			"# One\n\nprose\n\n###### Six\n\nmore",
+			"prose\n\nmore",
+		},
+		{
+			"removes indented headers",
+			"   ## Indented\n\nprose",
+			"prose",
+		},
+		{
+			"keeps issue references intact",
+			"Fix the bug.\n\nFixes #238",
+			"Fix the bug.\n\nFixes #238",
+		},
+		{
+			"keeps a hash that is not a header",
+			"#238 is fixed by this change.",
+			"#238 is fixed by this change.",
+		},
+		{
+			"trims surrounding whitespace",
+			"\n\n  prose  \n\n",
+			"prose",
+		},
+		{"handles an empty body", "", ""},
+		{"handles a body made only of headers", "## Description\n\n## Changes\n", ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, healPRBody(test.input))
+		})
+	}
 }
 
 func TestHealPRTitle(t *testing.T) {
