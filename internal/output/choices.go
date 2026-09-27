@@ -21,9 +21,9 @@ func acceptChoice() choice {
 // another round, so edits can be stacked. An editor that saved nothing is
 // treated as a cancel. noun names what is being edited ("command", "text")
 // and appears in the messages this option prints.
-func editChoice(ext *external, noun string, out io.Writer) choice {
+func editChoice(ed *editor, noun string, out io.Writer) choice {
 	return choice{key: "e", label: "[e]dit", act: func(current string) (string, verdict, error) {
-		updated, err := ext.open(noun, current)
+		updated, err := ed.open(noun, current)
 		if err != nil {
 			return "", canceled, fmt.Errorf("failed to edit %s: %w", noun, err)
 		}

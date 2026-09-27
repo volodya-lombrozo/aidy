@@ -13,19 +13,21 @@ type TextEditor interface {
 	Edit(text string) (string, error)
 }
 
+// textEditor reviews free text the same way reviewer reviews a command, and
+// leans on the same editor to do the actual editing.
 type textEditor struct {
-	ext *external
-	err *os.File
-	in  *os.File
-	out *os.File
+	editor *editor
+	err    *os.File
+	in     *os.File
+	out    *os.File
 }
 
 func NewTextEditor(shell executor.Executor) *textEditor {
 	return &textEditor{
-		ext: newExternal(shell),
-		err: os.Stderr,
-		in:  os.Stdin,
-		out: os.Stdout,
+		editor: newEditor(shell),
+		err:    os.Stderr,
+		in:     os.Stdin,
+		out:    os.Stdout,
 	}
 }
 
@@ -37,7 +39,7 @@ func (e *textEditor) Edit(text string) (string, error) {
 	p := prompt{in: e.in, out: e.out, err: e.err}
 	reviewed, v, err := p.run(text, []choice{
 		acceptChoice(),
-		editChoice(e.ext, "text", e.out),
+		editChoice(e.editor, "text", e.out),
 		cancelChoice(e.out),
 		printChoice(e.out),
 	})

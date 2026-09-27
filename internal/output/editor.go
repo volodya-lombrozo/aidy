@@ -2,114 +2,74 @@ package output
 
 import (
 	"fmt"
-	"io"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/volodya-lombrozo/aidy/internal/executor"
+	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
+// editor is the user's $EDITOR, and the only thing here that actually edits.
+// It is the single place that knows the temp-file dance: write the buffer
+// out, hand the file over, read back whatever was saved, clean up.
 type editor struct {
-	ext   *external
+	cmd   string
 	shell executor.Executor
-	err   *os.File
-	in    *os.File
-	out   *os.File
+	log   log.Logger
 }
 
-func NewEditor(shell executor.Executor) *editor {
+func newEditor(shell executor.Executor) *editor {
 	return &editor{
-		ext:   newExternal(shell),
+		cmd:   findEditor(runtime.GOOS),
 		shell: shell,
-		err:   os.Stderr,
-		in:    os.Stdin,
-		out:   os.Stdout,
+		log:   log.Default(),
 	}
 }
 
-// Print shows a generated shell command and offers to run it. Backing out
-// is not a failure here - the user simply chose not to run anything - so a
-// canceled prompt returns no error.
-func (e *editor) Print(command string) error {
-	cmd := prettyCommand(command)
-	printf(e.out, "\ngenerated command:\n%s\n", cmd)
-	p := prompt{in: e.in, out: e.out, err: e.err}
-	_, _, err := p.run(cmd, []choice{
-		runChoice(e.shell, e.out),
-		editChoice(e.ext, "command", e.out),
-		cancelChoice(e.out),
-		printChoice(e.out),
-	})
-	return err
-}
-
-// runChoice executes the buffer as a shell command. It lives here rather
-// than with the general options because only a command buffer can be run.
-func runChoice(shell executor.Executor, out io.Writer) choice {
-	return choice{key: "r", label: "[r]un", act: func(current string) (string, verdict, error) {
-		printf(out, "running...\n")
-		parts := cleanQoutes(splitCommand(current))
-		_, err := shell.RunInteractively(parts[0], parts[1:]...)
-		return current, accepted, err
-	}}
-}
-
-func cleanQoutes(all []string) []string {
-	for i, s := range all {
-		all[i] = strings.Trim(s, `"`)
+// open edits text and returns what the user saved. noun names what is being
+// edited ("command", "text") and shows up in the temp file name, so a
+// leftover file says where it came from.
+func (e *editor) open(noun string, text string) (string, error) {
+	tmp, err := os.CreateTemp("", fmt.Sprintf("aidy-edit%s-*.txt", noun))
+	if err != nil {
+		panic(err)
 	}
-	return all
-}
-
-func prettyCommand(command string) string {
-	parts := splitCommand(command)
-	var res strings.Builder
-	for i, p := range parts {
-		if strings.HasPrefix(p, "--") {
-			res.WriteString("\n")
-			res.WriteString("  ")
-			res.WriteString(p)
-		} else {
-			if i != 0 {
-				res.WriteString(" ")
-			}
-			res.WriteString(p)
+	e.log.Debug("created temp file '%s' for editing", tmp.Name())
+	defer func() {
+		if err := os.Remove(tmp.Name()); err != nil {
+			e.log.Error("failed to remove temp file '%s': %v", tmp.Name(), err)
 		}
+	}()
+	if _, err := tmp.WriteString(text); err != nil {
+		panic(err)
 	}
-	return res.String()
+	if err := tmp.Close(); err != nil {
+		e.log.Error("failed to close temp file '%s': %v", tmp.Name(), err)
+	}
+	e.log.Debug("temp file '%s' created with content:\n%s", tmp.Name(), text)
+	e.log.Debug("using '%s' as editor", e.cmd)
+	parts := strings.Fields(e.cmd)
+	args := append(parts[1:], tmp.Name())
+	if _, err := e.shell.RunInteractively(parts[0], args...); err != nil {
+		return "", fmt.Errorf("failed to run command '%s %s': %w", e.cmd, tmp.Name(), err)
+	}
+	edited, err := os.ReadFile(tmp.Name())
+	if err != nil {
+		return "", fmt.Errorf("failed to read edited file '%s': %w", tmp.Name(), err)
+	}
+	return string(edited), nil
 }
 
-func splitCommand(input string) []string {
-	var args []string
-	var current strings.Builder
-	quoted := false
-	escaped := false
-	for _, ch := range strings.TrimSpace(input) {
-		switch {
-		case escaped:
-			current.WriteRune(ch)
-			escaped = false
-		case ch == '\\':
-			escaped = true
-		case ch == '"':
-			current.WriteRune(ch)
-			quoted = !quoted
-		case ch == ' ' && !quoted:
-			if current.Len() > 0 {
-				args = append(args, current.String())
-				current.Reset()
-			}
-		case ch == '\n' && !quoted:
-			continue
-		default:
-			current.WriteRune(ch)
-		}
+func findEditor(runtime string) string {
+	editor := os.Getenv("EDITOR")
+	if editor != "" {
+		return editor
 	}
-	if quoted {
-		panic(fmt.Sprintf("unclosed quote in string '%s'", input))
+	switch runtime {
+	case "windows":
+		return "notepad"
+	default:
+		return "vi"
 	}
-	if current.Len() > 0 {
-		args = append(args, current.String())
-	}
-	return args
 }
