@@ -2,74 +2,56 @@ package output
 
 import (
 	"fmt"
+	"io"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/volodya-lombrozo/aidy/internal/executor"
-	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
 type editor struct {
-	external string
-	shell    executor.Executor
-	err      *os.File
-	in       *os.File
-	out      *os.File
-	log      log.Logger
+	ext   *external
+	shell executor.Executor
+	err   *os.File
+	in    *os.File
+	out   *os.File
 }
 
 func NewEditor(shell executor.Executor) *editor {
 	return &editor{
-		external: findEditor(runtime.GOOS),
-		shell:    shell,
-		err:      os.Stderr,
-		in:       os.Stdin,
-		out:      os.Stdout,
-		log:      log.Default(),
+		ext:   newExternal(shell),
+		shell: shell,
+		err:   os.Stderr,
+		in:    os.Stdin,
+		out:   os.Stdout,
 	}
 }
 
+// Print shows a generated shell command and offers to run it. Backing out
+// is not a failure here - the user simply chose not to run anything - so a
+// canceled prompt returns no error.
 func (e *editor) Print(command string) error {
 	cmd := prettyCommand(command)
-	fmt.Printf("\ngenerated command:\n%s\n", cmd)
+	printf(e.out, "\ngenerated command:\n%s\n", cmd)
 	p := prompt{in: e.in, out: e.out, err: e.err}
-	_, err := p.run(cmd, []choice{
-		{key: "r", label: "[r]un", act: func(cur string) (string, bool, error) {
-			return cur, true, e.run(cur)
-		}},
-		{key: "e", label: "[e]dit", act: func(cur string) (string, bool, error) {
-			updated, err := e.edit(cur)
-			if err != nil {
-				return cur, true, fmt.Errorf("failed to edit command: %w", err)
-			}
-			if updated == "" {
-				return cur, true, nil
-			}
-			e.printf("\nupdated command:\n%s\n", updated)
-			return updated, false, nil
-		}},
-		{key: "c", label: "[c]ancel", act: func(cur string) (string, bool, error) {
-			e.printf("%s\n", "canceled.")
-			return cur, true, nil
-		}},
-		{key: "p", label: "[p]rint", act: func(cur string) (string, bool, error) {
-			e.printf("%s\n", cur)
-			return cur, true, nil
-		}},
+	_, _, err := p.run(cmd, []choice{
+		runChoice(e.shell, e.out),
+		editChoice(e.ext, "command", e.out),
+		cancelChoice(e.out),
+		printChoice(e.out),
 	})
 	return err
 }
 
-func (e *editor) run(command string) error {
-	e.printf("running...\n")
-	parts := cleanQoutes(splitCommand(command))
-	_, err := e.shell.RunInteractively(parts[0], parts[1:]...)
-	if err != nil {
-		return err
-	} else {
-		return nil
-	}
+// runChoice executes the buffer as a shell command. It lives here rather
+// than with the general options because only a command buffer can be run.
+func runChoice(shell executor.Executor, out io.Writer) choice {
+	return choice{key: "r", label: "[r]un", act: func(current string) (string, verdict, error) {
+		printf(out, "running...\n")
+		parts := cleanQoutes(splitCommand(current))
+		_, err := shell.RunInteractively(parts[0], parts[1:]...)
+		return current, accepted, err
+	}}
 }
 
 func cleanQoutes(all []string) []string {
@@ -77,45 +59,6 @@ func cleanQoutes(all []string) []string {
 		all[i] = strings.Trim(s, `"`)
 	}
 	return all
-}
-
-func (e *editor) printf(format string, args ...any) {
-	if _, err := fmt.Fprintf(e.out, format, args...); err != nil {
-		panic(err)
-	}
-}
-
-func (e *editor) edit(input string) (string, error) {
-	tmp, err := os.CreateTemp("", "aidy-editcmd-*.txt")
-	if err != nil {
-		panic(err)
-	}
-	e.log.Debug("created temp file '%s' for editing", tmp.Name())
-	defer func() {
-		if err := os.Remove(tmp.Name()); err != nil {
-			e.log.Error("failed to remove temp file '%s': %v", tmp.Name(), err)
-		}
-	}()
-	if _, err := tmp.WriteString(input); err != nil {
-		panic(err)
-	}
-	if err := tmp.Close(); err != nil {
-		e.log.Error("failed to close temp file '%s': %v", tmp.Name(), err)
-	}
-	e.log.Debug("temp file '%s' created with content:\n%s", tmp.Name(), input)
-	e.log.Debug("using '%s' as editor", e.external)
-	editor := e.external
-	parts := strings.Fields(editor)
-	args := append(parts[1:], tmp.Name())
-	_, err = e.shell.RunInteractively(parts[0], args...)
-	if err != nil {
-		return "", fmt.Errorf("failed to run command '%s %s': %w", editor, tmp.Name(), err)
-	}
-	edited, err := os.ReadFile(tmp.Name())
-	if err != nil {
-		return "", fmt.Errorf("failed to read edited file '%s': %w", tmp.Name(), err)
-	}
-	return string(edited), nil
 }
 
 func prettyCommand(command string) string {
@@ -134,19 +77,6 @@ func prettyCommand(command string) string {
 		}
 	}
 	return res.String()
-}
-
-func findEditor(runtime string) string {
-	editor := os.Getenv("EDITOR")
-	if editor != "" {
-		return editor
-	}
-	switch runtime {
-	case "windows":
-		return "notepad"
-	default:
-		return "vi"
-	}
 }
 
 func splitCommand(input string) []string {
