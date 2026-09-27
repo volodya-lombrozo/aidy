@@ -1,7 +1,6 @@
 package output
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"runtime"
@@ -11,95 +10,28 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/log"
 )
 
+// editor is the user's $EDITOR, and the only thing here that actually edits.
+// It is the single place that knows the temp-file dance: write the buffer
+// out, hand the file over, read back whatever was saved, clean up.
 type editor struct {
-	external string
-	shell    executor.Executor
-	err      *os.File
-	in       *os.File
-	out      *os.File
-	log      log.Logger
+	cmd   string
+	shell executor.Executor
+	log   log.Logger
 }
 
-func NewEditor(shell executor.Executor) *editor {
+func newEditor(shell executor.Executor) *editor {
 	return &editor{
-		external: findEditor(runtime.GOOS),
-		shell:    shell,
-		err:      os.Stderr,
-		in:       os.Stdin,
-		out:      os.Stdout,
-		log:      log.Default(),
+		cmd:   findEditor(runtime.GOOS),
+		shell: shell,
+		log:   log.Default(),
 	}
 }
 
-func (e *editor) Print(command string) error {
-	cmd := prettyCommand(command)
-	fmt.Printf("\ngenerated command:\n%s\n", cmd)
-	reader := bufio.NewReader(e.in)
-	for {
-		e.printf("%s", "[r]un, [e]dit, [c]ancel, [p]rint? ")
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			e.printfErr("%s: %v\n", "Error reading input", err)
-			return err
-		}
-		choice := strings.ToLower(strings.TrimSpace(line))
-		switch choice {
-		case "r":
-			return e.run(cmd)
-		case "e":
-			updated, err := e.edit(cmd)
-			if err != nil {
-				return fmt.Errorf("failed to edit command: %w", err)
-			}
-			if updated == "" {
-				return nil
-			}
-			cmd = updated
-			e.printf("\nupdated command:\n%s\n", cmd)
-		case "c":
-			e.printf("%s\n", "canceled.")
-			return nil
-		case "p":
-			e.printf("%s\n", cmd)
-			return nil
-		default:
-			e.printfErr("%s\n", "please type r, e, c, or p and press enter.")
-		}
-	}
-}
-
-func (e *editor) run(command string) error {
-	e.printf("running...\n")
-	parts := cleanQoutes(splitCommand(command))
-	_, err := e.shell.RunInteractively(parts[0], parts[1:]...)
-	if err != nil {
-		return err
-	} else {
-		return nil
-	}
-}
-
-func cleanQoutes(all []string) []string {
-	for i, s := range all {
-		all[i] = strings.Trim(s, `"`)
-	}
-	return all
-}
-
-func (e *editor) printf(format string, args ...any) {
-	if _, err := fmt.Fprintf(e.out, format, args...); err != nil {
-		panic(err)
-	}
-}
-
-func (e *editor) printfErr(format string, args ...any) {
-	if _, err := fmt.Fprintf(e.err, format, args...); err != nil {
-		panic(err)
-	}
-}
-
-func (e *editor) edit(input string) (string, error) {
-	tmp, err := os.CreateTemp("", "aidy-editcmd-*.txt")
+// open edits text and returns what the user saved. noun names what is being
+// edited ("command", "text") and shows up in the temp file name, so a
+// leftover file says where it came from.
+func (e *editor) open(noun string, text string) (string, error) {
+	tmp, err := os.CreateTemp("", fmt.Sprintf("aidy-edit%s-*.txt", noun))
 	if err != nil {
 		panic(err)
 	}
@@ -109,44 +41,24 @@ func (e *editor) edit(input string) (string, error) {
 			e.log.Error("failed to remove temp file '%s': %v", tmp.Name(), err)
 		}
 	}()
-	if _, err := tmp.WriteString(input); err != nil {
+	if _, err := tmp.WriteString(text); err != nil {
 		panic(err)
 	}
 	if err := tmp.Close(); err != nil {
 		e.log.Error("failed to close temp file '%s': %v", tmp.Name(), err)
 	}
-	e.log.Debug("temp file '%s' created with content:\n%s", tmp.Name(), input)
-	e.log.Debug("using '%s' as editor", e.external)
-	editor := e.external
-	parts := strings.Fields(editor)
+	e.log.Debug("temp file '%s' created with content:\n%s", tmp.Name(), text)
+	e.log.Debug("using '%s' as editor", e.cmd)
+	parts := strings.Fields(e.cmd)
 	args := append(parts[1:], tmp.Name())
-	_, err = e.shell.RunInteractively(parts[0], args...)
-	if err != nil {
-		return "", fmt.Errorf("failed to run command '%s %s': %w", editor, tmp.Name(), err)
+	if _, err := e.shell.RunInteractively(parts[0], args...); err != nil {
+		return "", fmt.Errorf("failed to run command '%s %s': %w", e.cmd, tmp.Name(), err)
 	}
 	edited, err := os.ReadFile(tmp.Name())
 	if err != nil {
 		return "", fmt.Errorf("failed to read edited file '%s': %w", tmp.Name(), err)
 	}
 	return string(edited), nil
-}
-
-func prettyCommand(command string) string {
-	parts := splitCommand(command)
-	var res strings.Builder
-	for i, p := range parts {
-		if strings.HasPrefix(p, "--") {
-			res.WriteString("\n")
-			res.WriteString("  ")
-			res.WriteString(p)
-		} else {
-			if i != 0 {
-				res.WriteString(" ")
-			}
-			res.WriteString(p)
-		}
-	}
-	return res.String()
 }
 
 func findEditor(runtime string) string {
@@ -160,39 +72,4 @@ func findEditor(runtime string) string {
 	default:
 		return "vi"
 	}
-}
-
-func splitCommand(input string) []string {
-	var args []string
-	var current strings.Builder
-	quoted := false
-	escaped := false
-	for _, ch := range strings.TrimSpace(input) {
-		switch {
-		case escaped:
-			current.WriteRune(ch)
-			escaped = false
-		case ch == '\\':
-			escaped = true
-		case ch == '"':
-			current.WriteRune(ch)
-			quoted = !quoted
-		case ch == ' ' && !quoted:
-			if current.Len() > 0 {
-				args = append(args, current.String())
-				current.Reset()
-			}
-		case ch == '\n' && !quoted:
-			continue
-		default:
-			current.WriteRune(ch)
-		}
-	}
-	if quoted {
-		panic(fmt.Sprintf("unclosed quote in string '%s'", input))
-	}
-	if current.Len() > 0 {
-		args = append(args, current.String())
-	}
-	return args
 }

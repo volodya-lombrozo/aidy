@@ -3,9 +3,9 @@ package output
 import "strings"
 
 type Mock struct {
-	captured []string
-	EditErr  error
-	EditText string
+	captured   []string
+	ReviewErr  error
+	ReviewText string
 }
 
 func NewMock() *Mock {
@@ -17,13 +17,13 @@ func (m *Mock) Print(command string) error {
 	return nil
 }
 
-func (m *Mock) Edit(text string) (string, error) {
+func (m *Mock) Review(text string) (string, error) {
 	m.captured = append(m.captured, text)
-	if m.EditErr != nil {
-		return "", m.EditErr
+	if m.ReviewErr != nil {
+		return "", m.ReviewErr
 	}
-	if m.EditText != "" {
-		return m.EditText, nil
+	if m.ReviewText != "" {
+		return m.ReviewText, nil
 	}
 	return text, nil
 }
