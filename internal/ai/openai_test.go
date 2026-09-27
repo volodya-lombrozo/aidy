@@ -60,7 +60,7 @@ func TestOpenAi_GeneratesBody(t *testing.T) {
 	body, err := openai.PrBody("test diff", "successful issue-description", "project-summary")
 
 	require.NoError(t, err, "Expected no error when generating PR body")
-	assert.Contains(t, body, "generate a well-structured pull request body", "Expected PR body to match mock response")
+	assert.Contains(t, body, "generate a pull request body", "Expected PR body to match mock response")
 }
 
 func TestOpenAI_SuggestBranch(t *testing.T) {

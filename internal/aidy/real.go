@@ -292,6 +292,17 @@ func healQuote(open rune, text string) string {
 	return text
 }
 
+var mdHeader = regexp.MustCompile(`(?m)^[ \t]{0,3}#{1,6}[ \t]+[^\n]*$`)
+
+var blankRun = regexp.MustCompile(`\n{3,}`)
+
+// healPRBody removes markdown section headers, such as "## Description", from a
+// generated pull request body, keeping the prose that follows them.
+func healPRBody(text string) string {
+	stripped := mdHeader.ReplaceAllString(text, "")
+	return strings.TrimSpace(blankRun.ReplaceAllString(stripped, "\n\n"))
+}
+
 func healPRTitle(text string, issue string) string {
 	re := regexp.MustCompile(`(fix|feat|build|chore|ci|docs|style|refactor|perf|test)\((?:#?\d+|#?[A-Z][A-Z0-9]+-\d+)\)`)
 	replaced := re.ReplaceAllStringFunc(text, func(m string) string {
@@ -414,6 +425,7 @@ func (r *real) PullRequest(fixes bool, target string, duplicate bool, source str
 		if err != nil {
 			return "", fmt.Errorf("error generating pull request body: %v", err)
 		}
+		body = healPRBody(body)
 		if fixes {
 			body = body + fmt.Sprintf("\n\nFixes %s", issueRef(nissue))
 		} else {
@@ -473,6 +485,7 @@ func (r *real) MergeRequest(fixes bool, target string, duplicate bool, source st
 		if err != nil {
 			return "", fmt.Errorf("error generating merge request body: %v", err)
 		}
+		body = healPRBody(body)
 		if fixes {
 			body = body + fmt.Sprintf("\n\nCloses %s", issueRef(nissue))
 		} else {
