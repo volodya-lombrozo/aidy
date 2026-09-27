@@ -11,7 +11,7 @@ type Git interface {
 	Installed() (bool, error)
 	CurrentBranch() (string, error)
 	BaseBranch() (string, error)
-	Diff() (string, error)
+	Diff(refs ...string) (string, error)
 	CurrentDiff() (string, error)
 	CommitMessage() (string, error)
 	Append() error

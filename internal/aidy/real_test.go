@@ -580,6 +580,29 @@ func TestReal_PullRequest_Target(t *testing.T) {
 	require.NoError(t, err, "expected no error when creating pull request with target branch")
 	output := out.Last()
 	assert.Contains(t, output, "--base develop", "Expected output to contain target branch")
+	assert.Contains(t, output, "mock-diff for develop", "Expected the diff to be taken against the target branch")
+}
+
+func TestReal_PullRequest_TargetAndSource(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "develop", false, "feature-x")
+
+	require.NoError(t, err, "expected no error when creating pull request with target and source branches")
+	output := out.Last()
+	assert.Contains(t, output, "--base develop", "Expected output to contain target branch")
+	assert.Contains(t, output, "mock-diff for develop feature-x", "Expected the diff to be taken between the target and the source branches")
+}
+
+func TestReal_PullRequest_Source(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.PullRequest(false, "", false, "feature-x")
+
+	require.NoError(t, err, "expected no error when creating pull request with source branch")
+	assert.Contains(t, out.Last(), "mock-diff for feature-x", "Expected the diff to be taken from the source branch")
 }
 
 func TestReal_PullRequest_IssueNotFound(t *testing.T) {
@@ -716,6 +739,29 @@ func TestReal_MergeRequest_Target(t *testing.T) {
 	require.NoError(t, err, "expected no error when creating merge request with target branch")
 	result := out.Last()
 	assert.Contains(t, result, "--target-branch develop", "Expected output to contain target branch")
+	assert.Contains(t, result, "mock-diff for develop", "Expected the diff to be taken against the target branch")
+}
+
+func TestReal_MergeRequest_TargetAndSource(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.MergeRequest(false, "develop", false, "feature-x")
+
+	require.NoError(t, err, "expected no error when creating merge request with target and source branches")
+	result := out.Last()
+	assert.Contains(t, result, "--target-branch develop", "Expected output to contain target branch")
+	assert.Contains(t, result, "mock-diff for develop feature-x", "Expected the diff to be taken between the target and the source branches")
+}
+
+func TestReal_MergeRequest_Source(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{git: git.NewMock(), ai: ai.NewMockAI(), github: github.NewMock(), reviewer: out, cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.MergeRequest(false, "", false, "feature-x")
+
+	require.NoError(t, err, "expected no error when creating merge request with source branch")
+	assert.Contains(t, out.Last(), "mock-diff for feature-x", "Expected the diff to be taken from the source branch")
 }
 
 func TestReal_MergeRequest_Fixes(t *testing.T) {

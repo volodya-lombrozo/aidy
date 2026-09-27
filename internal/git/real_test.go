@@ -328,6 +328,116 @@ func TestRealGetDiff(t *testing.T) {
 	assert.NotEmpty(t, diff, "Expected non-empty diff")
 }
 
+func TestRealGit_DiffsAgainstTarget(t *testing.T) {
+	repo, cleanup := setup(t)
+	defer cleanup()
+	gs, err := NewGit(executor.NewReal(), repo)
+	require.NoError(t, err, "git should be createad without any problems")
+	require.NoError(t, commit(gs, repo, "base.txt", "base change"), "Error committing a base change")
+	_, err = gs.Run("checkout", "-b", "stacked")
+	require.NoError(t, err, "Error creating the 'stacked' branch")
+	require.NoError(t, commit(gs, repo, "stacked.txt", "stacked change"), "Error committing a stacked change")
+
+	diff, err := gs.Diff("main-branch")
+
+	require.NoError(t, err, "Expected no error during diff retrieval")
+	assert.Contains(t, diff, "stacked.txt", "Expected the changes made on top of the target branch")
+	assert.NotContains(t, diff, "base.txt", "Expected no changes that the target branch already has")
+}
+
+func TestRealGit_DiffsBetweenTargetAndSource(t *testing.T) {
+	repo, cleanup := setup(t)
+	defer cleanup()
+	gs, err := NewGit(executor.NewReal(), repo)
+	require.NoError(t, err, "git should be createad without any problems")
+	require.NoError(t, commit(gs, repo, "base.txt", "base change"), "Error committing a base change")
+	_, err = gs.Run("checkout", "-b", "stacked")
+	require.NoError(t, err, "Error creating the 'stacked' branch")
+	require.NoError(t, commit(gs, repo, "stacked.txt", "stacked change"), "Error committing a stacked change")
+	_, err = gs.Run("checkout", "main-branch")
+	require.NoError(t, err, "Error checking out the 'main-branch' branch")
+
+	diff, err := gs.Diff("main-branch", "stacked")
+
+	require.NoError(t, err, "Expected no error during diff retrieval")
+	assert.Contains(t, diff, "stacked.txt", "Expected the changes of the source branch")
+	assert.NotContains(t, diff, "base.txt", "Expected no changes that the target branch already has")
+}
+
+func TestRealGit_DiffsSourceAgainstDetectedBase(t *testing.T) {
+	repo, cleanup := setup(t)
+	defer cleanup()
+	gs, err := NewGit(executor.NewReal(), repo)
+	require.NoError(t, err, "git should be createad without any problems")
+	require.NoError(t, commit(gs, repo, "base.txt", "base change"), "Error committing a base change")
+	_, err = gs.Run("checkout", "-b", "stacked")
+	require.NoError(t, err, "Error creating the 'stacked' branch")
+	require.NoError(t, commit(gs, repo, "stacked.txt", "stacked change"), "Error committing a stacked change")
+	_, err = gs.Run("checkout", "main-branch")
+	require.NoError(t, err, "Error checking out the 'main-branch' branch")
+
+	diff, err := gs.Diff("", "stacked")
+
+	require.NoError(t, err, "Expected no error during diff retrieval")
+	assert.Contains(t, diff, "stacked.txt", "Expected the changes of the source branch")
+	assert.Contains(t, diff, "base.txt", "Expected the changes the source branch has over 'main'")
+}
+
+func TestRealGit_CantDiffAgainstUnknownTarget(t *testing.T) {
+	repo, cleanup := setup(t)
+	defer cleanup()
+	gs, err := NewGit(executor.NewReal(), repo)
+	require.NoError(t, err, "git should be createad without any problems")
+
+	diff, err := gs.Diff("absent-branch")
+
+	require.Error(t, err, "Expected an error when the target branch does not exist")
+	assert.Empty(t, diff, "Expected no diff for an unknown target branch")
+	assert.Contains(t, err.Error(), "branch 'absent-branch' is not found")
+}
+
+func TestRealGit_DiffsAgainstRemoteOnlyTarget(t *testing.T) {
+	repo, cleanup := setup(t)
+	defer cleanup()
+	gs, err := NewGit(executor.NewReal(), repo)
+	require.NoError(t, err, "git should be createad without any problems")
+	require.NoError(t, commit(gs, repo, "base.txt", "base change"), "Error committing a base change")
+	_, err = gs.Run("remote", "add", "origin", repo)
+	require.NoError(t, err, "Error adding the 'origin' remote")
+	_, err = gs.Run("update-ref", "refs/remotes/origin/develop", "main-branch")
+	require.NoError(t, err, "Error creating the 'origin/develop' tracking branch")
+	_, err = gs.Run("checkout", "-b", "stacked")
+	require.NoError(t, err, "Error creating the 'stacked' branch")
+	require.NoError(t, commit(gs, repo, "stacked.txt", "stacked change"), "Error committing a stacked change")
+
+	diff, err := gs.Diff("develop")
+
+	require.NoError(t, err, "Expected the target branch to be found on the remote")
+	assert.Contains(t, diff, "stacked.txt", "Expected the changes made on top of the remote target branch")
+	assert.NotContains(t, diff, "base.txt", "Expected no changes that the remote target branch already has")
+}
+
+func TestRealGit_DiffsFromForkPointOfTarget(t *testing.T) {
+	repo, cleanup := setup(t)
+	defer cleanup()
+	gs, err := NewGit(executor.NewReal(), repo)
+	require.NoError(t, err, "git should be createad without any problems")
+	_, err = gs.Run("checkout", "-b", "stacked")
+	require.NoError(t, err, "Error creating the 'stacked' branch")
+	require.NoError(t, commit(gs, repo, "stacked.txt", "stacked change"), "Error committing a stacked change")
+	_, err = gs.Run("checkout", "main-branch")
+	require.NoError(t, err, "Error checking out the 'main-branch' branch")
+	require.NoError(t, commit(gs, repo, "moved-on.txt", "target moved on"), "Error committing to the target branch")
+	_, err = gs.Run("checkout", "stacked")
+	require.NoError(t, err, "Error checking out the 'stacked' branch")
+
+	diff, err := gs.Diff("main-branch")
+
+	require.NoError(t, err, "Expected no error during diff retrieval")
+	assert.Contains(t, diff, "stacked.txt", "Expected the changes made on top of the target branch")
+	assert.NotContains(t, diff, "moved-on.txt", "Expected the changes the target branch made since the fork point to be left out")
+}
+
 func TestRealGetCurrentDiff(t *testing.T) {
 	repoDir, cleanup := setup(t)
 	defer cleanup()
@@ -577,6 +687,17 @@ func TestRealGit_Log_All(t *testing.T) {
 	assert.NotEmpty(t, logs, "Expected non-empty logs")
 	assert.Len(t, logs, 2, "Expected exactly 2 log entries")
 	assert.Contains(t, logs[0], "second commit", "Expected log to contain 'second commit'")
+}
+
+func commit(gs Git, repo string, name string, content string) error {
+	if err := os.WriteFile(filepath.Join(repo, name), []byte(content), 0644); err != nil {
+		return err
+	}
+	if err := gs.AddAll(); err != nil {
+		return err
+	}
+	_, err := gs.Run("commit", "-m", "add "+name)
+	return err
 }
 
 func setup(t *testing.T) (string, func()) {

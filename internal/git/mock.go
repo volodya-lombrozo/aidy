@@ -107,8 +107,17 @@ func (m *mock) CurrentBranch() (string, error) {
 	return "41_working_branch", m.smartError("CurrentBranch")
 }
 
-func (m *mock) Diff() (string, error) {
-	return "mock-diff", m.err
+func (m *mock) Diff(refs ...string) (string, error) {
+	var named []string
+	for _, ref := range refs {
+		if ref != "" {
+			named = append(named, ref)
+		}
+	}
+	if len(named) == 0 {
+		return "mock-diff", m.err
+	}
+	return fmt.Sprintf("mock-diff for %s", strings.Join(named, " ")), m.err
 }
 
 func (m *mock) CurrentDiff() (string, error) {

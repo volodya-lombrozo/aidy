@@ -18,8 +18,8 @@ func newMrCmd(ctx *Context) *cobra.Command {
 		},
 	}
 	command.Flags().BoolVarP(&fixes, "fixes", "f", false, "Create a MR with 'fixes' keyword")
-	command.Flags().StringVarP(&target, "target", "t", "", "Target branch for the MR")
+	command.Flags().StringVarP(&target, "target", "t", "", "Target branch for the MR, also the base of the diff (defaults to 'main' or 'master')")
 	command.Flags().BoolVar(&duplicate, "duplicate", false, "Reuse an existing MR's title and body against --target")
-	command.Flags().StringVar(&source, "source", "", "Branch whose existing MR to duplicate (defaults to the current branch)")
+	command.Flags().StringVar(&source, "source", "", "Branch the MR comes from, also the source of the diff, or whose existing MR to duplicate (defaults to the current branch)")
 	return command
 }
