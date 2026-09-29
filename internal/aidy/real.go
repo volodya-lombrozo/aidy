@@ -580,12 +580,99 @@ func (r *real) StartIssue(number string) error {
 }
 
 func branchName(number string, suggested string) string {
-	suggested = strings.ReplaceAll(suggested, " ", "-")
-	suggested = strings.ReplaceAll(suggested, "_", "-")
-	suggested = strings.ReplaceAll(suggested, "/", "-")
-	suggested = strings.ReplaceAll(suggested, "`", "")
-	return fmt.Sprintf("%s-%s", number, suggested)
+	clean := sanitizeSuggestion(suggested, number)
+	if clean == "" {
+		return number
+	}
+	return fmt.Sprintf("%s-%s", number, clean)
 }
+
+func sanitizeSuggestion(suggested string, number string) string {
+	for _, rawLine := range strings.Split(suggested, "\n") {
+		line := strings.TrimSpace(rawLine)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		lower := strings.ToLower(line)
+		if strings.HasPrefix(lower, "based on") || strings.HasPrefix(lower, "here ") ||
+			strings.HasPrefix(lower, "suggest") || strings.HasPrefix(lower, "note:") {
+			continue
+		}
+
+		if start, end := strings.Index(line, "`"), strings.LastIndex(line, "`"); start != -1 && end > start {
+			if cand := cleanCandidate(line[start+1:end], number); cand != "" {
+				return cand
+			}
+		}
+
+		if start, end := strings.Index(line, "**"), strings.LastIndex(line, "**"); start != -1 && end > start+1 {
+			if cand := cleanCandidate(line[start+2:end], number); cand != "" {
+				return cand
+			}
+		}
+
+		line = stripListPrefix(line)
+		if idx := strings.Index(line, " - "); idx != -1 {
+			line = line[:idx]
+		} else if idx := strings.Index(line, ": "); idx != -1 {
+			line = line[:idx]
+		}
+
+		if cand := cleanCandidate(line, number); cand != "" {
+			return cand
+		}
+	}
+	return ""
+}
+
+func stripListPrefix(s string) string {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "- ") || strings.HasPrefix(s, "* ") {
+		return strings.TrimSpace(s[2:])
+	}
+	if idx := strings.Index(s, ". "); idx > 0 && idx < 5 {
+		return strings.TrimSpace(s[idx+2:])
+	}
+	if idx := strings.Index(s, ") "); idx > 0 && idx < 5 {
+		return strings.TrimSpace(s[idx+2:])
+	}
+	return s
+}
+
+func cleanCandidate(s string, number string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	var b strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('-')
+		}
+	}
+	cleaned := b.String()
+	for strings.Contains(cleaned, "--") {
+		cleaned = strings.ReplaceAll(cleaned, "--", "-")
+	}
+	cleaned = strings.Trim(cleaned, "-")
+
+	if number != "" {
+		cleaned = strings.TrimPrefix(cleaned, number+"-")
+		cleaned = strings.Trim(cleaned, "-")
+		if cleaned == number {
+			return ""
+		}
+	}
+
+	if len(cleaned) > 40 {
+		cleaned = strings.TrimRight(cleaned[:40], "-")
+	}
+
+	if !strings.ContainsAny(cleaned, "abcdefghijklmnopqrstuvwxyz") {
+		return ""
+	}
+	return cleaned
+}
+
 
 func (r *real) Release(interval string, repo string, saveNotes bool) error {
 	tags, err := r.git.Tags(repo)
