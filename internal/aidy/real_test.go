@@ -1241,6 +1241,34 @@ func TestExtractIssueNumber(t *testing.T) {
 func TestBranchName(t *testing.T) {
 	assert.Equal(t, "283-fix-mr-body-flag", branchName("283", "`fix-mr-body-flag`"))
 	assert.Equal(t, "42-fix-bug", branchName("42", "fix-bug"))
+
+	// Issue #342: multi-line model reply with intro, headers, bold, and numbered list
+	multiLineReply := "Based on this issue, here are some suggested git branch names:\n\n" +
+		"## Primary Suggestions:\n" +
+		"1. **fix-checkout-branch** - fixes the checkout bug\n" +
+		"2. **sanitize-branch-name** - sanitizes the branch name\n\n" +
+		"## Alternative Options:\n" +
+		"- `checkout-fix`\n"
+	assert.Equal(t, "342-fix-checkout-branch", branchName("342", multiLineReply))
+
+	// Bullets with backticks
+	bulletReply := "Here are suggested branch names:\n- `sanitize-branch-name`"
+	assert.Equal(t, "342-sanitize-branch-name", branchName("342", bulletReply))
+
+	// Number prefix deduplication
+	assert.Equal(t, "42-fix-bug", branchName("42", "42-fix-bug"))
+	assert.Equal(t, "42-fix-bug", branchName("42", "42_fix_bug"))
+
+	// Empty and invalid fallbacks to issue number
+	assert.Equal(t, "342", branchName("342", ""))
+	assert.Equal(t, "342", branchName("342", "   \n\n  "))
+	assert.Equal(t, "342", branchName("342", "### !!! ???"))
+
+	// Capped length with special characters
+	longReply := "very-long-branch-name-that-has-many-many-characters-and-exceeds-limit"
+	result := branchName("42", longReply)
+	assert.True(t, len(result) <= 45)
+	assert.False(t, strings.HasSuffix(result, "-"))
 }
 
 func TestEscapeBackticks(t *testing.T) {

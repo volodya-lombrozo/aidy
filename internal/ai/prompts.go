@@ -155,7 +155,7 @@ The branch name should:
 - Use lowercase letters
 - Use hyphens to separate words
 - Not exceed 20 characters
-- Now exceed 2 words
+- Not exceed 2 words
 
 Reply only with the branch name — no explanations, comments, or extra formatting.
 `
