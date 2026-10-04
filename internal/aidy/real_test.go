@@ -1243,6 +1243,53 @@ func TestBranchName(t *testing.T) {
 	assert.Equal(t, "42-fix-bug", branchName("42", "fix-bug"))
 }
 
+func TestBranchName_PicksFirstMarkedSuggestionFromNoisyReply(t *testing.T) {
+	reply := "Based on this issue, here are some suggested git branch names:\n\n" +
+		"## Primary Suggestions:\n" +
+		"1. **fix-branch-sanitize** - cleans the model output\n" +
+		"2. **start-checkout** - fixes start\n\n" +
+		"## Recommended Choice\n" +
+		"Use `fix-branch-sanitize` because it is short."
+
+	assert.Equal(t, "342-fix-branch-sanitize", branchName("342", reply))
+}
+
+func TestBranchName_UsesFirstNonEmptyLine(t *testing.T) {
+	assert.Equal(t, "7-fix-login", branchName("7", "\n  Fix_Login \nexplanation follows"))
+}
+
+func TestBranchName_KeepsOnlyLowercaseLettersDigitsAndHyphens(t *testing.T) {
+	assert.Equal(t, "5-feat-add-api-v2", branchName("5", "Feat/Add: API (v2)!"))
+}
+
+func TestBranchName_DropsDuplicatedIssueNumber(t *testing.T) {
+	assert.Equal(t, "42-fix-bug", branchName("42", "42_fix_bug"))
+}
+
+func TestBranchName_CapsLength(t *testing.T) {
+	name := branchName("42", strings.Repeat("word-", 20))
+
+	assert.LessOrEqual(t, len(name), len("42-")+maxBranchSuffix)
+	assert.False(t, strings.HasSuffix(name, "-"))
+}
+
+func TestBranchName_FallsBackToIssueNumber(t *testing.T) {
+	assert.Equal(t, "342", branchName("342", ""))
+	assert.Equal(t, "342", branchName("342", "  \n\n "))
+	assert.Equal(t, "342", branchName("342", "### !!! ???"))
+	assert.Equal(t, "342", branchName("342", "`342`"))
+}
+
+func TestReal_StartIssueChecksOutSanitizedBranch(t *testing.T) {
+	shell := executor.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := raidy.StartIssue("42")
+
+	require.NoError(t, err)
+	assert.Equal(t, "git checkout -b 42-mock-branch-name", strings.TrimSpace(shell.Commands[len(shell.Commands)-1]))
+}
+
 func TestEscapeBackticks(t *testing.T) {
 	input := "This is a `test` string with `backticks`."
 	expected := "This is a \\`test\\` string with \\`backticks\\`."

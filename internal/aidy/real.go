@@ -590,17 +590,41 @@ func (r *real) StartIssue(number string) error {
 	branch := branchName(found, raw)
 	err = r.git.Checkout(branch)
 	if err != nil {
-		return fmt.Errorf("error checking out branch '%s': %v", branch, err)
+		return fmt.Errorf("error starting issue #%s: %w", found, err)
 	}
 	return nil
 }
 
+var (
+	markedBranch  = regexp.MustCompile("`([^`\n]+)`|\\*\\*([^*\n]+)\\*\\*")
+	invalidBranch = regexp.MustCompile(`[^a-z0-9]+`)
+)
+
+const maxBranchSuffix = 30
+
 func branchName(number string, suggested string) string {
-	suggested = strings.ReplaceAll(suggested, " ", "-")
-	suggested = strings.ReplaceAll(suggested, "_", "-")
-	suggested = strings.ReplaceAll(suggested, "/", "-")
-	suggested = strings.ReplaceAll(suggested, "`", "")
-	return fmt.Sprintf("%s-%s", number, suggested)
+	slug := invalidBranch.ReplaceAllString(strings.ToLower(candidate(suggested)), "-")
+	slug = strings.TrimPrefix(strings.Trim(slug, "-"), number+"-")
+	if len(slug) > maxBranchSuffix {
+		slug = slug[:maxBranchSuffix]
+	}
+	slug = strings.Trim(slug, "-")
+	if slug == "" || slug == number {
+		return number
+	}
+	return fmt.Sprintf("%s-%s", number, slug)
+}
+
+func candidate(suggested string) string {
+	if match := markedBranch.FindStringSubmatch(suggested); match != nil {
+		return match[1] + match[2]
+	}
+	for _, line := range strings.Split(suggested, "\n") {
+		if strings.TrimSpace(line) != "" {
+			return line
+		}
+	}
+	return ""
 }
 
 func (r *real) Release(interval string, repo string, saveNotes bool) error {
