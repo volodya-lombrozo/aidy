@@ -149,3 +149,40 @@ func TestOpenAI_IssueLabels(t *testing.T) {
 	require.NoError(t, err, "Expected no error when generating issue labels")
 	assert.ElementsMatch(t, labels, available, "Expected issue labels to match available labels")
 }
+
+type recorder struct {
+	prompt string
+}
+
+func (r *recorder) CreateChatCompletion(ctx context.Context, req openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {
+	r.prompt = req.Messages[0].Content
+	return openai.ChatCompletionResponse{
+		Choices: []openai.ChatCompletionChoice{
+			{Message: openai.ChatCompletionMessage{Content: "ok"}},
+		},
+	}, nil
+}
+
+func TestOpenAi_KeepsTitleRulesForLargeDiff(t *testing.T) {
+	client := &recorder{}
+	openAI := NewOpenAIWithClient(client, "test-model", 0.5, false, "en")
+
+	_, err := openAI.PrTitle("#341", strings.Repeat("a", 60_000), "issue-description", "")
+
+	require.NoError(t, err)
+	assert.Contains(t, client.prompt, "issue-description", "issue description should survive prompt trimming")
+	assert.Contains(t, client.prompt, "<type>(#341): <description>", "title format should survive prompt trimming")
+	assert.Contains(t, client.prompt, "Keep the title within 72 characters.", "title length rule should survive prompt trimming")
+}
+
+func TestOpenAi_KeepsBodyRulesForLargeDiff(t *testing.T) {
+	client := &recorder{}
+	openAI := NewOpenAIWithClient(client, "test-model", 0.5, false, "en")
+
+	_, err := openAI.PrBody(strings.Repeat("a", 60_000), "issue-description", "")
+
+	require.NoError(t, err)
+	assert.Contains(t, client.prompt, "issue-description", "issue description should survive prompt trimming")
+	assert.Contains(t, client.prompt, "Never use bullet points or numbered lists.", "no-lists rule should survive prompt trimming")
+	assert.Contains(t, client.prompt, "Not exceed 300 characters.", "body length rule should survive prompt trimming")
+}

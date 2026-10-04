@@ -14,13 +14,13 @@ type AI interface {
 	ReleaseNotes(changes string) (string, error)
 }
 
-func trimPrompt(prompt string) string {
+func trimInput(input string) string {
 	limit := 120 * 400
-	runes := []rune(prompt)
+	runes := []rune(input)
 	if len(runes) > limit {
 		return string(runes[:limit])
 	}
-	return prompt
+	return input
 }
 
 func appendSummary(prompt, summary string) string {
