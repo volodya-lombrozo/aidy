@@ -50,3 +50,13 @@ func TestMock_Token(t *testing.T) {
 	require.NoError(t, err, "Expected no error when getting token")
 	assert.Equal(t, expected, token, "Expected token to match the mock value")
 }
+
+func TestMock_Metrics(t *testing.T) {
+	conf := NewMock()
+	conf.MockMetrics = false
+
+	enabled, err := conf.Metrics()
+
+	require.NoError(t, err)
+	assert.False(t, enabled, "Expected metrics flag to match the mock value")
+}

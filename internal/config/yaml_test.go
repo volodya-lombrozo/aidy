@@ -223,3 +223,38 @@ func clean(t *testing.T, tmp string) {
 		t.Fatalf("Error removing temp directory: %v", err)
 	}
 }
+
+func TestYamlConf_EnablesMetricsByDefault(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yml")
+	require.NoError(t, os.WriteFile(path, []byte(KEYS), 0644))
+	config, err := YamlConf(path)
+	require.NoError(t, err, "Failed to load config")
+
+	enabled, err := config.Metrics()
+
+	require.NoError(t, err)
+	assert.True(t, enabled, "metrics should be enabled when not configured")
+}
+
+func TestYamlConf_DisablesMetrics(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yml")
+	require.NoError(t, os.WriteFile(path, []byte(KEYS+"metrics: false\n"), 0644))
+	config, err := YamlConf(path)
+	require.NoError(t, err, "Failed to load config")
+
+	enabled, err := config.Metrics()
+
+	require.NoError(t, err)
+	assert.False(t, enabled, "metrics should be disabled by the configuration")
+}
+
+func TestWriteYaml_OmitsUnsetMetrics(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yml")
+
+	err := WriteYaml(path, &YamlConfig{DefaultModel: "4o"})
+
+	require.NoError(t, err)
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "metrics", "unset metrics option should not be written")
+}

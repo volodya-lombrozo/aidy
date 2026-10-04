@@ -38,3 +38,7 @@ func (c *AiderConfig) Provider() (string, error) {
 func (c *AiderConfig) Token() (string, error) {
 	return c.OpenaiApiKeyYaml, nil
 }
+
+func (c *AiderConfig) Metrics() (bool, error) {
+	return true, nil
+}

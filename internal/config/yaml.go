@@ -10,6 +10,7 @@ type YamlConfig struct {
 	APIKeys      map[string]string            `yaml:"api-keys"`
 	Models       map[string]map[string]string `yaml:"models"`
 	Github       string                       `yaml:"github-api-key"`
+	Tracking     *bool                        `yaml:"metrics,omitempty"`
 }
 
 func YamlConf(filepath string) (*YamlConfig, error) {
@@ -60,4 +61,11 @@ func (c *YamlConfig) Token() (string, error) {
 		return "", err
 	}
 	return c.APIKeys[provider], nil
+}
+
+func (c *YamlConfig) Metrics() (bool, error) {
+	if c.Tracking == nil {
+		return true, nil
+	}
+	return *c.Tracking, nil
 }

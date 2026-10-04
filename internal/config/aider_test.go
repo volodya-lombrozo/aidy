@@ -84,3 +84,12 @@ func TestAider_InvalidYaml(t *testing.T) {
 
 	assert.Error(t, err, "Failed to load config")
 }
+
+func TestAider_EnablesMetrics(t *testing.T) {
+	conf := &AiderConfig{}
+
+	enabled, err := conf.Metrics()
+
+	require.NoError(t, err)
+	assert.True(t, enabled, "metrics should always be enabled for aider configuration")
+}
