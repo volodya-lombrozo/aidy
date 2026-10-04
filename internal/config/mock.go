@@ -6,6 +6,7 @@ type MockConfig struct {
 	Error        error
 	MockToken    string
 	MockProvider string
+	MockMetrics  bool
 }
 
 func NewMock() *MockConfig {
@@ -14,6 +15,7 @@ func NewMock() *MockConfig {
 		MockModel:    "gpt-4o",
 		MockToken:    "mock-token",
 		MockProvider: "openai",
+		MockMetrics:  true,
 	}
 }
 
@@ -31,4 +33,8 @@ func (m *MockConfig) Provider() (string, error) {
 
 func (m *MockConfig) Token() (string, error) {
 	return m.MockToken, m.Error
+}
+
+func (m *MockConfig) Metrics() (bool, error) {
+	return m.MockMetrics, m.Error
 }

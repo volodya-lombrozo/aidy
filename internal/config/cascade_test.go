@@ -101,3 +101,16 @@ func tmpConfFile(t *testing.T, dir, filename, content string) string {
 	require.NoError(t, err, "Failed to write temp config file")
 	return path
 }
+
+func TestCascade_ReadsMetricsFromAidyConf(t *testing.T) {
+	tmp := t.TempDir()
+	tmpConfFile(t, tmp, ".aidy.conf.yml", aidyconf+"metrics: false\n")
+	folder := func() (string, error) { return tmp, nil }
+	conf, err := NewCascadeInDirs(folder)
+	require.NoError(t, err, "Failed to create cascade config")
+
+	enabled, err := conf.Metrics()
+
+	require.NoError(t, err)
+	assert.False(t, enabled, "metrics should be disabled by .aidy.conf")
+}

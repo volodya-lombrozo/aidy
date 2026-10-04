@@ -31,6 +31,10 @@ func (c *CascadeConfig) GithubKey() (string, error) {
 	return c.original.GithubKey()
 }
 
+func (c *CascadeConfig) Metrics() (bool, error) {
+	return c.original.Metrics()
+}
+
 func (c *CascadeConfig) Model() (string, error) {
 	return c.original.Model()
 }

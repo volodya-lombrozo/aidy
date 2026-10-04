@@ -11,6 +11,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/cmd"
 	"github.com/volodya-lombrozo/aidy/internal/executor"
 	"github.com/volodya-lombrozo/aidy/internal/git"
+	"github.com/volodya-lombrozo/aidy/internal/metrics"
 )
 
 const conf = `default-model: 4o-mini
@@ -47,7 +48,7 @@ func TestAidyCommit_WithoutRemote(t *testing.T) {
 	require.NoError(t, err, "git commit should work")
 	err = os.WriteFile("second-file.txt", []byte("content"), 0644)
 	require.NoError(t, err, "writing file should work")
-	command := cmd.NewRootCmd(cmd.Real)
+	command := cmd.NewRootCmd(cmd.Real, metrics.NewMock())
 	command.SetArgs([]string{"ci", "-n"})
 	var out, errb bytes.Buffer
 	command.SetOut(&out)

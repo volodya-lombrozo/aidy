@@ -224,6 +224,29 @@ If a generated command fails (network outage, expired token, etc.), you don't ha
 aidy last
 ```
 
+### Stats
+
+Every run is recorded locally in `~/.aidy/metrics.json` with the command name, a timestamp, the outcome, and the duration. The file never leaves your machine. See which commands you use and which fail often:
+
+```bash
+aidy stats
+```
+
+Example output:
+
+```
+command        runs   failed   last used
+commit         412    3        2026-09-29
+pull-request   97     11       2026-09-28
+squash         0      -        never
+```
+
+To stop recording, add the following line to `.aidy.conf.yml`:
+
+```yaml
+metrics: false
+```
+
 To see all available commands, run:
 
 ```bash

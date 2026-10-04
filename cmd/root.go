@@ -1,8 +1,17 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/spf13/cobra"
 	"github.com/volodya-lombrozo/aidy/internal/aidy"
+	"github.com/volodya-lombrozo/aidy/internal/config"
+	"github.com/volodya-lombrozo/aidy/internal/metrics"
 )
 
 type Context struct {
@@ -10,14 +19,68 @@ type Context struct {
 }
 
 func Execute() error {
-	return NewRootCmd(Real).Execute()
+	usage := Usage()
+	return Tracked(NewRootCmd(Real, usage), usage)
+}
+
+func Tracked(root *cobra.Command, usage metrics.Metrics) error {
+	start := time.Now()
+	executed, err := root.ExecuteC()
+	if tracked(executed) {
+		if rerr := usage.Record(metrics.NewRun(executed.Name(), start, err)); rerr != nil {
+			_, _ = fmt.Fprintf(root.ErrOrStderr(), "failed to record usage metrics: %v\n", rerr)
+		}
+	}
+	return err
+}
+
+func Usage() metrics.Metrics {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return metrics.NewDisabled(metrics.NewMock())
+	}
+	file := metrics.NewFile(filepath.Join(home, ".aidy", "metrics.json"))
+	conf, err := config.NewCascadeInDirs(os.Getwd, gitRoot, os.UserHomeDir)
+	if err != nil {
+		return file
+	}
+	if enabled, err := conf.Metrics(); err == nil && !enabled {
+		return metrics.NewDisabled(file)
+	}
+	return file
+}
+
+func gitRoot() (string, error) {
+	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func trackable(root *cobra.Command) []string {
+	var names []string
+	for _, command := range root.Commands() {
+		if tracked(command) {
+			names = append(names, command.Name())
+		}
+	}
+	return names
+}
+
+func tracked(command *cobra.Command) bool {
+	return command != nil &&
+		command.HasParent() &&
+		command.Parent() == command.Root() &&
+		command.IsAvailableCommand() &&
+		command.Name() != "completion"
 }
 
 func Real(summary, aider, ailess, silent, debug bool, language string) aidy.Aidy {
 	return aidy.NewAidy(summary, aider, ailess, silent, debug, language)
 }
 
-func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *cobra.Command {
+func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy, usage metrics.Metrics) *cobra.Command {
 	var ctx Context
 	var ailess bool
 	var aider bool
@@ -58,6 +121,7 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 		newDiffCmd(&ctx),
 		newLastCmd(&ctx),
 		newVersionCmd(),
+		newStatsCmd(usage),
 	)
 	return root
 }
