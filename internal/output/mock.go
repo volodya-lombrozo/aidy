@@ -63,3 +63,20 @@ func (m *Mock) Last() string {
 	}
 	return m.captured[size-1]
 }
+
+func (m *Mock) Replay(command string) error {
+	m.captured = append(m.captured, command)
+	return nil
+}
+
+type MockMemory struct {
+	Commands []string
+}
+
+func NewMockMemory() *MockMemory {
+	return &MockMemory{}
+}
+
+func (m *MockMemory) WithLast(command string) {
+	m.Commands = append(m.Commands, command)
+}

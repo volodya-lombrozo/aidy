@@ -70,6 +70,11 @@ func (m *Mock) StartIssue(number string) error {
 	return nil
 }
 
+func (m *Mock) Last() error {
+	m.logs = append(m.logs, "Last called")
+	return nil
+}
+
 func (m *Mock) Logs() []string {
 	return m.logs
 }
@@ -98,3 +103,4 @@ func (f *FailingMock) Append()                        {}
 func (f *FailingMock) Clean()                         {}
 func (f *FailingMock) Diff() error                    { return errors.New("error") }
 func (f *FailingMock) StartIssue(number string) error { return errors.New("error") }
+func (f *FailingMock) Last() error                    { return errors.New("error") }
