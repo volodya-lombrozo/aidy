@@ -29,6 +29,8 @@ type real struct {
 	gitlab       gitlab.Gitlab
 	ai           ai.AI
 	reviewer     output.Output
+	replayer     output.Replayer
+	last         cache.LastCommand
 	config       config.Config
 	cache        cache.AidyCache
 	printer      output.Output
@@ -52,7 +54,6 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool, lan
 	InitLogger(silent, debug)
 	aidy.logger = log.Default()
 	shell := executor.NewReal()
-	aidy.reviewer = output.NewReviewer(shell)
 	aidy.printer = output.NewPrinter()
 	aidy.textreviewer = output.NewTextReviewer(shell)
 	var err error
@@ -64,6 +65,10 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool, lan
 		aidy.logger.Error("git is not installed or not found: %v", err)
 		os.Exit(1)
 	}
+	aidy.last = cache.NewLastCommand(aidy.git)
+	reviewer := output.NewReviewer(shell, aidy.last)
+	aidy.reviewer = reviewer
+	aidy.replayer = reviewer
 	if aidy.cache, err = NewCache(aidy.git, ".aidy/cache.js"); err != nil {
 		aidy.logger.Error("failed to initialize cache: %v", err)
 		os.Exit(1)
@@ -547,6 +552,17 @@ func (r *real) Clean() {
 		os.Exit(1)
 	}
 	r.logger.Info("'.aidy' directory was cleared")
+}
+
+func (r *real) Last() error {
+	command, err := r.last.Last()
+	if err != nil {
+		return err
+	}
+	if command == "" {
+		return errors.New("there is no previous command to repeat yet")
+	}
+	return r.replayer.Replay(command)
 }
 
 func (r *real) StartIssue(number string) error {

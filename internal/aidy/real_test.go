@@ -1408,3 +1408,26 @@ func TestInitLogger_DefaultMode(t *testing.T) {
 	assert.NotNil(t, logger, "Expected logger to be initialized")
 	assert.IsType(t, &log.Short{}, logger, "Expected logger to be of type Short")
 }
+
+func TestReal_Last_ReplaysSavedCommand(t *testing.T) {
+	last := cache.NewMockLastCommand()
+	last.WithLast("gh pr create --title \"edited\"")
+	out := output.NewMock()
+	raidy := &real{last: last, replayer: out}
+
+	err := raidy.Last()
+
+	require.NoError(t, err, "expected no error when repeating the last command")
+	assert.Equal(t, "gh pr create --title \"edited\"", out.Last(), "expected the saved command to be replayed")
+}
+
+func TestReal_Last_FailsWithoutSavedCommand(t *testing.T) {
+	out := output.NewMock()
+	raidy := &real{last: cache.NewMockLastCommand(), replayer: out}
+
+	err := raidy.Last()
+
+	require.Error(t, err, "expected an error when there is nothing to repeat")
+	assert.Contains(t, err.Error(), "no previous command")
+	assert.Empty(t, out.Captured(), "expected nothing to be replayed")
+}

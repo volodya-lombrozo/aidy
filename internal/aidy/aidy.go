@@ -13,4 +13,5 @@ type Aidy interface {
 	Clean()
 	Diff() error
 	StartIssue(number string) error
+	Last() error
 }

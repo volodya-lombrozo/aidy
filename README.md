@@ -216,6 +216,14 @@ Updates version from `0.1.0` to `1.0.0`.
 git push --tags
 ```
 
+### Last
+
+If a generated command fails (network outage, expired token, etc.), you don't have to generate and edit it again. Repeat the last command, including your edits:
+
+```bash
+aidy last
+```
+
 To see all available commands, run:
 
 ```bash

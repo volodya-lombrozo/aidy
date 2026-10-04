@@ -55,6 +55,7 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy) *co
 		newCleanCmd(&ctx),
 		newStartCmd(&ctx),
 		newDiffCmd(&ctx),
+		newLastCmd(&ctx),
 		newVersionCmd(),
 	)
 	return root
