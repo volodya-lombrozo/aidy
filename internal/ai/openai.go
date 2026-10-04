@@ -35,17 +35,17 @@ func NewOpenAIWithClient(client openClient, model string, temperature float32, s
 }
 
 func (o *OpenAI) ReleaseNotes(changes string) (string, error) {
-	prompt := fmt.Sprintf(ReleaseNotes, changes)
+	prompt := fmt.Sprintf(ReleaseNotes, trimInput(changes))
 	return o.send(prompt, "")
 }
 
 func (o *OpenAI) PrTitle(number, diff, issue, summary string) (string, error) {
-	prompt := fmt.Sprintf(PrTitle, diff, issue, number, number)
+	prompt := fmt.Sprintf(PrTitle, trimInput(diff), issue, number, number)
 	return o.send(prompt, summary)
 }
 
 func (o *OpenAI) PrBody(diff, issue, summary string) (string, error) {
-	prompt := fmt.Sprintf(PrBody, diff, issue)
+	prompt := fmt.Sprintf(PrBody, trimInput(diff), issue)
 	return o.send(prompt, summary)
 }
 
@@ -60,7 +60,7 @@ func (o *OpenAI) IssueBody(input string, summary string) (string, error) {
 }
 
 func (o *OpenAI) CommitMessage(number, diff, descr string) (string, error) {
-	prompt := appendIssue(fmt.Sprintf(CommitMsg, diff, number, number), descr)
+	prompt := appendIssue(fmt.Sprintf(CommitMsg, trimInput(diff), number, number), descr)
 	return o.send(prompt, "")
 }
 
@@ -81,7 +81,7 @@ func (o *OpenAI) IssueLabels(issue string, available []string) ([]string, error)
 }
 
 func (o *OpenAI) Summary(readme string) (string, error) {
-	prompt := fmt.Sprintf(Summary, readme)
+	prompt := fmt.Sprintf(Summary, trimInput(readme))
 	return o.send(prompt, "")
 }
 
@@ -100,7 +100,6 @@ func (o *OpenAI) send(prompt, summary string) (string, error) {
 		content = appendSummary(content, summary)
 	}
 	content = appendLanguage(content, o.language)
-	content = trimPrompt(content)
 	req := openai.ChatCompletionRequest{
 		Model: o.model,
 		Messages: []openai.ChatCompletionMessage{

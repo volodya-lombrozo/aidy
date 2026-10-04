@@ -52,17 +52,17 @@ func NewDeepSeek(apiKey string, summary bool, language string) AI {
 }
 
 func (d *DeepSeek) ReleaseNotes(changes string) (string, error) {
-	prompt := fmt.Sprintf(ReleaseNotes, changes)
+	prompt := fmt.Sprintf(ReleaseNotes, trimInput(changes))
 	return d.send("You are a helpful assistant generating GitHub release notes.", prompt, "")
 }
 
 func (d *DeepSeek) PrTitle(number, diff, issue, summary string) (string, error) {
-	prompt := fmt.Sprintf(PrTitle, diff, issue, number, number)
+	prompt := fmt.Sprintf(PrTitle, trimInput(diff), issue, number, number)
 	return d.send("You are a helpful assistant generating Git commit titles.", prompt, summary)
 }
 
 func (d *DeepSeek) PrBody(diff string, issue string, summary string) (string, error) {
-	prompt := fmt.Sprintf(PrBody, diff, issue)
+	prompt := fmt.Sprintf(PrBody, trimInput(diff), issue)
 	return d.send("You are a helpful assistant generating Git commit messages.", prompt, summary)
 }
 
@@ -93,13 +93,13 @@ func (d *DeepSeek) IssueLabels(issue string, available []string) ([]string, erro
 }
 
 func (d *DeepSeek) CommitMessage(number, diff, descr string) (string, error) {
-	prompt := appendIssue(fmt.Sprintf(CommitMsg, diff, number, number), descr)
+	prompt := appendIssue(fmt.Sprintf(CommitMsg, trimInput(diff), number, number), descr)
 	d.log.Debug("deepseek prompt: %q", prompt)
 	return d.send("You are a helpful assistant writing commit messages.", prompt, "")
 }
 
 func (d *DeepSeek) Summary(readme string) (string, error) {
-	prompt := fmt.Sprintf(Summary, readme)
+	prompt := fmt.Sprintf(Summary, trimInput(readme))
 	return d.send("You are a helpful assistant writing project summaries.", prompt, "")
 }
 
@@ -114,7 +114,6 @@ func (d *DeepSeek) send(system string, user string, summary string) (string, err
 		content = appendSummary(content, summary)
 	}
 	content = appendLanguage(content, d.language)
-	content = trimPrompt(content)
 	body := chatRequest{
 		Model: d.model,
 		Messages: []chatMessage{

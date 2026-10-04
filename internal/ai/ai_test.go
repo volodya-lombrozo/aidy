@@ -48,18 +48,18 @@ func TestAppendSummary(t *testing.T) {
 	}
 }
 
-func TestTrimPrompt(t *testing.T) {
+func TestTrimInput(t *testing.T) {
 	prompt := largePrompt()
 
-	trimmed := trimPrompt(prompt)
+	trimmed := trimInput(prompt)
 
 	assert.Equal(t, 48_000, len(trimmed))
 }
 
-func TestDoesNotTrimPrompt(t *testing.T) {
+func TestDoesNotTrimInput(t *testing.T) {
 	prompt := "Simple Prompt"
 
-	trimmed := trimPrompt(prompt)
+	trimmed := trimInput(prompt)
 
 	assert.Equal(t, "Simple Prompt", trimmed)
 }

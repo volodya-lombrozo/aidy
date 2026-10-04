@@ -55,17 +55,17 @@ func NewAnthropic(token, model string, summary bool, language string) AI {
 }
 
 func (a *Anthropic) ReleaseNotes(changes string) (string, error) {
-	prompt := fmt.Sprintf(ReleaseNotes, changes)
+	prompt := fmt.Sprintf(ReleaseNotes, trimInput(changes))
 	return a.send("You are a helpful assistant generating GitHub release notes.", prompt, "")
 }
 
 func (a *Anthropic) PrTitle(number, diff, issue, summary string) (string, error) {
-	prompt := fmt.Sprintf(PrTitle, diff, issue, number, number)
+	prompt := fmt.Sprintf(PrTitle, trimInput(diff), issue, number, number)
 	return a.send("You are a helpful assistant generating Git commit titles.", prompt, summary)
 }
 
 func (a *Anthropic) PrBody(diff string, issue string, summary string) (string, error) {
-	prompt := fmt.Sprintf(PrBody, diff, issue)
+	prompt := fmt.Sprintf(PrBody, trimInput(diff), issue)
 	return a.send("You are a helpful assistant generating Git commit messages.", prompt, summary)
 }
 
@@ -96,13 +96,13 @@ func (a *Anthropic) IssueLabels(issue string, available []string) ([]string, err
 }
 
 func (a *Anthropic) CommitMessage(number, diff, descr string) (string, error) {
-	prompt := appendIssue(fmt.Sprintf(CommitMsg, diff, number, number), descr)
+	prompt := appendIssue(fmt.Sprintf(CommitMsg, trimInput(diff), number, number), descr)
 	a.log.Debug("anthropic prompt: %q", prompt)
 	return a.send("You are a helpful assistant writing commit messages.", prompt, "")
 }
 
 func (a *Anthropic) Summary(readme string) (string, error) {
-	prompt := fmt.Sprintf(Summary, readme)
+	prompt := fmt.Sprintf(Summary, trimInput(readme))
 	return a.send("You are a helpful assistant writing project summaries.", prompt, "")
 }
 
@@ -117,7 +117,6 @@ func (a *Anthropic) send(system, user, summary string) (string, error) {
 		content = appendSummary(content, summary)
 	}
 	content = appendLanguage(content, a.language)
-	content = trimPrompt(content)
 	body := anthropicRequest{
 		Model:     a.model,
 		MaxTokens: 1024,
