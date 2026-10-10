@@ -7,6 +7,7 @@ type MockConfig struct {
 	MockToken    string
 	MockProvider string
 	MockMetrics  bool
+	MockJira     Jira
 }
 
 func NewMock() *MockConfig {
@@ -37,4 +38,8 @@ func (m *MockConfig) Token() (string, error) {
 
 func (m *MockConfig) Metrics() (bool, error) {
 	return m.MockMetrics, m.Error
+}
+
+func (m *MockConfig) Jira() (Jira, error) {
+	return m.MockJira, m.Error
 }

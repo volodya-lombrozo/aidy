@@ -93,3 +93,10 @@ func TestAider_EnablesMetrics(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, enabled, "metrics should always be enabled for aider configuration")
 }
+
+func TestAider_LeavesJiraUnconfigured(t *testing.T) {
+	access, err := (&AiderConfig{}).Jira()
+
+	require.NoError(t, err)
+	assert.False(t, access.Configured(), "aider configuration has no jira settings")
+}

@@ -35,6 +35,10 @@ func (c *CascadeConfig) Metrics() (bool, error) {
 	return c.original.Metrics()
 }
 
+func (c *CascadeConfig) Jira() (Jira, error) {
+	return c.original.Jira()
+}
+
 func (c *CascadeConfig) Model() (string, error) {
 	return c.original.Model()
 }

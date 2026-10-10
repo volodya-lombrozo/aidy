@@ -182,6 +182,33 @@ gh issue create
   --repo volodya-lombrozo/aidy
 ```
 
+### Start
+
+Create a branch for an issue:
+
+```bash
+aidy start 42
+```
+
+For a GitHub issue, the branch name is generated from the issue description, e.g. `42-fix-login-error`.
+
+You can also pass a Jira issue key or link:
+
+```bash
+aidy start https://company.atlassian.net/browse/PROJ-123
+```
+
+The branch prefix depends on the Jira issue type: `Bug` becomes `fix/PROJ-123`, `Test` becomes `test/PROJ-123`, and any other type becomes `feat/PROJ-123`. To let `aidy` read issue types, add a Jira connection to `.aidy.conf.yml`:
+
+```yaml
+jira:
+  url: https://company.atlassian.net
+  email: <your-email>
+  token: <jira-api-token>
+```
+
+Leave out `email` to use a personal access token (Jira Data Center). Without a Jira connection, `aidy` always uses `feat/PROJ-123`.
+
 ### Release
 
 `aidy` also helps generate releases. It creates a new tag with release notes (AI-generated) and bumps the version number according to the [SemVer](https://semver.org/) specification.

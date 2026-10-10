@@ -17,6 +17,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/git"
 	"github.com/volodya-lombrozo/aidy/internal/github"
 	"github.com/volodya-lombrozo/aidy/internal/gitlab"
+	"github.com/volodya-lombrozo/aidy/internal/jira"
 	"github.com/volodya-lombrozo/aidy/internal/log"
 	"github.com/volodya-lombrozo/aidy/internal/output"
 )
@@ -1477,4 +1478,96 @@ func TestReal_Last_FailsWithoutSavedCommand(t *testing.T) {
 	require.Error(t, err, "expected an error when there is nothing to repeat")
 	assert.Contains(t, err.Error(), "no previous command")
 	assert.Empty(t, out.Captured(), "expected nothing to be replayed")
+}
+
+func TestReal_StartIssueChecksOutJiraBranchByType(t *testing.T) {
+	cases := map[string]string{
+		"Bug":   "fix/PROJ-123",
+		"Test":  "test/PROJ-123",
+		"Story": "feat/PROJ-123",
+		"Task":  "feat/PROJ-123",
+	}
+	for kind, expected := range cases {
+		t.Run(kind, func(t *testing.T) {
+			shell := executor.NewMock()
+			raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewFailedMockAI(), github: github.NewMock(), jira: jira.NewMock(kind), cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+			err := raidy.StartIssue("PROJ-123")
+
+			require.NoError(t, err)
+			assert.Equal(t, []string{"git checkout -b " + expected}, trimmed(shell.Commands))
+		})
+	}
+}
+
+func TestReal_StartIssueAcceptsJiraLink(t *testing.T) {
+	shell := executor.NewMock()
+	gh := github.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewFailedMockAI(), github: gh, jira: jira.NewMock("Bug"), cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.StartIssue("https://company.atlassian.net/browse/PROJ-123")
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"git checkout -b fix/PROJ-123"}, trimmed(shell.Commands))
+	assert.Zero(t, gh.Descriptions, "github should not be asked about jira issues")
+}
+
+func TestReal_StartIssueUsesFeatPrefixWithoutJiraConnection(t *testing.T) {
+	shell := executor.NewMock()
+	logger := log.NewMock()
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewFailedMockAI(), github: github.NewMock(), jira: jira.NewOffline(), cache: cache.NewMockAidyCache(), logger: logger}
+
+	err := raidy.StartIssue("PROJ-123")
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"git checkout -b feat/PROJ-123"}, trimmed(shell.Commands))
+	assert.Contains(t, strings.Join(logger.Messages, "\n"), "jira connection is not configured")
+}
+
+func TestReal_StartIssueUsesFeatPrefixWhenJiraFails(t *testing.T) {
+	shell := executor.NewMock()
+	broken := jira.NewMock("Bug")
+	broken.Error = fmt.Errorf("unauthorized")
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewFailedMockAI(), github: github.NewMock(), jira: broken, cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.StartIssue("PROJ-123")
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"git checkout -b feat/PROJ-123"}, trimmed(shell.Commands))
+}
+
+func TestReal_StartIssueJiraCheckoutError(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Err = fmt.Errorf("error checking out branch")
+	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), jira: jira.NewMock("Bug"), cache: cache.NewMockAidyCache(), logger: log.NewMock()}
+
+	err := raidy.StartIssue("PROJ-123")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error starting issue PROJ-123")
+}
+
+func TestNewJira_IsOfflineWithoutSettings(t *testing.T) {
+	client, err := NewJira(config.NewMock())
+
+	require.NoError(t, err)
+	_, err = client.IssueType("PROJ-1")
+	assert.ErrorContains(t, err, "jira connection is not configured")
+}
+
+func TestNewJira_FailsOnConfigError(t *testing.T) {
+	conf := config.NewMock()
+	conf.Error = fmt.Errorf("broken config")
+
+	_, err := NewJira(conf)
+
+	assert.ErrorContains(t, err, "broken config")
+}
+
+func trimmed(commands []string) []string {
+	res := make([]string, 0, len(commands))
+	for _, command := range commands {
+		res = append(res, strings.TrimSpace(command))
+	}
+	return res
 }
