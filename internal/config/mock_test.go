@@ -60,3 +60,13 @@ func TestMock_Metrics(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, enabled, "Expected metrics flag to match the mock value")
 }
+
+func TestMock_Jira(t *testing.T) {
+	mock := NewMock()
+	mock.MockJira = Jira{URL: "https://company.atlassian.net", Token: "jira-token"}
+
+	access, err := mock.Jira()
+
+	require.NoError(t, err)
+	assert.Equal(t, mock.MockJira, access)
+}

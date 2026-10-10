@@ -18,6 +18,7 @@ import (
 	"github.com/volodya-lombrozo/aidy/internal/git"
 	"github.com/volodya-lombrozo/aidy/internal/github"
 	"github.com/volodya-lombrozo/aidy/internal/gitlab"
+	"github.com/volodya-lombrozo/aidy/internal/jira"
 	"github.com/volodya-lombrozo/aidy/internal/log"
 	"github.com/volodya-lombrozo/aidy/internal/output"
 	"golang.org/x/mod/semver"
@@ -27,6 +28,7 @@ type real struct {
 	git          git.Git
 	github       github.Github
 	gitlab       gitlab.Gitlab
+	jira         jira.Jira
 	ai           ai.AI
 	reviewer     output.Output
 	replayer     output.Replayer
@@ -86,6 +88,10 @@ func NewAidy(summary bool, aider bool, ailess bool, silent bool, debug bool, lan
 		os.Exit(1)
 	}
 	aidy.gitlab = gitlab.NewGitlab(shell)
+	if aidy.jira, err = NewJira(aidy.config); err != nil {
+		aidy.logger.Error("failed to initialize Jira client: %v", err)
+		os.Exit(1)
+	}
 	if err = aidy.InitSummary(summary, "README.md"); err != nil {
 		aidy.logger.Warn("failed to initialize project summary: %v", err)
 	}
@@ -566,11 +572,14 @@ func (r *real) Last() error {
 }
 
 func (r *real) StartIssue(number string) error {
-	if err := r.SetTarget(); err != nil {
-		r.logger.Warn("failed to set target repository: %v", err)
-	}
 	if number == "" {
 		return fmt.Errorf("error: no issue number provided")
+	}
+	if key := jiraKey.FindString(number); key != "" {
+		return r.startJiraIssue(key)
+	}
+	if err := r.SetTarget(); err != nil {
+		r.logger.Warn("failed to set target repository: %v", err)
 	}
 	re := regexp.MustCompile(`\d+`)
 	found := re.FindString(number)
@@ -593,6 +602,33 @@ func (r *real) StartIssue(number string) error {
 		return fmt.Errorf("error starting issue #%s: %w", found, err)
 	}
 	return nil
+}
+
+var jiraKey = regexp.MustCompile(`[A-Z][A-Z0-9]+-\d+`)
+
+func (r *real) startJiraIssue(key string) error {
+	r.logger.Info("retrieving the type of jira issue %s...", key)
+	kind, err := r.jira.IssueType(key)
+	if err != nil {
+		r.logger.Warn("can't retrieve the type of jira issue %s, using the default branch prefix: %v", key, err)
+		kind = ""
+	}
+	branch := fmt.Sprintf("%s/%s", branchPrefix(kind), key)
+	if err = r.git.Checkout(branch); err != nil {
+		return fmt.Errorf("error starting issue %s: %w", key, err)
+	}
+	return nil
+}
+
+func branchPrefix(kind string) string {
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "bug":
+		return "fix"
+	case "test":
+		return "test"
+	default:
+		return "feat"
+	}
 }
 
 var (
@@ -895,6 +931,17 @@ func NewGitHub(git git.Git, conf config.Config, cache cache.AidyCache) (github.G
 		return nil, fmt.Errorf("error getting github token from configuration: %v", err)
 	}
 	return github.NewGithub("https://api.github.com", git, token, cache), nil
+}
+
+func NewJira(conf config.Config) (jira.Jira, error) {
+	access, err := conf.Jira()
+	if err != nil {
+		return nil, fmt.Errorf("error getting jira settings from configuration: %v", err)
+	}
+	if !access.Configured() {
+		return jira.NewOffline(), nil
+	}
+	return jira.NewJira(access.URL, access.Email, access.Token), nil
 }
 
 func NewConf(aider bool, git git.Git) (config.Config, error) {

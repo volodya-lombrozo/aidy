@@ -11,6 +11,7 @@ type YamlConfig struct {
 	Models       map[string]map[string]string `yaml:"models"`
 	Github       string                       `yaml:"github-api-key"`
 	Tracking     *bool                        `yaml:"metrics,omitempty"`
+	Atlassian    *Jira                        `yaml:"jira,omitempty"`
 }
 
 func YamlConf(filepath string) (*YamlConfig, error) {
@@ -68,4 +69,11 @@ func (c *YamlConfig) Metrics() (bool, error) {
 		return true, nil
 	}
 	return *c.Tracking, nil
+}
+
+func (c *YamlConfig) Jira() (Jira, error) {
+	if c.Atlassian == nil {
+		return Jira{}, nil
+	}
+	return *c.Atlassian, nil
 }

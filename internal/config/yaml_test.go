@@ -258,3 +258,46 @@ func TestWriteYaml_OmitsUnsetMetrics(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotContains(t, string(data), "metrics", "unset metrics option should not be written")
 }
+
+func TestYamlConf_ReadsJira(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yml")
+	jira := "jira:\n  url: https://company.atlassian.net\n  email: me@example.com\n  token: jira-token\n"
+	require.NoError(t, os.WriteFile(path, []byte(KEYS+jira), 0644))
+	config, err := YamlConf(path)
+	require.NoError(t, err, "Failed to load config")
+
+	access, err := config.Jira()
+
+	require.NoError(t, err)
+	assert.Equal(t, Jira{URL: "https://company.atlassian.net", Email: "me@example.com", Token: "jira-token"}, access)
+	assert.True(t, access.Configured(), "jira should be configured")
+}
+
+func TestYamlConf_LeavesJiraUnconfiguredByDefault(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yml")
+	require.NoError(t, os.WriteFile(path, []byte(KEYS), 0644))
+	config, err := YamlConf(path)
+	require.NoError(t, err, "Failed to load config")
+
+	access, err := config.Jira()
+
+	require.NoError(t, err)
+	assert.False(t, access.Configured(), "jira should not be configured when missing")
+}
+
+func TestJira_RequiresUrlAndToken(t *testing.T) {
+	assert.False(t, Jira{URL: "https://company.atlassian.net"}.Configured())
+	assert.False(t, Jira{Token: "jira-token"}.Configured())
+	assert.True(t, Jira{URL: "https://company.atlassian.net", Token: "jira-token"}.Configured())
+}
+
+func TestWriteYaml_OmitsUnsetJira(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yml")
+
+	err := WriteYaml(path, &YamlConfig{DefaultModel: "4o"})
+
+	require.NoError(t, err)
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "jira", "unset jira option should not be written")
+}

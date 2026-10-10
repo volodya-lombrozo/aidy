@@ -114,3 +114,16 @@ func TestCascade_ReadsMetricsFromAidyConf(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, enabled, "metrics should be disabled by .aidy.conf")
 }
+
+func TestCascade_ReadsJiraFromAidyConf(t *testing.T) {
+	tmp := t.TempDir()
+	tmpConfFile(t, tmp, ".aidy.conf.yml", aidyconf+"jira:\n  url: https://company.atlassian.net\n  token: jira-token\n")
+	folder := func() (string, error) { return tmp, nil }
+	conf, err := NewCascadeInDirs(folder)
+	require.NoError(t, err, "Failed to create cascade config")
+
+	access, err := conf.Jira()
+
+	require.NoError(t, err)
+	assert.Equal(t, Jira{URL: "https://company.atlassian.net", Token: "jira-token"}, access)
+}

@@ -42,3 +42,7 @@ func (c *AiderConfig) Token() (string, error) {
 func (c *AiderConfig) Metrics() (bool, error) {
 	return true, nil
 }
+
+func (c *AiderConfig) Jira() (Jira, error) {
+	return Jira{}, nil
+}
