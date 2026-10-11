@@ -92,7 +92,7 @@ func NewRootCmd(create func(bool, bool, bool, bool, bool, string) aidy.Aidy, usa
 		Use:     "aidy",
 		Short:   "aidy - ai-powered github cli helper",
 		Long:    "Aidy assists you with generating commit messages, pull requests, issues, and releases",
-		Version: Version,
+		Version: currentVersion(),
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			cmd.Root().SilenceUsage = true
 			cmd.Root().SilenceErrors = true
