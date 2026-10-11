@@ -18,19 +18,19 @@ func NewShort(original Logger) Logger {
 }
 
 func (s *Short) Debug(msg string, args ...any) {
-	s.Original.Debug(s.logShortf(msg, args...))
+	s.Original.Debug("%s", s.logShortf(msg, args...))
 }
 
 func (s *Short) Info(msg string, args ...any) {
-	s.Original.Info(s.logShortf(msg, args...))
+	s.Original.Info("%s", s.logShortf(msg, args...))
 }
 
 func (s *Short) Warn(msg string, args ...any) {
-	s.Original.Warn(s.logShortf(msg, args...))
+	s.Original.Warn("%s", s.logShortf(msg, args...))
 }
 
 func (s *Short) Error(msg string, args ...any) {
-	s.Original.Error(s.logShortf(msg, args...))
+	s.Original.Error("%s", s.logShortf(msg, args...))
 }
 
 func (s *Short) logShortf(format string, args ...any) string {

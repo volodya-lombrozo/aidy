@@ -39,33 +39,33 @@ func (report *report) pretty() string {
 		return report.Files[i].Name < report.Files[j].Name
 	})
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Total lines changed: %d\n", report.TotalLines))
+	fmt.Fprintf(&sb, "Total lines changed: %d\n", report.TotalLines)
 	if report.large() {
 		for _, file := range report.Files {
 			sb.WriteString("\n\n")
-			sb.WriteString(fmt.Sprintf("File: %s", file.Name))
+			fmt.Fprintf(&sb, "File: %s", file.Name)
 			status := file.Status
 			switch status {
 			case "A":
 				sb.WriteString(" was added")
-				sb.WriteString(fmt.Sprintf("\nLines changed: %d\n", file.LineChanges))
+				fmt.Fprintf(&sb, "\nLines changed: %d\n", file.LineChanges)
 				sb.WriteString("Diff block:\n")
 				sb.WriteString(file.DiffBlock)
 			case "D":
 				sb.WriteString(" was removed")
 			case "M":
 				sb.WriteString(" was modified")
-				sb.WriteString(fmt.Sprintf("\nLines changed: %d\n", file.LineChanges))
+				fmt.Fprintf(&sb, "\nLines changed: %d\n", file.LineChanges)
 				sb.WriteString("Diff block:\n")
 				sb.WriteString(file.DiffBlock)
 			default:
-				sb.WriteString(fmt.Sprintf(" has '%s' status", status))
+				fmt.Fprintf(&sb, " has '%s' status", status)
 			}
 		}
 	} else {
 		for _, file := range report.Files {
 			sb.WriteString("\n\n")
-			sb.WriteString(fmt.Sprintf("File: %s", file.Name))
+			fmt.Fprintf(&sb, "File: %s", file.Name)
 			status := file.Status
 			switch status {
 			case "A":
@@ -75,9 +75,9 @@ func (report *report) pretty() string {
 			case "M":
 				sb.WriteString(" was modified")
 			default:
-				sb.WriteString(fmt.Sprintf(" has '%s' status", status))
+				fmt.Fprintf(&sb, " has '%s' status", status)
 			}
-			sb.WriteString(fmt.Sprintf("\nLines changed: %d\n", file.LineChanges))
+			fmt.Fprintf(&sb, "\nLines changed: %d\n", file.LineChanges)
 			sb.WriteString("Diff block:\n")
 			sb.WriteString(file.DiffBlock)
 		}

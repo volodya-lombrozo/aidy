@@ -13,7 +13,7 @@ Download the latest stable version from the [releases page](https://github.com/v
 
 ### Using Go
 
-If you have Go 1.24.1 or later installed, you can run:
+If you have Go 1.27 or later installed, you can run:
 
 ```bash
 go install github.com/volodya-lombrozo/aidy@latest
@@ -27,7 +27,7 @@ go install github.com/volodya-lombrozo/aidy@v0.1.0
 
 ### From Sources 
 
-You need to have Go 1.24.1 or later installed on your system.
+You need to have Go 1.27 or later installed on your system.
 
 1. Clone the repository:
 
