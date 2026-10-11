@@ -432,6 +432,27 @@ func TestReal_Heal(t *testing.T) {
 	}
 }
 
+func TestWithIssueRef(t *testing.T) {
+	tests := []struct {
+		message  string
+		id       string
+		expected string
+	}{
+		{"chore: Improve code quality and CI caching", "123", "chore(#123): Improve code quality and CI caching"},
+		{"feat(cli): Add command", "123", "feat(#123): Add command"},
+		{"fix!: Drop flag", "123", "fix(#123)!: Drop flag"},
+		{"Improve code quality", "123", "#123 Improve code quality"},
+		{"feat(#123): Add command", "123", "feat(#123): Add command"},
+		{"feat: Add command", "PROJ-17", "feat(PROJ-17): Add command"},
+		{"feat(PROJ-17): Add command", "PROJ-17", "feat(PROJ-17): Add command"},
+		{"feat: Add command", "unknown", "feat: Add command"},
+		{"feat: Add command", "main", "feat: Add command"},
+	}
+	for _, test := range tests {
+		assert.Equal(t, test.expected, withIssueRef(test.message, test.id))
+	}
+}
+
 func TestReal_Heal_CantGetBranch(t *testing.T) {
 	raidy := &real{git: git.NewMockWithError(fmt.Errorf("CurrentBranch method fails"))}
 

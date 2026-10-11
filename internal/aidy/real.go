@@ -882,9 +882,21 @@ func (r *real) Heal() error {
 		return fmt.Errorf("error getting current commit message: %v", gitErr)
 	}
 	re := regexp.MustCompile(`#\d+|[A-Z][A-Z0-9]+-\d+`)
-	updated := re.ReplaceAllString(message, issueRef(inumber))
+	updated := withIssueRef(re.ReplaceAllString(message, issueRef(inumber)), inumber)
 	err = r.git.Amend(updated)
 	return err
+}
+
+func withIssueRef(message string, id string) string {
+	ref := issueRef(id)
+	if !regexp.MustCompile(`^(#\d+|[A-Z][A-Z0-9]+-\d+)$`).MatchString(ref) || strings.Contains(message, ref) {
+		return message
+	}
+	typed := regexp.MustCompile(`^(fix|feat|build|chore|ci|docs|style|refactor|perf|test)(\([^)]*\))?(!?):`)
+	if typed.MatchString(message) {
+		return typed.ReplaceAllString(message, fmt.Sprintf("${1}(%s)${3}:", ref))
+	}
+	return fmt.Sprintf("%s %s", ref, message)
 }
 
 func (r *real) CheckGitInstalled() error {
