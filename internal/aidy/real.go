@@ -881,10 +881,39 @@ func (r *real) Heal() error {
 	if gitErr != nil {
 		return fmt.Errorf("error getting current commit message: %v", gitErr)
 	}
-	re := regexp.MustCompile(`#\d+|[A-Z][A-Z0-9]+-\d+`)
-	updated := re.ReplaceAllString(message, issueRef(inumber))
-	err = r.git.Amend(updated)
+	err = r.git.Amend(healCommitMessage(message, inumber))
 	return err
+}
+
+const commitTypes = `(fix|feat|build|chore|ci|docs|style|refactor|perf|test)`
+
+func healCommitMessage(message string, id string) string {
+	if !isIssue(id) {
+		return withoutIssueRef(message, id)
+	}
+	re := regexp.MustCompile(`#\d+|[A-Z][A-Z0-9]+-\d+`)
+	return withIssueRef(re.ReplaceAllString(message, issueRef(id)), id)
+}
+
+func isIssue(id string) bool {
+	return regexp.MustCompile(`^(\d+|[A-Z][A-Z0-9]+-\d+)$`).MatchString(id)
+}
+
+func withIssueRef(message string, id string) string {
+	ref := issueRef(id)
+	if strings.Contains(message, ref) {
+		return message
+	}
+	typed := regexp.MustCompile(`^` + commitTypes + `(\([^)]*\))?(!?):`)
+	if typed.MatchString(message) {
+		return typed.ReplaceAllString(message, fmt.Sprintf("${1}(%s)${3}:", ref))
+	}
+	return fmt.Sprintf("%s %s", ref, message)
+}
+
+func withoutIssueRef(message string, id string) string {
+	scoped := regexp.MustCompile(`^` + commitTypes + `\(#?(\d+|[A-Z][A-Z0-9]+-\d+|` + regexp.QuoteMeta(id) + `)\)(!?):`)
+	return scoped.ReplaceAllString(message, "${1}${3}:")
 }
 
 func (r *real) CheckGitInstalled() error {
