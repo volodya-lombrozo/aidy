@@ -432,7 +432,7 @@ func TestReal_Heal(t *testing.T) {
 	}
 }
 
-func TestWithIssueRef(t *testing.T) {
+func TestHealCommitMessage(t *testing.T) {
 	tests := []struct {
 		message  string
 		id       string
@@ -443,13 +443,19 @@ func TestWithIssueRef(t *testing.T) {
 		{"fix!: Drop flag", "123", "fix(#123)!: Drop flag"},
 		{"Improve code quality", "123", "#123 Improve code quality"},
 		{"feat(#123): Add command", "123", "feat(#123): Add command"},
+		{"feat(#42): Add command", "123", "feat(#123): Add command"},
 		{"feat: Add command", "PROJ-17", "feat(PROJ-17): Add command"},
-		{"feat(PROJ-17): Add command", "PROJ-17", "feat(PROJ-17): Add command"},
-		{"feat: Add command", "unknown", "feat: Add command"},
+		{"feat(PROJ-99): Add command", "PROJ-17", "feat(PROJ-17): Add command"},
+		{"feat(main): Add command", "main", "feat: Add command"},
+		{"feat(#main): Add command", "main", "feat: Add command"},
+		{"fix(#42)!: Drop flag", "main", "fix!: Drop flag"},
+		{"feat(PROJ-17): Add command", "fix-ci", "feat: Add command"},
+		{"feat(cli): Add command", "main", "feat(cli): Add command"},
 		{"feat: Add command", "main", "feat: Add command"},
+		{"Add command", "unknown", "Add command"},
 	}
 	for _, test := range tests {
-		assert.Equal(t, test.expected, withIssueRef(test.message, test.id))
+		assert.Equal(t, test.expected, healCommitMessage(test.message, test.id), "message '%s' on issue '%s'", test.message, test.id)
 	}
 }
 
