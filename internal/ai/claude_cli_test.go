@@ -26,6 +26,7 @@ func TestClaudeCli_PassesSystemPromptAndModel(t *testing.T) {
 
 	require.NoError(t, err, "Expected no error when suggesting branch")
 	assert.Contains(t, result, "-p", "Expected headless mode")
+	assert.Contains(t, result, "--no-session-persistence", "Expected no session transcripts on disk")
 	assert.Contains(t, result, "--system-prompt You are a helpful assistant suggesting branch names.", "Expected system prompt")
 	assert.Contains(t, result, "--model haiku", "Expected configured model")
 	assert.Contains(t, result, "--output-format text", "Expected text output")

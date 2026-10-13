@@ -102,7 +102,7 @@ func (c *ClaudeCli) send(system, user, summary string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("'%s' not found in PATH, install Claude Code to use the 'claude-cli' provider: %w", c.binary, err)
 	}
-	cmd := exec.Command(path, "-p", "--system-prompt", system, "--tools", "", "--model", c.model, "--output-format", "text")
+	cmd := exec.Command(path, "-p", "--no-session-persistence", "--system-prompt", system, "--tools", "", "--model", c.model, "--output-format", "text")
 	cmd.Env = withoutAPIKey(os.Environ())
 	cmd.Stdin = strings.NewReader(content)
 	var stdout, stderr bytes.Buffer
