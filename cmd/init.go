@@ -14,12 +14,15 @@ import (
 )
 
 var defaultModelIDs = map[string]string{
-	"deepseek":  "deepseek-chat",
-	"openai":    "gpt-4o",
-	"anthropic": "claude-sonnet-4-6",
+	"deepseek":   "deepseek-chat",
+	"openai":     "gpt-4o",
+	"anthropic":  "claude-sonnet-4-6",
+	"claude-cli": "sonnet",
 }
 
-var providers = []string{"deepseek", "openai", "anthropic"}
+var providers = []string{"deepseek", "openai", "anthropic", "claude-cli"}
+
+var keyless = map[string]bool{"claude-cli": true}
 
 func newInitCmd() *cobra.Command {
 	command := &cobra.Command{
@@ -59,15 +62,18 @@ func runInit(in io.Reader, out io.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	key, err := askRequired(reader, out, fmt.Sprintf("%s API key", provider))
-	if err != nil {
-		return err
+	apiKeys := map[string]string{}
+	if !keyless[provider] {
+		key, err := askRequired(reader, out, fmt.Sprintf("%s API key", provider))
+		if err != nil {
+			return err
+		}
+		apiKeys[provider] = key
 	}
 	github, err := ask(reader, out, "GitHub API key (optional, press enter to skip)", "")
 	if err != nil {
 		return err
 	}
-	apiKeys := map[string]string{provider: key}
 	if github != "" {
 		apiKeys["github"] = github
 	}
