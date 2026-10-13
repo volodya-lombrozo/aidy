@@ -172,3 +172,25 @@ func TestRunInit_OverwritesOnConfirm(t *testing.T) {
 	require.NoError(t, err, "config file should be readable")
 	assert.Equal(t, "deepseek", conf.DefaultModel)
 }
+
+func TestRunInit_SkipsAPIKeyForClaudeCli(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".aidy.conf.yml")
+	in := strings.NewReader("claude-cli\n\n\n")
+	var out bytes.Buffer
+
+	err := runInit(in, &out, path)
+
+	require.NoError(t, err, "no error expected")
+	assert.NotContains(t, out.String(), "claude-cli API key", "should not ask for claude-cli API key")
+	conf, err := config.YamlConf(path)
+	require.NoError(t, err, "config file should be readable")
+	provider, err := conf.Provider()
+	require.NoError(t, err)
+	assert.Equal(t, "claude-cli", provider)
+	model, err := conf.Model()
+	require.NoError(t, err)
+	assert.Equal(t, "sonnet", model, "should fall back to the default model id")
+	token, err := conf.Token()
+	require.NoError(t, err)
+	assert.Empty(t, token, "claude-cli should not store a token")
+}

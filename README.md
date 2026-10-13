@@ -103,7 +103,20 @@ models:
     model-id: claude-sonnet-4-6
 ```
 
-Supported providers: `deepseek`, `openai`, and `anthropic`. Verify the configuration with:
+To use your Claude subscription instead of an API key, install
+[Claude Code](https://claude.com/claude-code), log in, and use the `claude-cli`
+provider. It runs `claude -p` locally, so no API key is required:
+
+```yaml
+default-model: claude
+
+models:
+  claude:
+    provider: claude-cli
+    model-id: sonnet
+```
+
+Supported providers: `deepseek`, `openai`, `anthropic`, and `claude-cli`. Verify the configuration with:
 
 ```bash
 aidy conf

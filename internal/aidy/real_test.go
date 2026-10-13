@@ -99,6 +99,32 @@ func TestReal_InitialisesAI_DeepSeek(t *testing.T) {
 	assert.NotNil(t, brain, "Expected brain to be initialized")
 }
 
+func TestReal_InitialisesAI_ClaudeCliWithoutToken(t *testing.T) {
+	conf := config.NewMock()
+	conf.MockProvider = "claude-cli"
+	conf.MockToken = ""
+
+	brain, err := Brain(false, false, conf, "en")
+
+	require.NoError(t, err, "Expected no error when initializing claude-cli without token")
+	assert.NotNil(t, brain, "Expected brain to be initialized")
+}
+
+func TestReal_InitialisesAI_LogsProviderAndModel(t *testing.T) {
+	original := log.Default()
+	defer log.Set(original)
+	logger := log.NewMock()
+	log.Set(logger)
+	conf := config.NewMock()
+	conf.MockProvider = "claude-cli"
+	conf.MockModel = "haiku"
+
+	_, err := Brain(false, false, conf, "en")
+
+	require.NoError(t, err, "Expected no error when initializing AI")
+	assert.Contains(t, logger.Messages, "mock dubug: using AI provider 'claude-cli' with model 'haiku'", "Expected provider and model in debug log")
+}
+
 func TestReal_InitialisesAI_UnknownProvider(t *testing.T) {
 	conf := config.NewMock()
 	conf.MockProvider = "unknown"

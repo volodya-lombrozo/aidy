@@ -995,16 +995,20 @@ func Brain(ailess bool, summary bool, conf config.Config, language string) (ai.A
 	if err != nil {
 		return nil, fmt.Errorf("error getting AI provider from configuration: %v", err)
 	}
+	model, err := conf.Model()
+	if err != nil {
+		return nil, fmt.Errorf("error getting AI model from configuration: %v", err)
+	}
+	log.Default().Debug("using AI provider '%s' with model '%s'", provider, model)
+	if provider == "claude-cli" {
+		return ai.NewClaudeCli(model, summary, language), nil
+	}
 	token, err := conf.Token()
 	if err != nil {
 		return nil, fmt.Errorf("error getting AI token: %v", err)
 	}
 	if token == "" {
 		return nil, fmt.Errorf("AI token not found in configuration")
-	}
-	model, err := conf.Model()
-	if err != nil {
-		return nil, fmt.Errorf("error getting AI model from configuration: %v", err)
 	}
 	var brain ai.AI
 	switch provider {
