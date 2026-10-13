@@ -1,16 +1,48 @@
 package ai
 
 import (
+	"fmt"
+	"io"
 	"os"
-	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+const fakeClaudeMode = "AIDY_FAKE_CLAUDE_MODE"
+
+func TestMain(m *testing.M) {
+	if mode, ok := os.LookupEnv(fakeClaudeMode); ok {
+		os.Exit(fakeClaude(mode))
+	}
+	os.Exit(m.Run())
+}
+
+func fakeClaude(mode string) int {
+	switch mode {
+	case "stdin":
+		in, _ := io.ReadAll(os.Stdin)
+		fmt.Print(string(in))
+	case "args":
+		fmt.Println(strings.Join(os.Args[1:], " "))
+	case "env":
+		fmt.Printf("key=%s\n", os.Getenv("ANTHROPIC_API_KEY"))
+	case "stderr":
+		fmt.Fprintln(os.Stderr, "warning")
+		fmt.Println("answer")
+	case "fail":
+		fmt.Fprintln(os.Stderr, "not logged in")
+		return 1
+	case "bug":
+		fmt.Println("bug")
+	}
+	return 0
+}
+
 func TestClaudeCli_SendsPromptThroughStdin(t *testing.T) {
-	ai := fakeClaudeCli(t, "#!/bin/sh\ncat\n", "", false, "en")
+	ai := fakeClaudeCli(t, "stdin", "", false, "en")
 
 	result, err := ai.Summary("Test README content")
 
@@ -20,7 +52,7 @@ func TestClaudeCli_SendsPromptThroughStdin(t *testing.T) {
 }
 
 func TestClaudeCli_PassesSystemPromptAndModel(t *testing.T) {
-	ai := fakeClaudeCli(t, "#!/bin/sh\necho \"$@\"\n", "haiku", false, "en")
+	ai := fakeClaudeCli(t, "args", "haiku", false, "en")
 
 	result, err := ai.SuggestBranch("Test description")
 
@@ -36,7 +68,7 @@ func TestClaudeCli_PassesSystemPromptAndModel(t *testing.T) {
 }
 
 func TestClaudeCli_UsesDefaultModel(t *testing.T) {
-	ai := fakeClaudeCli(t, "#!/bin/sh\necho \"$@\"\n", "", false, "en")
+	ai := fakeClaudeCli(t, "args", "", false, "en")
 
 	result, err := ai.SuggestBranch("Test description")
 
@@ -46,7 +78,7 @@ func TestClaudeCli_UsesDefaultModel(t *testing.T) {
 
 func TestClaudeCli_HidesAnthropicApiKey(t *testing.T) {
 	t.Setenv("ANTHROPIC_API_KEY", "secret-key")
-	ai := fakeClaudeCli(t, "#!/bin/sh\necho \"key=$ANTHROPIC_API_KEY\"\n", "", false, "en")
+	ai := fakeClaudeCli(t, "env", "", false, "en")
 
 	result, err := ai.SuggestBranch("Test description")
 
@@ -55,7 +87,7 @@ func TestClaudeCli_HidesAnthropicApiKey(t *testing.T) {
 }
 
 func TestClaudeCli_IgnoresStderr(t *testing.T) {
-	ai := fakeClaudeCli(t, "#!/bin/sh\necho warning >&2\necho answer\n", "", false, "en")
+	ai := fakeClaudeCli(t, "stderr", "", false, "en")
 
 	result, err := ai.SuggestBranch("Test description")
 
@@ -64,7 +96,7 @@ func TestClaudeCli_IgnoresStderr(t *testing.T) {
 }
 
 func TestClaudeCli_ReportsStderrOnFailure(t *testing.T) {
-	ai := fakeClaudeCli(t, "#!/bin/sh\necho 'not logged in' >&2\nexit 1\n", "", false, "en")
+	ai := fakeClaudeCli(t, "fail", "", false, "en")
 
 	_, err := ai.SuggestBranch("Test description")
 
@@ -73,7 +105,7 @@ func TestClaudeCli_ReportsStderrOnFailure(t *testing.T) {
 }
 
 func TestClaudeCli_FailsOnEmptyOutput(t *testing.T) {
-	ai := fakeClaudeCli(t, "#!/bin/sh\n", "", false, "en")
+	ai := fakeClaudeCli(t, "empty", "", false, "en")
 
 	_, err := ai.SuggestBranch("Test description")
 
@@ -91,7 +123,7 @@ func TestClaudeCli_FailsWhenBinaryIsMissing(t *testing.T) {
 }
 
 func TestClaudeCli_AppendsSummaryAndLanguage(t *testing.T) {
-	ai := fakeClaudeCli(t, "#!/bin/sh\ncat\n", "", true, "fr")
+	ai := fakeClaudeCli(t, "stdin", "", true, "fr")
 
 	result, err := ai.PrBody("Test diff", "Test issue", "Test summary")
 
@@ -101,7 +133,7 @@ func TestClaudeCli_AppendsSummaryAndLanguage(t *testing.T) {
 }
 
 func TestClaudeCli_IssueLabels(t *testing.T) {
-	ai := fakeClaudeCli(t, "#!/bin/sh\necho bug\n", "", false, "en")
+	ai := fakeClaudeCli(t, "bug", "", false, "en")
 
 	labels, err := ai.IssueLabels("Test issue", []string{"bug", "enhancement"})
 
@@ -109,11 +141,12 @@ func TestClaudeCli_IssueLabels(t *testing.T) {
 	assert.Equal(t, []string{"bug"}, labels, "Expected only labels mentioned in response")
 }
 
-func fakeClaudeCli(t *testing.T, script, model string, summary bool, language string) *ClaudeCli {
+func fakeClaudeCli(t *testing.T, mode, model string, summary bool, language string) *ClaudeCli {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "claude")
-	require.NoError(t, os.WriteFile(path, []byte(script), 0755), "Failed to write fake claude cli")
+	t.Setenv(fakeClaudeMode, mode)
+	self, err := os.Executable()
+	require.NoError(t, err, "Failed to locate test binary acting as fake claude cli")
 	ai := NewClaudeCli(model, summary, language).(*ClaudeCli)
-	ai.binary = path
+	ai.binary = self
 	return ai
 }
