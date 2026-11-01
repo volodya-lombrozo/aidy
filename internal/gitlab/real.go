@@ -22,6 +22,21 @@ func NewGitlab(shell executor.Executor) *real {
 	return &real{shell: shell, log: log.Default()}
 }
 
+func (r *real) Description(number string, repository string) (string, error) {
+	out, err := r.shell.RunCommand("glab", "issue", "view", number, "--repo", repository, "--output", "json")
+	if err != nil {
+		return "", fmt.Errorf("error fetching issue '%s' from '%s': %w", number, repository, err)
+	}
+	var issue struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}
+	if err := json.Unmarshal([]byte(out), &issue); err != nil {
+		return "", fmt.Errorf("error parsing issue json for '%s': %w", number, err)
+	}
+	return fmt.Sprintf("Title: '%s'\nBody: '%s'", issue.Title, issue.Description), nil
+}
+
 func (r *real) MergeRequestByBranch(branch string) (string, string, error) {
 	out, err := r.shell.RunCommand("glab", "mr", "list", "--source-branch", branch, "--all", "--output", "json")
 	if err != nil {

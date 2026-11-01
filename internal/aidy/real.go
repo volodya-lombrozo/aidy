@@ -111,6 +111,8 @@ func InitLogger(silent bool, debug bool) {
 	log.Set(logger)
 }
 
+var repositoryRemote = regexp.MustCompile(`^(?:git@|https?://|ssh://git@)(github\.com|gitlab\.com)[:/]([^/]+/.+?)(?:\.git)?$`)
+
 func (r *real) SetTarget() error {
 	target := r.cache.Remote()
 	if target != "" {
@@ -123,7 +125,6 @@ func (r *real) SetTarget() error {
 		}
 		lines := strings.Split(out, "\n")
 		r.logger.Debug("found %d remote repositories:\n%s", len(lines), out)
-		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/.+?)(?:\.git)?$`)
 		unique := make(map[string]struct{})
 		for _, line := range lines {
 			fields := strings.Fields(line)
@@ -133,9 +134,9 @@ func (r *real) SetTarget() error {
 			} else {
 				address = fields[1]
 			}
-			matches := re.FindStringSubmatch(address)
-			if len(matches) == 2 {
-				unique[string(matches[1])] = struct{}{}
+			matches := repositoryRemote.FindStringSubmatch(address)
+			if len(matches) == 3 {
+				unique[matches[2]] = struct{}{}
 			}
 		}
 		var repos []string
@@ -587,7 +588,7 @@ func (r *real) StartIssue(number string) error {
 		return fmt.Errorf("error: invalid issue number '%s'", number)
 	}
 	r.logger.Info("retrieving the description for issue #%s...", found)
-	descr, err := r.github.Description(found)
+	descr, err := r.startIssueDescription(found)
 	if err != nil {
 		return fmt.Errorf("error retrieving issue description: %v", err)
 	}
@@ -602,6 +603,27 @@ func (r *real) StartIssue(number string) error {
 		return fmt.Errorf("error starting issue #%s: %w", found, err)
 	}
 	return nil
+}
+
+func (r *real) startIssueDescription(number string) (string, error) {
+	remotes, err := r.git.Remotes()
+	if err != nil {
+		return "", fmt.Errorf("error getting git remotes: %w", err)
+	}
+	for _, remote := range remotes {
+		fields := strings.Fields(remote)
+		if len(fields) > 1 {
+			remote = fields[1]
+		}
+		matches := repositoryRemote.FindStringSubmatch(remote)
+		if len(matches) == 3 && matches[2] == r.cache.Remote() {
+			if matches[1] == "gitlab.com" {
+				return r.gitlab.Description(number, matches[1]+"/"+matches[2])
+			}
+			break
+		}
+	}
+	return r.github.Description(number)
 }
 
 var jiraKey = regexp.MustCompile(`[A-Z][A-Z0-9]+-\d+`)

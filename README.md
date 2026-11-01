@@ -203,7 +203,7 @@ Create a branch for an issue:
 aidy start 42
 ```
 
-For a GitHub issue, the branch name is generated from the issue description, e.g. `42-fix-login-error`.
+For a GitHub or GitLab issue, the branch name is generated from the issue description, e.g. `42-fix-login-error`. The provider is chosen from the target repository's remote (`github.com` or `gitlab.com`). GitLab issues require the `glab` CLI to be installed and authenticated with `glab auth login`.
 
 You can also pass a Jira issue key or link:
 

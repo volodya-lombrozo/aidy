@@ -541,11 +541,103 @@ func TestReal_StartIssue(t *testing.T) {
 	err := raidy.StartIssue("42")
 
 	assert.NoError(t, err, "Expected no error when starting issue")
-	expected := []string{"git checkout -b 42-mock-branch-name"}
+	expected := []string{"git remote -v", "git checkout -b 42-mock-branch-name"}
 	assert.Equal(t, len(expected), len(shell.Commands), "number of commands should match")
 	for i, expectedCommand := range expected {
 		assert.Contains(t, shell.Commands[i], expectedCommand)
 	}
+}
+
+type issueBranchAI struct {
+	ai.AI
+	description string
+}
+
+func (brain *issueBranchAI) SuggestBranch(description string) (string, error) {
+	brain.description = description
+	return brain.AI.SuggestBranch(description)
+}
+
+func TestReal_StartIssueGitlab(t *testing.T) {
+	for _, remote := range []string{
+		"https://gitlab.com/group/subgroup/project.git",
+		"git@gitlab.com:group/subgroup/project.git",
+		"ssh://git@gitlab.com/group/subgroup/project.git",
+	} {
+		t.Run(remote, func(t *testing.T) {
+			shell := executor.NewMock()
+			shell.Output = "origin\t" + remote + " (fetch)\norigin\t" + remote + " (push)"
+			glab := executor.NewMock()
+			glab.Output = `{"title":"Fix login", "description":"Handle expired tokens"}`
+			stored := cache.NewMockAidyCache()
+			stored.WithRemote("")
+			brain := &issueBranchAI{AI: ai.NewMockAI()}
+			assistant := &real{git: git.NewMockWithShell(shell), gitlab: gitlab.NewGitlab(glab), ai: brain, cache: stored, logger: log.Default()}
+
+			err := assistant.StartIssue("11")
+
+			require.NoError(t, err)
+			assert.Equal(t, "group/subgroup/project", stored.Remote())
+			assert.Equal(t, "Title: 'Fix login'\nBody: 'Handle expired tokens'", brain.description)
+			assert.Equal(t, []string{"glab issue view 11 --repo gitlab.com/group/subgroup/project --output json"}, glab.Commands)
+			assert.Contains(t, strings.Join(shell.Commands, "\n"), "git checkout -b 11-mock-branch-name")
+		})
+	}
+}
+
+func TestReal_StartIssueSelectedProvider(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		target      string
+		description string
+	}{
+		{name: "github", target: "owner/github-project", description: "mock description for issue '#11'"},
+		{name: "gitlab", target: "group/gitlab-project", description: "mock description for issue '#11' in 'gitlab.com/group/gitlab-project'"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			shell := executor.NewMock()
+			shell.Output = "origin git@gitlab.com:group/gitlab-project.git (fetch)\nupstream https://github.com/owner/github-project.git (fetch)"
+			stored := cache.NewMockAidyCache()
+			stored.WithRemote(test.target)
+			brain := &issueBranchAI{AI: ai.NewMockAI()}
+			assistant := &real{git: git.NewMockWithShell(shell), github: github.NewMock(), gitlab: gitlab.NewMock(), ai: brain, cache: stored, logger: log.Default()}
+
+			err := assistant.StartIssue("11")
+
+			require.NoError(t, err)
+			assert.Equal(t, test.description, brain.description)
+			assert.Contains(t, strings.Join(shell.Commands, "\n"), "git checkout -b 11-mock-branch-name")
+		})
+	}
+}
+
+func TestReal_StartIssueGitlabFailure(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "origin git@gitlab.com:group/project.git (fetch)"
+	stored := cache.NewMockAidyCache()
+	stored.WithRemote("group/project")
+	glab := gitlab.NewMock()
+	glab.Error = assert.AnError
+	assistant := &real{git: git.NewMockWithShell(shell), gitlab: glab, ai: ai.NewMockAI(), cache: stored, logger: log.Default()}
+
+	err := assistant.StartIssue("11")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error retrieving issue description")
+	require.Len(t, shell.Commands, 1)
+	assert.Contains(t, shell.Commands[0], "git remote -v")
+}
+
+func TestReal_StartIssueRemoteError(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Err = assert.AnError
+	assistant := &real{git: git.NewMockWithShell(shell), cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := assistant.StartIssue("11")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error getting git remotes")
+	require.Len(t, shell.Commands, 1)
 }
 
 func TestReal_StartIssueNoNumber(t *testing.T) {
@@ -585,14 +677,22 @@ func TestReal_StartIssueBranchNameError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to suggest branch")
 }
 
+type checkoutFailureGit struct {
+	git.Git
+}
+
+func (repository *checkoutFailureGit) Checkout(branch string) error {
+	return fmt.Errorf("error checking out branch")
+}
+
 func TestReal_StartIssueCheckoutError(t *testing.T) {
 	shell := executor.NewMock()
-	shell.Err = fmt.Errorf("error checking out branch")
-	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: &checkoutFailureGit{Git: git.NewMockWithShell(shell)}, ai: ai.NewMockAI(), github: github.NewMock(), cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.StartIssue("42")
 
 	assert.Error(t, err, "expected error when checking out branch fails")
+	assert.Contains(t, err.Error(), "error starting issue #42")
 	assert.Contains(t, err.Error(), "error checking out branch")
 }
 
