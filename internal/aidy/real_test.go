@@ -264,7 +264,7 @@ func TestReal_SetTarget_RealGitOutput(t *testing.T) {
 	err = aidy.SetTarget()
 
 	require.NoError(t, err, "Expected no error when setting target with multiple remotes")
-	assert.Equal(t, "yegor256/jaxec", cache.Remote(), "Expected remote to be set to 'cqfn/kaicode.github.io'")
+	assert.Equal(t, "https://github.com/yegor256/jaxec", cache.Remote())
 }
 
 func TestReal_SetTarget_MultipleRemotes(t *testing.T) {
@@ -284,7 +284,7 @@ func TestReal_SetTarget_MultipleRemotes(t *testing.T) {
 	err = aidy.SetTarget()
 
 	require.NoError(t, err, "Expected no error when setting target with multiple remotes")
-	assert.Equal(t, "cqfn/kaicode.github.io", cache.Remote(), "Expected remote to be set to 'cqfn/kaicode.github.io'")
+	assert.Equal(t, "https://github.com/cqfn/kaicode.github.io", cache.Remote())
 }
 
 func TestReal_SetTarget_MultipleRemotes_WrongChoice(t *testing.T) {
@@ -339,7 +339,7 @@ func TestReal_SetTarget_PreservesDots(t *testing.T) {
 	err := aidy.SetTarget()
 
 	require.NoError(t, err, "Expected no error when setting target with dots in remote")
-	assert.Equal(t, "cqfn/kaicode.github.io", cache.Remote(), "expected dots in remote to be preserved")
+	assert.Equal(t, "https://github.com/cqfn/kaicode.github.io", cache.Remote(), "expected dots in remote to be preserved")
 }
 
 func TestReal_PrintsDiff_Successfully(t *testing.T) {
@@ -541,11 +541,111 @@ func TestReal_StartIssue(t *testing.T) {
 	err := raidy.StartIssue("42")
 
 	assert.NoError(t, err, "Expected no error when starting issue")
-	expected := []string{"git checkout -b 42-mock-branch-name"}
+	expected := []string{"git remote -v", "git checkout -b 42-mock-branch-name"}
 	assert.Equal(t, len(expected), len(shell.Commands), "number of commands should match")
 	for i, expectedCommand := range expected {
 		assert.Contains(t, shell.Commands[i], expectedCommand)
 	}
+}
+
+type issueBranchAI struct {
+	ai.AI
+	description string
+}
+
+func (brain *issueBranchAI) SuggestBranch(description string) (string, error) {
+	brain.description = description
+	return brain.AI.SuggestBranch(description)
+}
+
+func TestReal_StartIssueGitlab(t *testing.T) {
+	for _, test := range []struct {
+		remote string
+		target string
+	}{
+		{remote: "https://gitlab.com/group/subgroup/project.git", target: "https://gitlab.com/group/subgroup/project"},
+		{remote: "git@gitlab.com:group/subgroup/project.git", target: "https://gitlab.com/group/subgroup/project"},
+		{remote: "ssh://git@gitlab.com/group/subgroup/project.git", target: "https://gitlab.com/group/subgroup/project"},
+		{remote: "https://code.company.com/group/subgroup/project.git", target: "https://code.company.com/group/subgroup/project"},
+		{remote: "git@code.company.com:group/subgroup/project.git", target: "https://code.company.com/group/subgroup/project"},
+		{remote: "ssh://git@code.company.com:2222/group/subgroup/project.git", target: "https://code.company.com/group/subgroup/project"},
+		{remote: "https://code.company.com:8443/group/subgroup/project.git", target: "https://code.company.com:8443/group/subgroup/project"},
+		{remote: "http://code.company.com/group/subgroup/project.git", target: "http://code.company.com/group/subgroup/project"},
+	} {
+		t.Run(test.remote, func(t *testing.T) {
+			shell := executor.NewMock()
+			shell.Output = "origin\t" + test.remote + " (fetch)\norigin\t" + test.remote + " (push)"
+			glab := executor.NewMock()
+			glab.Output = `{"title":"Fix login", "description":"Handle expired tokens"}`
+			stored := cache.NewMockAidyCache()
+			stored.WithRemote("")
+			brain := &issueBranchAI{AI: ai.NewMockAI()}
+			assistant := &real{git: git.NewMockWithShell(shell), gitlab: gitlab.NewGitlab(glab), ai: brain, cache: stored, logger: log.Default()}
+
+			err := assistant.StartIssue("11")
+
+			require.NoError(t, err)
+			assert.Equal(t, test.target, stored.Remote())
+			assert.Equal(t, "Title: 'Fix login'\nBody: 'Handle expired tokens'", brain.description)
+			assert.Equal(t, []string{"glab issue view 11 --repo " + test.target + " --output json"}, glab.Commands)
+			assert.Contains(t, strings.Join(shell.Commands, "\n"), "git checkout -b 11-mock-branch-name")
+		})
+	}
+}
+
+func TestReal_StartIssueSelectedProvider(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		target      string
+		description string
+	}{
+		{name: "github", target: "owner/github-project", description: "mock description for issue '#11'"},
+		{name: "gitlab", target: "group/gitlab-project", description: "mock description for issue '#11' in 'https://gitlab.com/group/gitlab-project'"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			shell := executor.NewMock()
+			shell.Output = "origin git@gitlab.com:group/gitlab-project.git (fetch)\nupstream https://github.com/owner/github-project.git (fetch)"
+			stored := cache.NewMockAidyCache()
+			stored.WithRemote(test.target)
+			brain := &issueBranchAI{AI: ai.NewMockAI()}
+			assistant := &real{git: git.NewMockWithShell(shell), github: github.NewMock(), gitlab: gitlab.NewMock(), ai: brain, cache: stored, logger: log.Default()}
+
+			err := assistant.StartIssue("11")
+
+			require.NoError(t, err)
+			assert.Equal(t, test.description, brain.description)
+			assert.Contains(t, strings.Join(shell.Commands, "\n"), "git checkout -b 11-mock-branch-name")
+		})
+	}
+}
+
+func TestReal_StartIssueGitlabFailure(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Output = "origin git@gitlab.com:group/project.git (fetch)"
+	stored := cache.NewMockAidyCache()
+	stored.WithRemote("group/project")
+	glab := gitlab.NewMock()
+	glab.Error = assert.AnError
+	assistant := &real{git: git.NewMockWithShell(shell), gitlab: glab, ai: ai.NewMockAI(), cache: stored, logger: log.Default()}
+
+	err := assistant.StartIssue("11")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error retrieving issue description")
+	require.Len(t, shell.Commands, 1)
+	assert.Contains(t, shell.Commands[0], "git remote -v")
+}
+
+func TestReal_StartIssueRemoteError(t *testing.T) {
+	shell := executor.NewMock()
+	shell.Err = assert.AnError
+	assistant := &real{git: git.NewMockWithShell(shell), cache: cache.NewMockAidyCache(), logger: log.Default()}
+
+	err := assistant.StartIssue("11")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error getting git remotes")
+	require.Len(t, shell.Commands, 1)
 }
 
 func TestReal_StartIssueNoNumber(t *testing.T) {
@@ -585,14 +685,22 @@ func TestReal_StartIssueBranchNameError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to suggest branch")
 }
 
+type checkoutFailureGit struct {
+	git.Git
+}
+
+func (repository *checkoutFailureGit) Checkout(branch string) error {
+	return fmt.Errorf("error checking out branch")
+}
+
 func TestReal_StartIssueCheckoutError(t *testing.T) {
 	shell := executor.NewMock()
-	shell.Err = fmt.Errorf("error checking out branch")
-	raidy := &real{git: git.NewMockWithShell(shell), ai: ai.NewMockAI(), github: github.NewMock(), cache: cache.NewMockAidyCache(), logger: log.Default()}
+	raidy := &real{git: &checkoutFailureGit{Git: git.NewMockWithShell(shell)}, ai: ai.NewMockAI(), github: github.NewMock(), cache: cache.NewMockAidyCache(), logger: log.Default()}
 
 	err := raidy.StartIssue("42")
 
 	assert.Error(t, err, "expected error when checking out branch fails")
+	assert.Contains(t, err.Error(), "error starting issue #42")
 	assert.Contains(t, err.Error(), "error checking out branch")
 }
 

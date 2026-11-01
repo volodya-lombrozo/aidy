@@ -123,19 +123,10 @@ func (r *real) SetTarget() error {
 		}
 		lines := strings.Split(out, "\n")
 		r.logger.Debug("found %d remote repositories:\n%s", len(lines), out)
-		re := regexp.MustCompile(`(?:git@github\.com:|https://github\.com/)([^/]+/.+?)(?:\.git)?$`)
 		unique := make(map[string]struct{})
 		for _, line := range lines {
-			fields := strings.Fields(line)
-			var address string
-			if len(fields) < 2 {
-				address = line
-			} else {
-				address = fields[1]
-			}
-			matches := re.FindStringSubmatch(address)
-			if len(matches) == 2 {
-				unique[string(matches[1])] = struct{}{}
+			if repo, ok := parseRepository(line); ok {
+				unique[repo.url] = struct{}{}
 			}
 		}
 		var repos []string
@@ -587,7 +578,7 @@ func (r *real) StartIssue(number string) error {
 		return fmt.Errorf("error: invalid issue number '%s'", number)
 	}
 	r.logger.Info("retrieving the description for issue #%s...", found)
-	descr, err := r.github.Description(found)
+	descr, err := r.startIssueDescription(found)
 	if err != nil {
 		return fmt.Errorf("error retrieving issue description: %v", err)
 	}
@@ -602,6 +593,34 @@ func (r *real) StartIssue(number string) error {
 		return fmt.Errorf("error starting issue #%s: %w", found, err)
 	}
 	return nil
+}
+
+func (r *real) startIssueDescription(number string) (string, error) {
+	remotes, err := r.git.Remotes()
+	if err != nil {
+		return "", fmt.Errorf("error getting git remotes: %w", err)
+	}
+	target := r.cache.Remote()
+	matches := make(map[string]repository)
+	for _, remote := range remotes {
+		if repo, ok := parseRepository(remote); ok && (repo.url == target || repo.path == target) {
+			matches[repo.url] = repo
+		}
+	}
+	if len(matches) > 1 {
+		return "", fmt.Errorf("ambiguous target repository '%s' on multiple hosts; run 'aidy clean' and select the host-qualified target again", target)
+	}
+	for _, repo := range matches {
+		r.cache.WithRemote(repo.url)
+		if repo.host != "github.com" {
+			return r.gitlab.Description(number, repo.url)
+		}
+		return r.github.Description(number)
+	}
+	if repo, ok := parseRepository(target); ok && repo.host != "github.com" {
+		return r.gitlab.Description(number, repo.url)
+	}
+	return r.github.Description(number)
 }
 
 var jiraKey = regexp.MustCompile(`[A-Z][A-Z0-9]+-\d+`)
