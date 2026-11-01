@@ -203,7 +203,9 @@ Create a branch for an issue:
 aidy start 42
 ```
 
-For a GitHub or GitLab issue, the branch name is generated from the issue description, e.g. `42-fix-login-error`. The provider is chosen from the target repository's remote (`github.com` or `gitlab.com`). GitLab issues require the `glab` CLI to be installed and authenticated with `glab auth login`.
+For a GitHub or GitLab issue, the branch name is generated from the issue description, e.g. `42-fix-login-error`. The target repository includes its host, so repositories with the same path on different hosts remain separate choices. GitHub.com uses the GitHub API; other hosts are delegated to `glab`, including self-managed GitLab instances.
+
+GitLab issues require the `glab` CLI to be installed and authenticated. For GitLab.com, run `glab auth login`. For a self-managed instance, run `glab auth login --hostname gitlab.company.com`. HTTPS and SSH remotes are supported, including custom SSH ports and nested groups. If an older cached target is ambiguous across hosts, run `aidy clean`, then rerun `aidy start` and select the correct host-qualified repository.
 
 You can also pass a Jira issue key or link:
 

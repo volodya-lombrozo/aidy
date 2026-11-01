@@ -111,8 +111,6 @@ func InitLogger(silent bool, debug bool) {
 	log.Set(logger)
 }
 
-var repositoryRemote = regexp.MustCompile(`^(?:git@|https?://|ssh://git@)(github\.com|gitlab\.com)[:/]([^/]+/.+?)(?:\.git)?$`)
-
 func (r *real) SetTarget() error {
 	target := r.cache.Remote()
 	if target != "" {
@@ -127,16 +125,8 @@ func (r *real) SetTarget() error {
 		r.logger.Debug("found %d remote repositories:\n%s", len(lines), out)
 		unique := make(map[string]struct{})
 		for _, line := range lines {
-			fields := strings.Fields(line)
-			var address string
-			if len(fields) < 2 {
-				address = line
-			} else {
-				address = fields[1]
-			}
-			matches := repositoryRemote.FindStringSubmatch(address)
-			if len(matches) == 3 {
-				unique[matches[2]] = struct{}{}
+			if repo, ok := parseRepository(line); ok {
+				unique[repo.url] = struct{}{}
 			}
 		}
 		var repos []string
@@ -610,18 +600,25 @@ func (r *real) startIssueDescription(number string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error getting git remotes: %w", err)
 	}
+	target := r.cache.Remote()
+	matches := make(map[string]repository)
 	for _, remote := range remotes {
-		fields := strings.Fields(remote)
-		if len(fields) > 1 {
-			remote = fields[1]
+		if repo, ok := parseRepository(remote); ok && (repo.url == target || repo.path == target) {
+			matches[repo.url] = repo
 		}
-		matches := repositoryRemote.FindStringSubmatch(remote)
-		if len(matches) == 3 && matches[2] == r.cache.Remote() {
-			if matches[1] == "gitlab.com" {
-				return r.gitlab.Description(number, matches[1]+"/"+matches[2])
-			}
-			break
+	}
+	if len(matches) > 1 {
+		return "", fmt.Errorf("ambiguous target repository '%s' on multiple hosts; run 'aidy clean' and select the host-qualified target again", target)
+	}
+	for _, repo := range matches {
+		r.cache.WithRemote(repo.url)
+		if repo.host != "github.com" {
+			return r.gitlab.Description(number, repo.url)
 		}
+		return r.github.Description(number)
+	}
+	if repo, ok := parseRepository(target); ok && repo.host != "github.com" {
+		return r.gitlab.Description(number, repo.url)
 	}
 	return r.github.Description(number)
 }

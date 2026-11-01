@@ -264,7 +264,7 @@ func TestReal_SetTarget_RealGitOutput(t *testing.T) {
 	err = aidy.SetTarget()
 
 	require.NoError(t, err, "Expected no error when setting target with multiple remotes")
-	assert.Equal(t, "yegor256/jaxec", cache.Remote(), "Expected remote to be set to 'cqfn/kaicode.github.io'")
+	assert.Equal(t, "https://github.com/yegor256/jaxec", cache.Remote())
 }
 
 func TestReal_SetTarget_MultipleRemotes(t *testing.T) {
@@ -284,7 +284,7 @@ func TestReal_SetTarget_MultipleRemotes(t *testing.T) {
 	err = aidy.SetTarget()
 
 	require.NoError(t, err, "Expected no error when setting target with multiple remotes")
-	assert.Equal(t, "cqfn/kaicode.github.io", cache.Remote(), "Expected remote to be set to 'cqfn/kaicode.github.io'")
+	assert.Equal(t, "https://github.com/cqfn/kaicode.github.io", cache.Remote())
 }
 
 func TestReal_SetTarget_MultipleRemotes_WrongChoice(t *testing.T) {
@@ -339,7 +339,7 @@ func TestReal_SetTarget_PreservesDots(t *testing.T) {
 	err := aidy.SetTarget()
 
 	require.NoError(t, err, "Expected no error when setting target with dots in remote")
-	assert.Equal(t, "cqfn/kaicode.github.io", cache.Remote(), "expected dots in remote to be preserved")
+	assert.Equal(t, "https://github.com/cqfn/kaicode.github.io", cache.Remote(), "expected dots in remote to be preserved")
 }
 
 func TestReal_PrintsDiff_Successfully(t *testing.T) {
@@ -559,14 +559,22 @@ func (brain *issueBranchAI) SuggestBranch(description string) (string, error) {
 }
 
 func TestReal_StartIssueGitlab(t *testing.T) {
-	for _, remote := range []string{
-		"https://gitlab.com/group/subgroup/project.git",
-		"git@gitlab.com:group/subgroup/project.git",
-		"ssh://git@gitlab.com/group/subgroup/project.git",
+	for _, test := range []struct {
+		remote string
+		target string
+	}{
+		{remote: "https://gitlab.com/group/subgroup/project.git", target: "https://gitlab.com/group/subgroup/project"},
+		{remote: "git@gitlab.com:group/subgroup/project.git", target: "https://gitlab.com/group/subgroup/project"},
+		{remote: "ssh://git@gitlab.com/group/subgroup/project.git", target: "https://gitlab.com/group/subgroup/project"},
+		{remote: "https://code.company.com/group/subgroup/project.git", target: "https://code.company.com/group/subgroup/project"},
+		{remote: "git@code.company.com:group/subgroup/project.git", target: "https://code.company.com/group/subgroup/project"},
+		{remote: "ssh://git@code.company.com:2222/group/subgroup/project.git", target: "https://code.company.com/group/subgroup/project"},
+		{remote: "https://code.company.com:8443/group/subgroup/project.git", target: "https://code.company.com:8443/group/subgroup/project"},
+		{remote: "http://code.company.com/group/subgroup/project.git", target: "http://code.company.com/group/subgroup/project"},
 	} {
-		t.Run(remote, func(t *testing.T) {
+		t.Run(test.remote, func(t *testing.T) {
 			shell := executor.NewMock()
-			shell.Output = "origin\t" + remote + " (fetch)\norigin\t" + remote + " (push)"
+			shell.Output = "origin\t" + test.remote + " (fetch)\norigin\t" + test.remote + " (push)"
 			glab := executor.NewMock()
 			glab.Output = `{"title":"Fix login", "description":"Handle expired tokens"}`
 			stored := cache.NewMockAidyCache()
@@ -577,9 +585,9 @@ func TestReal_StartIssueGitlab(t *testing.T) {
 			err := assistant.StartIssue("11")
 
 			require.NoError(t, err)
-			assert.Equal(t, "group/subgroup/project", stored.Remote())
+			assert.Equal(t, test.target, stored.Remote())
 			assert.Equal(t, "Title: 'Fix login'\nBody: 'Handle expired tokens'", brain.description)
-			assert.Equal(t, []string{"glab issue view 11 --repo gitlab.com/group/subgroup/project --output json"}, glab.Commands)
+			assert.Equal(t, []string{"glab issue view 11 --repo " + test.target + " --output json"}, glab.Commands)
 			assert.Contains(t, strings.Join(shell.Commands, "\n"), "git checkout -b 11-mock-branch-name")
 		})
 	}
@@ -592,7 +600,7 @@ func TestReal_StartIssueSelectedProvider(t *testing.T) {
 		description string
 	}{
 		{name: "github", target: "owner/github-project", description: "mock description for issue '#11'"},
-		{name: "gitlab", target: "group/gitlab-project", description: "mock description for issue '#11' in 'gitlab.com/group/gitlab-project'"},
+		{name: "gitlab", target: "group/gitlab-project", description: "mock description for issue '#11' in 'https://gitlab.com/group/gitlab-project'"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			shell := executor.NewMock()

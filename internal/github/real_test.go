@@ -17,6 +17,42 @@ const JsonIssue = `{
   "body": "Body"
 }`
 
+func TestRealGithub_HostQualifiedTarget(t *testing.T) {
+	for _, target := range []string{"group/project", "https://github.com/group/project", "http://github.com/group/project"} {
+		t.Run(target, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				switch request.URL.Path {
+				case "/repos/group/project/issues/11":
+					_, _ = writer.Write([]byte(JsonIssue))
+				case "/repos/group/project/labels":
+					_, _ = writer.Write([]byte(`[{"name":"bug"}]`))
+				case "/repos/group/project/pulls":
+					assert.Equal(t, "group:feature", request.URL.Query().Get("head"))
+					_, _ = writer.Write([]byte(`[{"number":1,"title":"Title","body":"Body"}]`))
+				default:
+					t.Errorf("unexpected API path: %s", request.URL.Path)
+					writer.WriteHeader(http.StatusNotFound)
+				}
+			}))
+			defer server.Close()
+			stored := cache.NewMockAidyCache()
+			stored.WithRemote(target)
+			client := NewGithub(server.URL, git.NewMock(), "", stored)
+
+			description, err := client.Description("11")
+			require.NoError(t, err)
+			assert.Equal(t, "Title: 'Title'\nBody: 'Body'", description)
+			labels, err := client.Labels()
+			require.NoError(t, err)
+			assert.Equal(t, []string{"bug"}, labels)
+			title, body, err := client.PullRequestByBranch("feature")
+			require.NoError(t, err)
+			assert.Equal(t, "Title", title)
+			assert.Equal(t, "Body", body)
+		})
+	}
+}
+
 func TestRealGithub_Description(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

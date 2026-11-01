@@ -60,7 +60,7 @@ func (r *github) Description(number string) (string, error) {
 		return fmt.Sprintf("invalid issue number: '%s'", number), nil
 	}
 	var task issue
-	target := r.ch.Remote()
+	target := r.target()
 	if target != "" {
 		var err error
 		task, err = r.description(number, target)
@@ -78,7 +78,7 @@ func (r *github) Description(number string) (string, error) {
 
 func (r *github) Labels() ([]string, error) {
 	var labels []label
-	target := r.ch.Remote()
+	target := r.target()
 	if target != "" {
 		r.log.Debug("retrieving labels for target repository '%s'", target)
 		url := fmt.Sprintf("%s/repos/%s/labels", r.url, target)
@@ -122,7 +122,7 @@ func (r *github) Labels() ([]string, error) {
 }
 
 func (r *github) PullRequestByBranch(branch string) (string, string, error) {
-	target := r.ch.Remote()
+	target := r.target()
 	if target == "" {
 		return "", "", fmt.Errorf("cannot find a target repository to search for a pull request for branch '%s'", branch)
 	}
@@ -159,6 +159,10 @@ func (r *github) PullRequestByBranch(branch string) (string, string, error) {
 	}
 	r.log.Debug("found a pull request #%d for branch '%s'", prs[0].Number, branch)
 	return prs[0].Title, prs[0].Body, nil
+}
+
+func (r *github) target() string {
+	return strings.TrimPrefix(strings.TrimPrefix(r.ch.Remote(), "https://github.com/"), "http://github.com/")
 }
 
 func (r *github) Remotes() ([]string, error) {
