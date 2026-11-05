@@ -95,7 +95,7 @@ func (c *CodexCli) send(system, user, summary string) (string, error) {
 		return "", fmt.Errorf("'%s' not found in PATH, install Codex CLI to use the 'codex-cli' provider: %w", c.binary, err)
 	}
 	prompt := fmt.Sprintf("%s\n\n%s", system, content)
-	cmd := exec.Command(path, "exec", "--ephemeral", "--sandbox", "read-only", "--model", c.model, "-")
+	cmd := exec.Command(path, "exec", "--ephemeral", "--sandbox", "read-only", "--model", c.model, "--config", "model_reasoning_effort=low", "-")
 	cmd.Env = withoutOpenAIAPIKey(os.Environ())
 	cmd.Stdin = strings.NewReader(prompt)
 	var stdout, stderr bytes.Buffer
