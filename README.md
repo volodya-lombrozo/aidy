@@ -129,6 +129,18 @@ models:
     model-id: gpt-5-codex
 ```
 
+To select a different Codex model, change `model-id`. For example, if
+`gpt-6-luna` is available in your Codex CLI account:
+
+```yaml
+default-model: codex
+
+models:
+  codex:
+    provider: codex-cli
+    model-id: gpt-6-luna
+```
+
 Supported providers: `deepseek`, `openai`, `anthropic`, `claude-cli`, and `codex-cli`. Verify the configuration with:
 
 ```bash
