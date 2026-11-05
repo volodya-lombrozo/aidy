@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/volodya-lombrozo/aidy/internal/log"
@@ -94,8 +95,14 @@ func (c *CodexCli) send(system, user, summary string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("'%s' not found in PATH, install Codex CLI to use the 'codex-cli' provider: %w", c.binary, err)
 	}
+	workdir, err := os.MkdirTemp("", "aidy-codex-")
+	if err != nil {
+		return "", fmt.Errorf("error creating temporary Codex working directory: %w", err)
+	}
+	defer os.RemoveAll(workdir)
 	prompt := fmt.Sprintf("%s\n\n%s", system, content)
-	cmd := exec.Command(path, "exec", "--ephemeral", "--sandbox", "read-only", "--model", c.model, "--config", "model_reasoning_effort=low", "-")
+	cmd := exec.Command(path, "exec", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--cd", filepath.Clean(workdir), "--sandbox", "read-only", "--model", c.model, "--config", "model_reasoning_effort=low", "--config", `web_search="disabled"`, "-")
+	cmd.Dir = workdir
 	cmd.Env = withoutOpenAIAPIKey(os.Environ())
 	cmd.Stdin = strings.NewReader(prompt)
 	var stdout, stderr bytes.Buffer

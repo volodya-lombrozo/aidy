@@ -50,7 +50,9 @@ func TestCodexCli_UsesReadOnlyEphemeralExecutionAndModel(t *testing.T) {
 	result, err := cli.SuggestBranch("Test description")
 
 	require.NoError(t, err)
-	assert.Contains(t, result, "exec --ephemeral --sandbox read-only --model gpt-test --config model_reasoning_effort=low -")
+	assert.Contains(t, result, "exec --ephemeral --ignore-user-config --ignore-rules --skip-git-repo-check --cd ")
+	assert.Contains(t, result, "--sandbox read-only --model gpt-test --config model_reasoning_effort=low --config web_search=\"disabled\" -")
+	assert.Contains(t, result, "aidy-codex-")
 }
 
 func TestCodexCli_UsesDefaultModel(t *testing.T) {
