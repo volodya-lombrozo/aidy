@@ -194,3 +194,25 @@ func TestRunInit_SkipsAPIKeyForClaudeCli(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, token, "claude-cli should not store a token")
 }
+
+func TestRunInit_SkipsAPIKeyForCodexCli(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".aidy.conf.yml")
+	in := strings.NewReader("codex-cli\n\n\n")
+	var out bytes.Buffer
+
+	err := runInit(in, &out, path)
+
+	require.NoError(t, err)
+	assert.NotContains(t, out.String(), "codex-cli API key")
+	conf, err := config.YamlConf(path)
+	require.NoError(t, err)
+	provider, err := conf.Provider()
+	require.NoError(t, err)
+	assert.Equal(t, "codex-cli", provider)
+	model, err := conf.Model()
+	require.NoError(t, err)
+	assert.Equal(t, "gpt-5-codex", model)
+	token, err := conf.Token()
+	require.NoError(t, err)
+	assert.Empty(t, token)
+}

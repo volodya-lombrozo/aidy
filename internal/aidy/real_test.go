@@ -110,6 +110,17 @@ func TestReal_InitialisesAI_ClaudeCliWithoutToken(t *testing.T) {
 	assert.NotNil(t, brain, "Expected brain to be initialized")
 }
 
+func TestReal_InitialisesAI_CodexCliWithoutToken(t *testing.T) {
+	conf := config.NewMock()
+	conf.MockProvider = "codex-cli"
+	conf.MockToken = ""
+
+	brain, err := Brain(false, false, conf, "en")
+
+	require.NoError(t, err, "Expected no error when initializing codex-cli without token")
+	assert.NotNil(t, brain, "Expected brain to be initialized")
+}
+
 func TestReal_InitialisesAI_LogsProviderAndModel(t *testing.T) {
 	original := log.Default()
 	defer log.Set(original)

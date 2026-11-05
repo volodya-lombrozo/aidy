@@ -1022,6 +1022,9 @@ func Brain(ailess bool, summary bool, conf config.Config, language string) (ai.A
 	if provider == "claude-cli" {
 		return ai.NewClaudeCli(model, summary, language), nil
 	}
+	if provider == "codex-cli" {
+		return ai.NewCodexCli(model, summary, language), nil
+	}
 	token, err := conf.Token()
 	if err != nil {
 		return nil, fmt.Errorf("error getting AI token: %v", err)

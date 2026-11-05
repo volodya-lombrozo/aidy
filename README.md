@@ -56,7 +56,7 @@ The quickest way to get started is to run:
 aidy init
 ```
 
-This walks you through choosing an AI provider, a model, and an API key, then writes `~/.aidy.conf.yml` for you. It also asks for a GitHub API key, which you can skip if you don't have one yet. If a configuration file already exists, you'll be asked before it's overwritten.
+This walks you through choosing an AI provider and model, asks for an API key when the provider needs one, then writes `~/.aidy.conf.yml` for you. It also asks for a GitHub API key, which you can skip if you don't have one yet. If a configuration file already exists, you'll be asked before it's overwritten.
 
 Alternatively, create the configuration file in your home directory `~/.aidy.conf.yml` yourself with the following minimal content:
 
@@ -116,7 +116,32 @@ models:
     model-id: sonnet
 ```
 
-Supported providers: `deepseek`, `openai`, `anthropic`, and `claude-cli`. Verify the configuration with:
+To use your OpenAI subscription, install and log in to the Codex CLI, then use
+the `codex-cli` provider. It runs `codex exec` locally without an API key and
+uses the configured model in a read-only sandbox:
+
+```yaml
+default-model: codex
+
+models:
+  codex:
+    provider: codex-cli
+    model-id: gpt-5-codex
+```
+
+To select a different Codex model, change `model-id`. For example, if
+`gpt-6-luna` is available in your Codex CLI account:
+
+```yaml
+default-model: codex
+
+models:
+  codex:
+    provider: codex-cli
+    model-id: gpt-6-luna
+```
+
+Supported providers: `deepseek`, `openai`, `anthropic`, `claude-cli`, and `codex-cli`. Verify the configuration with:
 
 ```bash
 aidy conf
