@@ -17,6 +17,9 @@ func TestMain(m *testing.M) {
 	if mode, ok := os.LookupEnv(fakeClaudeMode); ok {
 		os.Exit(fakeClaude(mode))
 	}
+	if mode, ok := os.LookupEnv(fakeCodexMode); ok {
+		os.Exit(fakeCodex(mode))
+	}
 	os.Exit(m.Run())
 }
 
