@@ -21,6 +21,7 @@ type CodexCli struct {
 	summary  bool
 	language string
 	log      log.Logger
+	tempDir  func() (string, error)
 }
 
 func NewCodexCli(model string, summary bool, language string) AI {
@@ -33,6 +34,7 @@ func NewCodexCli(model string, summary bool, language string) AI {
 		summary:  summary,
 		language: language,
 		log:      log.Default(),
+		tempDir:  func() (string, error) { return os.MkdirTemp("", "aidy-codex-") },
 	}
 }
 
@@ -95,11 +97,15 @@ func (c *CodexCli) send(system, user, summary string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("'%s' not found in PATH, install Codex CLI to use the 'codex-cli' provider: %w", c.binary, err)
 	}
-	workdir, err := os.MkdirTemp("", "aidy-codex-")
+	workdir, err := c.tempDir()
 	if err != nil {
 		return "", fmt.Errorf("error creating temporary Codex working directory: %w", err)
 	}
-	defer os.RemoveAll(workdir)
+	defer func() {
+		if err := os.RemoveAll(workdir); err != nil {
+			c.log.Warn("failed to remove temporary Codex working directory: %v", err)
+		}
+	}()
 	prompt := fmt.Sprintf("%s\n\n%s", system, content)
 	cmd := exec.Command(path, "exec", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--cd", filepath.Clean(workdir), "--sandbox", "read-only", "--model", c.model, "--config", "model_reasoning_effort=low", "--config", `web_search="disabled"`, "-")
 	cmd.Dir = workdir

@@ -44,6 +44,30 @@ func TestCodexCli_SendsPromptThroughStdin(t *testing.T) {
 	assert.Contains(t, result, "Test README content")
 }
 
+func TestCodexCli_UsesAidyPrompts(t *testing.T) {
+	cli := fakeCodexCli(t, "stdin", "", false, "en")
+
+	releaseNotes, err := cli.ReleaseNotes("changes")
+	require.NoError(t, err)
+	assert.Contains(t, releaseNotes, "generating GitHub release notes")
+
+	prTitle, err := cli.PrTitle("12", "diff", "issue", "summary")
+	require.NoError(t, err)
+	assert.Contains(t, prTitle, "generating Git commit titles")
+
+	issueTitle, err := cli.IssueTitle("input", "summary")
+	require.NoError(t, err)
+	assert.Contains(t, issueTitle, "creating GitHub issue titles")
+
+	issueBody, err := cli.IssueBody("input", "summary")
+	require.NoError(t, err)
+	assert.Contains(t, issueBody, "writing GitHub issue descriptions")
+
+	commit, err := cli.CommitMessage("12", "diff", "issue")
+	require.NoError(t, err)
+	assert.Contains(t, commit, "writing commit messages")
+}
+
 func TestCodexCli_UsesReadOnlyEphemeralExecutionAndModel(t *testing.T) {
 	cli := fakeCodexCli(t, "args", "gpt-test", false, "en")
 
@@ -112,6 +136,30 @@ func TestCodexCli_IssueLabels(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{"bug"}, labels)
+
+	cli = fakeCodexCli(t, "fail", "", false, "en")
+	_, err = cli.IssueLabels("Test issue", []string{"bug"})
+	require.Error(t, err)
+}
+
+func TestCodexCli_ReportsMissingBinary(t *testing.T) {
+	cli := NewCodexCli("", false, "en").(*CodexCli)
+	cli.binary = "aidy-missing-codex-binary"
+
+	_, err := cli.SuggestBranch("description")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found in PATH")
+}
+
+func TestCodexCli_ReportsTemporaryDirectoryFailure(t *testing.T) {
+	cli := fakeCodexCli(t, "stdin", "", false, "en")
+	cli.tempDir = func() (string, error) { return "", fmt.Errorf("temporary directory unavailable") }
+
+	_, err := cli.SuggestBranch("description")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "temporary directory unavailable")
 }
 
 func fakeCodexCli(t *testing.T, mode, model string, summary bool, language string) *CodexCli {
