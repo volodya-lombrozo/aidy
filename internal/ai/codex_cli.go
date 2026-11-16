@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/volodya-lombrozo/aidy/internal/log"
 )
@@ -114,8 +115,11 @@ func (c *CodexCli) send(system, user, summary string) (string, error) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("error running codex cli: %v; stderr: %s", err, strings.TrimSpace(stderr.String()))
+	started := time.Now()
+	runErr := cmd.Run()
+	c.log.Debug("codex exec with model '%s' took %s", c.model, time.Since(started))
+	if runErr != nil {
+		return "", fmt.Errorf("error running codex cli: %v; stderr: %s", runErr, strings.TrimSpace(stderr.String()))
 	}
 	result := strings.TrimSpace(stdout.String())
 	if result == "" {
