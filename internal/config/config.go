@@ -4,6 +4,7 @@ type Config interface {
 	Provider() (string, error)
 	Model() (string, error)
 	ReasoningEffort() (string, error)
+	ServiceTier() (string, error)
 	Token() (string, error)
 	GithubKey() (string, error)
 	Metrics() (bool, error)

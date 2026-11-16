@@ -1027,7 +1027,11 @@ func Brain(ailess bool, summary bool, conf config.Config, language string) (ai.A
 		if err != nil {
 			return nil, fmt.Errorf("error getting Codex reasoning effort from configuration: %v", err)
 		}
-		return ai.NewCodexCliWithReasoningEffort(model, effort, summary, language), nil
+		tier, err := conf.ServiceTier()
+		if err != nil {
+			return nil, fmt.Errorf("error getting Codex service tier from configuration: %v", err)
+		}
+		return ai.NewCodexCliWithSettings(model, effort, tier, summary, language), nil
 	}
 	token, err := conf.Token()
 	if err != nil {

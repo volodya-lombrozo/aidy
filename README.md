@@ -139,13 +139,16 @@ models:
   codex:
     provider: codex-cli
     model-id: gpt-6-luna
-    # Optional override (defaults to none for Luna, low otherwise):
+    # Optional overrides (defaults to none/priority for Luna, low/standard otherwise):
     # reasoning-effort: low
+    # service-tier: default
 ```
 
 Codex CLI uses `none` reasoning effort by default for `gpt-6-luna` to reduce
-latency, and `low` for other models. Set `reasoning-effort` under the model to
-override this choice (`none`, `low`, `medium`, or `high`).
+latency, and requests Luna's `priority` tier, which the model catalog describes
+as 1.5x speed. Other models use `low` reasoning effort and the standard tier.
+Set `reasoning-effort` or `service-tier` under the model to override these
+choices. Supported service tiers depend on the model and Codex account.
 
 Supported providers: `deepseek`, `openai`, `anthropic`, `claude-cli`, and `codex-cli`. Verify the configuration with:
 

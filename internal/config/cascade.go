@@ -47,6 +47,10 @@ func (c *CascadeConfig) ReasoningEffort() (string, error) {
 	return c.original.ReasoningEffort()
 }
 
+func (c *CascadeConfig) ServiceTier() (string, error) {
+	return c.original.ServiceTier()
+}
+
 func (c *CascadeConfig) Provider() (string, error) {
 	return c.original.Provider()
 }

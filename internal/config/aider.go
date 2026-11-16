@@ -35,6 +35,10 @@ func (c *AiderConfig) ReasoningEffort() (string, error) {
 	return "", nil
 }
 
+func (c *AiderConfig) ServiceTier() (string, error) {
+	return "", nil
+}
+
 func (c *AiderConfig) Provider() (string, error) {
 	return "openai", nil
 }

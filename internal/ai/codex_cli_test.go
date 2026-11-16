@@ -75,7 +75,8 @@ func TestCodexCli_UsesReadOnlyEphemeralExecutionAndModel(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Contains(t, result, "exec --ephemeral --ignore-user-config --ignore-rules --skip-git-repo-check --cd ")
-	assert.Contains(t, result, "--sandbox read-only --model gpt-test --config model_reasoning_effort=low --config web_search=\"disabled\" -")
+	assert.Contains(t, result, "--sandbox read-only --model gpt-test --config model_reasoning_effort=low --config model_instructions_file=")
+	assert.Contains(t, result, "--config web_search=\"disabled\" -")
 	assert.Contains(t, result, "aidy-codex-")
 }
 
@@ -122,6 +123,32 @@ func TestCodexCli_UsesConfiguredReasoningEffort(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Contains(t, result, "--config model_reasoning_effort=low")
+}
+
+func TestCodexCli_UsesPriorityTierForLunaAndHonorsOverride(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		tier string
+		want string
+	}{
+		{name: "Luna defaults to priority", want: "priority"},
+		{name: "configured default disables priority", tier: "default", want: "default"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cli := NewCodexCliWithSettings("gpt-6-luna", "low", test.tier, false, "en").(*CodexCli)
+			cli.binary = func() string {
+				self, err := os.Executable()
+				require.NoError(t, err)
+				return self
+			}()
+			t.Setenv(fakeCodexMode, "args")
+
+			result, err := cli.SuggestBranch("Test description")
+
+			require.NoError(t, err)
+			assert.Contains(t, result, "--config service_tier="+test.want)
+		})
+	}
 }
 
 func TestCodexCli_HidesOpenAIAPIKey(t *testing.T) {
