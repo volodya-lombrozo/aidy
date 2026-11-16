@@ -31,6 +31,10 @@ func (c *AiderConfig) Model() (string, error) {
 	return c.ModelYaml, nil
 }
 
+func (c *AiderConfig) ReasoningEffort() (string, error) {
+	return "", nil
+}
+
 func (c *AiderConfig) Provider() (string, error) {
 	return "openai", nil
 }

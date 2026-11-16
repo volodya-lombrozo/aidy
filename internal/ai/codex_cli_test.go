@@ -88,6 +88,42 @@ func TestCodexCli_UsesDefaultModel(t *testing.T) {
 	assert.Contains(t, result, "--model "+codexCliDefaultModel)
 }
 
+func TestCodexCli_UsesModelSpecificDefaultReasoningEffort(t *testing.T) {
+	for _, test := range []struct {
+		model  string
+		effort string
+	}{
+		{model: "gpt-6-luna", effort: "none"},
+		{model: "gpt-test", effort: "low"},
+	} {
+		t.Run(test.model, func(t *testing.T) {
+			cli := fakeCodexCli(t, "args", test.model, false, "en")
+
+			result, err := cli.SuggestBranch("Test description")
+
+			require.NoError(t, err)
+			assert.Contains(t, result, "--config model_reasoning_effort="+test.effort)
+		})
+	}
+}
+
+func TestCodexCli_UsesConfiguredReasoningEffort(t *testing.T) {
+	cli := NewCodexCliWithReasoningEffort("gpt-6-luna", "low", false, "en").(*CodexCli)
+	cli.binary = func() string {
+		self, err := os.Executable()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return self
+	}()
+	t.Setenv(fakeCodexMode, "args")
+
+	result, err := cli.SuggestBranch("Test description")
+
+	require.NoError(t, err)
+	assert.Contains(t, result, "--config model_reasoning_effort=low")
+}
+
 func TestCodexCli_HidesOpenAIAPIKey(t *testing.T) {
 	t.Setenv("OPENAI_API_KEY", "secret-key")
 	cli := fakeCodexCli(t, "env", "", false, "en")

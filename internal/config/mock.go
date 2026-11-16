@@ -1,13 +1,14 @@
 package config
 
 type MockConfig struct {
-	MockGithub   string
-	MockModel    string
-	Error        error
-	MockToken    string
-	MockProvider string
-	MockMetrics  bool
-	MockJira     Jira
+	MockGithub          string
+	MockModel           string
+	MockReasoningEffort string
+	Error               error
+	MockToken           string
+	MockProvider        string
+	MockMetrics         bool
+	MockJira            Jira
 }
 
 func NewMock() *MockConfig {
@@ -26,6 +27,10 @@ func (m *MockConfig) GithubKey() (string, error) {
 
 func (m *MockConfig) Model() (string, error) {
 	return m.MockModel, m.Error
+}
+
+func (m *MockConfig) ReasoningEffort() (string, error) {
+	return m.MockReasoningEffort, m.Error
 }
 
 func (m *MockConfig) Provider() (string, error) {

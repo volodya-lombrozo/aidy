@@ -15,10 +15,13 @@ import (
 
 const codexCliDefaultModel = "gpt-5-codex"
 const codexCliBinary = "codex"
+const codexCliDefaultReasoningEffort = "low"
+const codexCliLunaReasoningEffort = "none"
 
 type CodexCli struct {
 	binary   string
 	model    string
+	effort   string
 	summary  bool
 	language string
 	log      log.Logger
@@ -26,12 +29,23 @@ type CodexCli struct {
 }
 
 func NewCodexCli(model string, summary bool, language string) AI {
+	return NewCodexCliWithReasoningEffort(model, "", summary, language)
+}
+
+func NewCodexCliWithReasoningEffort(model, effort string, summary bool, language string) AI {
 	if model == "" {
 		model = codexCliDefaultModel
+	}
+	if effort == "" {
+		effort = codexCliDefaultReasoningEffort
+		if model == "gpt-6-luna" {
+			effort = codexCliLunaReasoningEffort
+		}
 	}
 	return &CodexCli{
 		binary:   codexCliBinary,
 		model:    model,
+		effort:   effort,
 		summary:  summary,
 		language: language,
 		log:      log.Default(),
@@ -108,7 +122,7 @@ func (c *CodexCli) send(system, user, summary string) (string, error) {
 		}
 	}()
 	prompt := fmt.Sprintf("%s\n\n%s", system, content)
-	cmd := exec.Command(path, "exec", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--cd", filepath.Clean(workdir), "--sandbox", "read-only", "--model", c.model, "--config", "model_reasoning_effort=low", "--config", `web_search="disabled"`, "-")
+	cmd := exec.Command(path, "exec", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--cd", filepath.Clean(workdir), "--sandbox", "read-only", "--model", c.model, "--config", "model_reasoning_effort="+c.effort, "--config", `web_search="disabled"`, "-")
 	cmd.Dir = workdir
 	cmd.Env = withoutOpenAIAPIKey(os.Environ())
 	cmd.Stdin = strings.NewReader(prompt)
@@ -117,7 +131,17 @@ func (c *CodexCli) send(system, user, summary string) (string, error) {
 	cmd.Stderr = &stderr
 	started := time.Now()
 	runErr := cmd.Run()
-	c.log.Debug("codex exec with model '%s' took %s", c.model, time.Since(started))
+	// TEMP(perf): remove after comparing Codex process CPU time with wall time.
+	elapsed := time.Since(started)
+	var cpu time.Duration
+	if cmd.ProcessState != nil {
+		cpu = cmd.ProcessState.UserTime() + cmd.ProcessState.SystemTime()
+	}
+	wait := elapsed - cpu
+	if wait < 0 {
+		wait = 0
+	}
+	c.log.Debug("codex exec timing model=%s wall=%s cpu=%s non_cpu=%s", c.model, elapsed, cpu, wait)
 	if runErr != nil {
 		return "", fmt.Errorf("error running codex cli: %v; stderr: %s", runErr, strings.TrimSpace(stderr.String()))
 	}

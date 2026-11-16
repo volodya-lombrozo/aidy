@@ -48,6 +48,11 @@ func (c *YamlConfig) Model() (string, error) {
 	return c.Models[model]["model-id"], nil
 }
 
+func (c *YamlConfig) ReasoningEffort() (string, error) {
+	model := c.DefaultModel
+	return c.Models[model]["reasoning-effort"], nil
+}
+
 func (c *YamlConfig) DeepseekKey() (string, error) {
 	return c.APIKeys["deepseek"], nil
 }

@@ -1023,7 +1023,11 @@ func Brain(ailess bool, summary bool, conf config.Config, language string) (ai.A
 		return ai.NewClaudeCli(model, summary, language), nil
 	}
 	if provider == "codex-cli" {
-		return ai.NewCodexCli(model, summary, language), nil
+		effort, err := conf.ReasoningEffort()
+		if err != nil {
+			return nil, fmt.Errorf("error getting Codex reasoning effort from configuration: %v", err)
+		}
+		return ai.NewCodexCliWithReasoningEffort(model, effort, summary, language), nil
 	}
 	token, err := conf.Token()
 	if err != nil {

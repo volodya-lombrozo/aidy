@@ -91,6 +91,20 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, "experimental-mode", modelDeepseek["custom-option"])
 }
 
+func TestYamlConfig_ReasoningEffort(t *testing.T) {
+	config := &YamlConfig{
+		DefaultModel: "codex",
+		Models: map[string]map[string]string{
+			"codex": {"reasoning-effort": "none"},
+		},
+	}
+
+	effort, err := config.ReasoningEffort()
+
+	require.NoError(t, err)
+	assert.Equal(t, "none", effort)
+}
+
 func TestYamlConfFileReadError(t *testing.T) {
 	_, err := YamlConf("/non/existent/path/config.yml")
 	assert.Error(t, err, "Expected an error when the file cannot be read")
