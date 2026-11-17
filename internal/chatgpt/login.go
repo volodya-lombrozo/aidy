@@ -42,7 +42,7 @@ func (c *Client) Login(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	redirect := "http://" + listener.Addr().String() + "/auth/callback"
 	state, nonce, verifier := random(), random(), random()
 	hash := sha256.Sum256([]byte(verifier))
@@ -64,26 +64,24 @@ func (c *Client) Login(ctx context.Context, out io.Writer) error {
 		}
 		select {
 		case results <- r.URL.Query():
-			fmt.Fprintln(w, "Sign-in received. Return to aidy to finish.")
+			_, _ = fmt.Fprintln(w, "Sign-in received. Return to aidy to finish.")
 		default:
 			http.Error(w, "Callback already received", 400)
 		}
 	})
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second}
-	defer server.Close()
+	defer func() { _ = server.Close() }()
 	go func() { _ = server.Serve(listener) }()
 	address := issuer + "/api/accounts/authorize?" + q.Encode()
-	fmt.Fprintf(out, "Continue with ChatGPT in your browser:\n%s\n", address)
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.CommandContext(ctx, "open", address)
-	case "windows":
-		cmd = exec.CommandContext(ctx, "rundll32", "url.dll,FileProtocolHandler", address)
-	default:
-		cmd = exec.CommandContext(ctx, "xdg-open", address)
+	if _, err := fmt.Fprintf(out, "Continue with ChatGPT in your browser:\n%s\n", address); err != nil {
+		return err
 	}
-	_ = cmd.Run() // The printed URL also supports manual browser opening.
+	open := c.browser
+	if open == nil {
+		open = openBrowser
+	}
+	_ = open(ctx, address) // The printed URL also supports manual browser opening.
+
 	var result url.Values
 	select {
 	case result = <-results:
@@ -124,8 +122,21 @@ func (c *Client) Login(ctx context.Context, out io.Writer) error {
 	if err = c.save(s); err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "ChatGPT connected: %s\n", email)
-	return nil
+	_, err = fmt.Fprintf(out, "ChatGPT connected: %s\n", email)
+	return err
+}
+
+func openBrowser(ctx context.Context, address string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.CommandContext(ctx, "open", address)
+	case "windows":
+		cmd = exec.CommandContext(ctx, "rundll32", "url.dll,FileProtocolHandler", address)
+	default:
+		cmd = exec.CommandContext(ctx, "xdg-open", address)
+	}
+	return cmd.Run()
 }
 
 // identity verifies RS256 against the issuer's published keys before using claims.
@@ -154,7 +165,7 @@ func (c *Client) identity(ctx context.Context, token, client, nonce string) (str
 	if err != nil {
 		return "", "", errors.New("could not retrieve ChatGPT identity keys")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var keys struct {
 		Keys []struct{ Kid, Kty, N, E string }
 	}

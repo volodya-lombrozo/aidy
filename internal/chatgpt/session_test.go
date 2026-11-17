@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -39,7 +40,9 @@ func TestRefreshPersistsRotation(t *testing.T) {
 	require.Equal(t, "new-refresh", saved.Refresh)
 	info, err := os.Stat(filepath.Join(c.Dir, "credentials.json"))
 	require.NoError(t, err)
-	require.Equal(t, os.FileMode(0600), info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		require.Equal(t, os.FileMode(0600), info.Mode().Perm())
+	}
 }
 func TestMissingSession(t *testing.T) {
 	c := &Client{Dir: t.TempDir()}

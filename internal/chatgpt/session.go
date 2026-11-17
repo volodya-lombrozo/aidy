@@ -23,8 +23,9 @@ const permission = "chatgpt.tokens.use.direct"
 
 // Client owns one local credential store. HTTP is injectable for tests.
 type Client struct {
-	Dir  string
-	HTTP *http.Client
+	Dir     string
+	HTTP    *http.Client
+	browser func(context.Context, string) error
 }
 type session struct {
 	Host     string    `json:"host"`
@@ -65,12 +66,12 @@ func (c *Client) lock(ctx context.Context) (func(), error) {
 	}
 	for {
 		if err := ctx.Err(); err != nil {
-			file.Close()
+			_ = file.Close()
 			return nil, err
 		}
 		acquired, err := tryLock(file)
 		if err != nil {
-			file.Close()
+			_ = file.Close()
 			return nil, err
 		}
 		if acquired {
@@ -78,7 +79,7 @@ func (c *Client) lock(ctx context.Context) (func(), error) {
 		}
 		select {
 		case <-ctx.Done():
-			file.Close()
+			_ = file.Close()
 			return nil, fmt.Errorf("waiting for ChatGPT credential lock: %w", ctx.Err())
 		case <-time.After(100 * time.Millisecond):
 		}
@@ -105,9 +106,9 @@ func (c *Client) save(s session) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(f.Name())
+	defer func() { _ = os.Remove(f.Name()) }()
 	if _, err = f.Write(b); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	if err = f.Close(); err != nil {
@@ -142,7 +143,7 @@ func (c *Client) exchange(ctx context.Context, form url.Values) (tokens, error) 
 	if err != nil {
 		return t, errors.New("ChatGPT token request failed; check your connection")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 200 {
 		return t, fmt.Errorf("ChatGPT token request failed (HTTP %d); sign in by running an aidy AI command in an interactive terminal", resp.StatusCode)
 	}

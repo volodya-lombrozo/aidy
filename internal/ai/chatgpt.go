@@ -77,7 +77,7 @@ func (c *chatGPTClient) CreateChatCompletion(ctx context.Context, request openai
 	if err != nil {
 		return result, errors.New("ChatGPT request failed; check your connection")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 200 {
 		return result, fmt.Errorf("ChatGPT request failed (HTTP %d); check account access and limits at https://chatgpt.com/settings/usage", resp.StatusCode)
 	}
