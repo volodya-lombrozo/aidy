@@ -1019,6 +1019,9 @@ func Brain(ailess bool, summary bool, conf config.Config, language string) (ai.A
 		return nil, fmt.Errorf("error getting AI model from configuration: %v", err)
 	}
 	log.Default().Debug("using AI provider '%s' with model '%s'", provider, model)
+	if provider == "chatgpt" {
+		return ai.NewChatGPT(model, summary, language), nil
+	}
 	if provider == "claude-cli" {
 		return ai.NewClaudeCli(model, summary, language), nil
 	}
