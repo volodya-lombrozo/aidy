@@ -150,7 +150,32 @@ as 1.5x speed. Other models use `low` reasoning effort and the standard tier.
 Set `reasoning-effort` or `service-tier` under the model to override these
 choices. Supported service tiers depend on the model and Codex account.
 
-Supported providers: `deepseek`, `openai`, `anthropic`, `claude-cli`, and `codex-cli`. Verify the configuration with:
+To use your ChatGPT plan directly, configure the separate `chatgpt` provider:
+
+```yaml
+default-model: chatgpt
+models:
+  chatgpt:
+    provider: chatgpt
+    model-id: gpt-6.1-sol
+```
+
+The first AI request in an interactive terminal opens the browser for **Continue
+with ChatGPT**. Approve aidy's access to your plan. Later requests reuse the saved
+session and refresh it automatically. No Codex CLI or API key is required.
+Scripts must use a session established interactively first.
+
+Credentials are stored in `~/.aidy/chatgpt/credentials.json` with owner-only
+permissions and atomic updates. Keep this file private. Each prompt is a separate
+streamed Responses API request; partial or failed responses are rejected. Plan
+availability and usage limits apply. Review access and limits in
+[ChatGPT Settings](https://chatgpt.com/settings/usage).
+
+The integration follows OpenAI's
+[open-source sign-in flow](https://developers.openai.com/siwc/token-sharing-open-source/sign-in)
+and [Responses API requirements](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
+
+Supported providers: `deepseek`, `openai`, `anthropic`, `claude-cli`, `codex-cli`, and `chatgpt`. Verify the configuration with:
 
 ```bash
 aidy conf

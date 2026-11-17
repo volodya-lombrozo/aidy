@@ -14,6 +14,7 @@ import (
 )
 
 var defaultModelIDs = map[string]string{
+	"chatgpt":    "gpt-6.1-sol",
 	"deepseek":   "deepseek-chat",
 	"openai":     "gpt-4o",
 	"anthropic":  "claude-sonnet-4-6",
@@ -21,9 +22,9 @@ var defaultModelIDs = map[string]string{
 	"codex-cli":  "gpt-5-codex",
 }
 
-var providers = []string{"deepseek", "openai", "anthropic", "claude-cli", "codex-cli"}
+var providers = []string{"deepseek", "openai", "anthropic", "claude-cli", "codex-cli", "chatgpt"}
 
-var keyless = map[string]bool{"claude-cli": true, "codex-cli": true}
+var keyless = map[string]bool{"chatgpt": true, "claude-cli": true, "codex-cli": true}
 
 func newInitCmd() *cobra.Command {
 	command := &cobra.Command{
