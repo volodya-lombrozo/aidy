@@ -13,6 +13,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewChatGPT(t *testing.T) {
+	brain := NewChatGPT("", true, "en").(*OpenAI)
+	require.Equal(t, "gpt-6.1-sol", brain.model)
+	require.True(t, brain.summary)
+	require.Equal(t, "en", brain.language)
+	require.Empty(t, brain.client.(*chatGPTClient).effort)
+
+	configured := NewChatGPTWithReasoningEffort("gpt-6-luna", "none", false, "fr").(*OpenAI)
+	require.Equal(t, "gpt-6-luna", configured.model)
+	require.False(t, configured.summary)
+	require.Equal(t, "fr", configured.language)
+	client := configured.client.(*chatGPTClient)
+	require.Equal(t, "none", client.effort)
+	require.Equal(t, "https://api.openai.com/v1/responses", client.endpoint)
+	require.NotNil(t, client.access)
+	require.NotNil(t, client.http)
+}
+
 func TestChatGPTStream(t *testing.T) {
 	for _, tc := range []struct {
 		name, stream, want string
