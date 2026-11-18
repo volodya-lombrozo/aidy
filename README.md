@@ -160,6 +160,20 @@ models:
     model-id: gpt-6.1-sol
 ```
 
+For faster responses on simple tasks such as commit messages, use `gpt-6-luna`
+with `reasoning-effort: none` to disable reasoning:
+
+```yaml
+chatgpt:
+  provider: chatgpt
+  model-id: gpt-6-luna
+  reasoning-effort: none
+```
+
+Disabling reasoning can reduce latency but may reduce quality on complex tasks.
+Supported effort values depend on the model. If omitted, the provider uses the
+server default.
+
 The first AI request in an interactive terminal opens the browser for **Continue
 with ChatGPT**. Approve aidy's access to your plan. Later requests reuse the saved
 session and refresh it automatically. No Codex CLI or API key is required.

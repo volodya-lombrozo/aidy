@@ -13,6 +13,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewChatGPT(t *testing.T) {
+	brain := NewChatGPT("", true, "en").(*OpenAI)
+	require.Equal(t, "gpt-6.1-sol", brain.model)
+	require.True(t, brain.summary)
+	require.Equal(t, "en", brain.language)
+	require.Empty(t, brain.client.(*chatGPTClient).effort)
+
+	configured := NewChatGPTWithReasoningEffort("gpt-6-luna", "none", false, "fr").(*OpenAI)
+	require.Equal(t, "gpt-6-luna", configured.model)
+	require.False(t, configured.summary)
+	require.Equal(t, "fr", configured.language)
+	client := configured.client.(*chatGPTClient)
+	require.Equal(t, "none", client.effort)
+	require.Equal(t, "https://api.openai.com/v1/responses", client.endpoint)
+	require.NotNil(t, client.access)
+	require.NotNil(t, client.http)
+}
+
 func TestChatGPTStream(t *testing.T) {
 	for _, tc := range []struct {
 		name, stream, want string
@@ -41,7 +59,7 @@ type chatGPTTransport func(*http.Request) (*http.Response, error)
 func (f chatGPTTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestChatGPTRequests(t *testing.T) {
-	for _, mode := range []string{"success", "access-error", "network-error", "unauthorized", "failed-stream", "bad-url"} {
+	for _, mode := range []string{"success", "low", "none", "access-error", "network-error", "unauthorized", "failed-stream", "bad-url"} {
 		t.Run(mode, func(t *testing.T) {
 			client := &chatGPTClient{endpoint: "https://example.com/responses", access: func(context.Context) (string, error) {
 				if mode == "access-error" {
@@ -52,6 +70,9 @@ func TestChatGPTRequests(t *testing.T) {
 			if mode == "bad-url" {
 				client.endpoint = ":"
 			}
+			if mode == "low" || mode == "none" {
+				client.effort = mode
+			}
 			client.http = &http.Client{Transport: chatGPTTransport(func(r *http.Request) (*http.Response, error) {
 				require.Equal(t, "Bearer token", r.Header.Get("Authorization"))
 				var body map[string]any
@@ -60,6 +81,11 @@ func TestChatGPTRequests(t *testing.T) {
 				require.Equal(t, true, body["stream"])
 				require.Equal(t, "prompt", body["instructions"])
 				require.NotContains(t, body, "temperature")
+				if client.effort == "" {
+					require.NotContains(t, body, "reasoning")
+				} else {
+					require.Equal(t, map[string]any{"effort": client.effort}, body["reasoning"])
+				}
 				if mode == "network-error" {
 					return nil, errors.New("offline")
 				}
@@ -74,7 +100,7 @@ func TestChatGPTRequests(t *testing.T) {
 				return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(stream)), Header: make(http.Header)}, nil
 			})}
 			response, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{Model: "model", Messages: []openai.ChatCompletionMessage{{Content: "prompt"}}})
-			if mode == "success" {
+			if mode == "success" || mode == "low" || mode == "none" {
 				require.NoError(t, err)
 				require.Equal(t, "result", response.Choices[0].Message.Content)
 			} else {

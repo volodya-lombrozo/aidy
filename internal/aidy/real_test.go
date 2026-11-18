@@ -121,6 +121,46 @@ func TestReal_InitialisesAI_CodexCliWithoutToken(t *testing.T) {
 	assert.NotNil(t, brain, "Expected brain to be initialized")
 }
 
+type chatGPTConfig struct {
+	config.Config
+	effortErr error
+	read      bool
+}
+
+func (c *chatGPTConfig) ReasoningEffort() (string, error) {
+	c.read = true
+	effort, err := c.Config.ReasoningEffort()
+	if c.effortErr != nil {
+		return "", c.effortErr
+	}
+	return effort, err
+}
+
+func TestReal_InitialisesAI_ChatGPT(t *testing.T) {
+	for _, fail := range []bool{false, true} {
+		t.Run(fmt.Sprintf("effort-error=%t", fail), func(t *testing.T) {
+			base := config.NewMock()
+			base.MockProvider = "chatgpt"
+			base.MockModel = "gpt-6-luna"
+			base.MockToken = ""
+			base.MockReasoningEffort = "none"
+			conf := &chatGPTConfig{Config: base}
+			if fail {
+				conf.effortErr = fmt.Errorf("unavailable reasoning setting")
+			}
+			brain, err := Brain(false, false, conf, "en")
+			require.True(t, conf.read, "ChatGPT must read the configured reasoning effort")
+			if fail {
+				require.EqualError(t, err, "error getting ChatGPT reasoning effort from configuration: unavailable reasoning setting")
+				require.Nil(t, brain)
+			} else {
+				require.NoError(t, err)
+				require.IsType(t, &ai.OpenAI{}, brain)
+			}
+		})
+	}
+}
+
 func TestReal_InitialisesAI_LogsProviderAndModel(t *testing.T) {
 	original := log.Default()
 	defer log.Set(original)

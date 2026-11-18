@@ -19,10 +19,14 @@ import (
 
 // NewChatGPT reuses aidy's prompts with a direct ChatGPT plan transport.
 func NewChatGPT(model string, summary bool, language string) AI {
+	return NewChatGPTWithReasoningEffort(model, "", summary, language)
+}
+
+func NewChatGPTWithReasoningEffort(model, effort string, summary bool, language string) AI {
 	if model == "" {
 		model = "gpt-6.1-sol"
 	}
-	return NewOpenAIWithClient(&chatGPTClient{http: &http.Client{Timeout: 5 * time.Minute}, endpoint: "https://api.openai.com/v1/responses", access: chatGPTAccess}, model, 0, summary, language)
+	return NewOpenAIWithClient(&chatGPTClient{http: &http.Client{Timeout: 5 * time.Minute}, endpoint: "https://api.openai.com/v1/responses", access: chatGPTAccess, effort: effort}, model, 0, summary, language)
 }
 func chatGPTAccess(ctx context.Context) (string, error) {
 	c, err := chatgpt.Default()
@@ -45,6 +49,7 @@ func chatGPTAccess(ctx context.Context) (string, error) {
 }
 
 type chatGPTClient struct {
+	effort   string
 	http     *http.Client
 	endpoint string
 	access   func(context.Context) (string, error)
@@ -62,7 +67,11 @@ func (c *chatGPTClient) CreateChatCompletion(ctx context.Context, request openai
 	for _, m := range request.Messages {
 		prompts = append(prompts, m.Content)
 	}
-	body, err := json.Marshal(map[string]any{"model": request.Model, "instructions": strings.Join(prompts, "\n\n"), "input": []map[string]string{{"role": "user", "content": "Complete the requested text generation task."}}, "store": false, "stream": true})
+	payload := map[string]any{"model": request.Model, "instructions": strings.Join(prompts, "\n\n"), "input": []map[string]string{{"role": "user", "content": "Complete the requested text generation task."}}, "store": false, "stream": true}
+	if c.effort != "" {
+		payload["reasoning"] = map[string]string{"effort": c.effort}
+	}
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return result, err
 	}
