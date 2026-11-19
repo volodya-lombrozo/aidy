@@ -157,16 +157,6 @@ func (r *real) SetTarget() error {
 	return nil
 }
 
-func (r *real) Diff() error {
-	diff, err := r.git.Diff()
-	if err != nil {
-		return fmt.Errorf("failed to get diff: '%v'", err)
-	} else {
-		r.print(fmt.Sprintf("diff with the base branch:\n%s\n", diff))
-		return nil
-	}
-}
-
 func (r *real) Commit(issue bool) error {
 	branch, err := r.git.CurrentBranch()
 	if err != nil {
@@ -205,7 +195,7 @@ func (r *real) Commit(issue bool) error {
 		return fmt.Errorf("error committing changes: %v", err)
 	}
 	r.logger.Info("commit was created with message: '%s'", msg)
-	return r.Heal()
+	return r.heal()
 }
 
 func (r *real) Issue(task string) error {
@@ -890,7 +880,7 @@ func (r *real) Squash(issue bool) {
 	r.logger.Info("changes were squashed")
 }
 
-func (r *real) Heal() error {
+func (r *real) heal() error {
 	name, err := r.git.CurrentBranch()
 	if err != nil {
 		return fmt.Errorf("error getting branch name: %v", err)

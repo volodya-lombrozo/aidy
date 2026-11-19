@@ -393,30 +393,6 @@ func TestReal_SetTarget_PreservesDots(t *testing.T) {
 	assert.Equal(t, "https://github.com/cqfn/kaicode.github.io", cache.Remote(), "expected dots in remote to be preserved")
 }
 
-func TestReal_PrintsDiff_Successfully(t *testing.T) {
-	printer := output.NewMock()
-	git := git.NewMock()
-	raidy := &real{git: git, config: config.NewMock(), printer: printer}
-
-	err := raidy.Diff()
-
-	captured := printer.Captured()
-	require.NoError(t, err, "Expected no error when printing diff")
-	expected := "diff with the base branch:\nmock-diff\n"
-	assert.Equal(t, expected, captured, "Expected diff to be printed")
-}
-
-func TestReal_PrintsDiff_Error(t *testing.T) {
-	printer := output.NewMock()
-	git := git.NewMockWithError(fmt.Errorf("mock error"))
-	raidy := &real{git: git, config: config.NewMock(), printer: printer}
-
-	err := raidy.Diff()
-
-	require.Error(t, err, "Expected error when printing diff")
-	assert.Equal(t, "failed to get diff: 'mock error'", err.Error(), "Expected error message to match")
-}
-
 func TestReal_PrintConfig_Successful(t *testing.T) {
 	printer := output.NewMock()
 	raidy := &real{config: config.NewMock(), printer: printer}
@@ -498,7 +474,7 @@ func TestReal_Heal(t *testing.T) {
 	shell := executor.NewMock()
 	raidy := &real{git: git.NewMockWithShell(shell)}
 
-	err := raidy.Heal()
+	err := raidy.heal()
 
 	require.NoError(t, err, "Expected no error when healing")
 	expected := []string{
@@ -539,7 +515,7 @@ func TestHealCommitMessage(t *testing.T) {
 func TestReal_Heal_CantGetBranch(t *testing.T) {
 	raidy := &real{git: git.NewMockWithError(fmt.Errorf("CurrentBranch method fails"))}
 
-	err := raidy.Heal()
+	err := raidy.heal()
 
 	require.Error(t, err, "Expected error when unable to get current branch")
 	assert.Equal(t, "error getting branch name: CurrentBranch method fails", err.Error(), "Expected error message to match")
@@ -548,7 +524,7 @@ func TestReal_Heal_CantGetBranch(t *testing.T) {
 func TestReal_Heal_CantGetCommitMessage(t *testing.T) {
 	raidy := &real{git: git.NewMockWithError(fmt.Errorf("CommitMessage method fails"))}
 
-	err := raidy.Heal()
+	err := raidy.heal()
 
 	require.Error(t, err, "Expected error when unable to get commit message")
 	assert.Equal(t, "error getting current commit message: CommitMessage method fails", err.Error(), "Expected error message to match")
@@ -557,7 +533,7 @@ func TestReal_Heal_CantGetCommitMessage(t *testing.T) {
 func TestReal_Heal_CantAmend(t *testing.T) {
 	raidy := &real{git: git.NewMockWithError(fmt.Errorf("Amend method fails"))}
 
-	err := raidy.Heal()
+	err := raidy.heal()
 
 	require.Error(t, err, "Expected error when unable to amend commit")
 	assert.Equal(t, "Amend method fails", err.Error(), "Expected error message to match")

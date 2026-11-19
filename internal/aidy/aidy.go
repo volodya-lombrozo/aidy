@@ -8,10 +8,8 @@ type Aidy interface {
 	PullRequest(fixes bool, target string, duplicate bool, source string) error
 	MergeRequest(fixes bool, target string, duplicate bool, source string) error
 	Issue(task string) error
-	Heal() error
 	Append()
 	Clean()
-	Diff() error
 	StartIssue(number string) error
 	Last() error
 }
