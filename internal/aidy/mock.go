@@ -47,22 +47,12 @@ func (m *Mock) Issue(task string) error {
 	return nil
 }
 
-func (m *Mock) Heal() error {
-	m.logs = append(m.logs, "Heal called")
-	return nil
-}
-
 func (m *Mock) Append() {
 	m.logs = append(m.logs, "Append called")
 }
 
 func (m *Mock) Clean() {
 	m.logs = append(m.logs, "Clean called")
-}
-
-func (m *Mock) Diff() error {
-	m.logs = append(m.logs, "Diff called")
-	return nil
 }
 
 func (m *Mock) StartIssue(number string) error {
@@ -98,9 +88,7 @@ func (f *FailingMock) MergeRequest(fixes bool, target string, duplicate bool, so
 	return errors.New("error")
 }
 func (f *FailingMock) Issue(task string) error        { return errors.New("error") }
-func (f *FailingMock) Heal() error                    { return errors.New("error") }
 func (f *FailingMock) Append()                        {}
 func (f *FailingMock) Clean()                         {}
-func (f *FailingMock) Diff() error                    { return errors.New("error") }
 func (f *FailingMock) StartIssue(number string) error { return errors.New("error") }
 func (f *FailingMock) Last() error                    { return errors.New("error") }

@@ -48,13 +48,6 @@ func TestMockAidy_Issue(t *testing.T) {
 	assert.Contains(t, aidy.Logs(), "Issue called with task: test-task")
 }
 
-func TestMockAidy_Heal(t *testing.T) {
-	aidy := NewMock()
-	err := aidy.Heal()
-	assert.NoError(t, err)
-	assert.Contains(t, aidy.Logs(), "Heal called")
-}
-
 func TestMockAidy_Append(t *testing.T) {
 	aidy := NewMock()
 	aidy.Append()
@@ -65,13 +58,6 @@ func TestMockAidy_Clean(t *testing.T) {
 	aidy := NewMock()
 	aidy.Clean()
 	assert.Contains(t, aidy.Logs(), "Clean called")
-}
-
-func TestMockAidy_Diff(t *testing.T) {
-	aidy := NewMock()
-	err := aidy.Diff()
-	assert.NoError(t, err)
-	assert.Contains(t, aidy.Logs(), "Diff called")
 }
 
 func TestMockAidy_StartIssue(t *testing.T) {
